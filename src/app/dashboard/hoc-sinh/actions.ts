@@ -14,10 +14,10 @@ export type SuaHocSinhResult = { error: string } | { ok: true };
 export type XoaHocSinhResult = { error: string } | { ok: true };
 
 const GIOI_TINH_HOP_LE = ["nam", "nu", "khac"] as const;
-const TINH_TRANG_HOP_LE = ["da_dang_ky", "da_xac_nhan", "da_nhap_hoc", "huy_dang_ky"] as const;
+const TINH_TRANG_HOP_LE = ["da_dang_ky", "da_xac_nhan", "da_nhap_hoc", "huy_dang_ky"];
 
 type ThongTinBoSung = {
-  tinh_trang_dang_ky: string | null;
+  tinh_trang_dang_ky: string[] | null;
   ngay_sinh: string | null;
   gioi_tinh: string | null;
   email: string | null;
@@ -38,13 +38,13 @@ function docThongTinBoSung(formData: FormData): ThongTinBoSung | { error: string
     return { error: "Giới tính không hợp lệ." };
   }
 
-  const tinhTrang = layChuoi("tinh_trang_dang_ky");
-  if (tinhTrang && !TINH_TRANG_HOP_LE.includes(tinhTrang as (typeof TINH_TRANG_HOP_LE)[number])) {
-    return { error: "Tình trạng đăng ký không hợp lệ." };
+  const tinhTrang = formData.getAll("tinh_trang_dang_ky").map((v) => String(v));
+  for (const t of tinhTrang) {
+    if (!TINH_TRANG_HOP_LE.includes(t)) return { error: "Tình trạng đăng ký không hợp lệ." };
   }
 
   return {
-    tinh_trang_dang_ky: tinhTrang,
+    tinh_trang_dang_ky: tinhTrang.length > 0 ? tinhTrang : null,
     ngay_sinh: layChuoi("ngay_sinh"),
     gioi_tinh: gioiTinh,
     email: layChuoi("email"),

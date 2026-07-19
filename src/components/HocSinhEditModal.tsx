@@ -126,28 +126,31 @@ export default function HocSinhEditModal({ hocSinh, onClose }: { hocSinh: HocSin
             />
           </div>
 
-          <div className={formStyles.row}>
-            <div className={formStyles.field}>
-              <label htmlFor="tinh_trang_dang_ky" className={formStyles.label}>Tình trạng đăng ký</label>
-              <select
-                id="tinh_trang_dang_ky" name="tinh_trang_dang_ky"
-                className={formStyles.select} disabled={isPending}
-                defaultValue={hocSinh.tinh_trang_dang_ky ?? ""}
-              >
-                <option value="">— Chưa chọn —</option>
-                {TINH_TRANG_DANG_KY_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{TINH_TRANG_DANG_KY_LABEL[t]}</option>
-                ))}
-              </select>
+          <div className={formStyles.field}>
+            <span className={formStyles.label}>Tình trạng đăng ký (chọn được nhiều)</span>
+            <div className={formStyles.checkGroup}>
+              {TINH_TRANG_DANG_KY_OPTIONS.map((t) => (
+                <label key={t} className={formStyles.checkItem}>
+                  <input
+                    type="checkbox"
+                    name="tinh_trang_dang_ky"
+                    value={t}
+                    disabled={isPending}
+                    defaultChecked={hocSinh.tinh_trang_dang_ky?.includes(t) ?? false}
+                  />
+                  {TINH_TRANG_DANG_KY_LABEL[t]}
+                </label>
+              ))}
             </div>
-            <div className={formStyles.field}>
-              <label htmlFor="truong_thpt" className={formStyles.label}>Trường THPT</label>
-              <input
-                id="truong_thpt" name="truong_thpt" type="text"
-                className={formStyles.input} disabled={isPending}
-                defaultValue={hocSinh.truong_thpt ?? ""}
-              />
-            </div>
+          </div>
+
+          <div className={formStyles.field}>
+            <label htmlFor="truong_thpt" className={formStyles.label}>Trường THPT</label>
+            <input
+              id="truong_thpt" name="truong_thpt" type="text"
+              className={formStyles.input} disabled={isPending}
+              defaultValue={hocSinh.truong_thpt ?? ""}
+            />
           </div>
 
           <div className={formStyles.row}>

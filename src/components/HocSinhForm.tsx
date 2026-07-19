@@ -127,20 +127,21 @@ export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
         <input id="dia_chi" name="dia_chi" type="text" className={styles.input} disabled={isPending} />
       </div>
 
-      <div className={styles.row}>
-        <div className={styles.field}>
-          <label htmlFor="tinh_trang_dang_ky" className={styles.label}>Tình trạng đăng ký (tuỳ chọn)</label>
-          <select id="tinh_trang_dang_ky" name="tinh_trang_dang_ky" className={styles.select} disabled={isPending} defaultValue="">
-            <option value="">— Chưa chọn —</option>
-            {TINH_TRANG_DANG_KY_OPTIONS.map((t) => (
-              <option key={t} value={t}>{TINH_TRANG_DANG_KY_LABEL[t]}</option>
-            ))}
-          </select>
+      <div className={styles.field}>
+        <span className={styles.label}>Tình trạng đăng ký (tuỳ chọn, chọn được nhiều)</span>
+        <div className={styles.checkGroup}>
+          {TINH_TRANG_DANG_KY_OPTIONS.map((t) => (
+            <label key={t} className={styles.checkItem}>
+              <input type="checkbox" name="tinh_trang_dang_ky" value={t} disabled={isPending} />
+              {TINH_TRANG_DANG_KY_LABEL[t]}
+            </label>
+          ))}
         </div>
-        <div className={styles.field}>
-          <label htmlFor="truong_thpt" className={styles.label}>Trường THPT (tuỳ chọn)</label>
-          <input id="truong_thpt" name="truong_thpt" type="text" className={styles.input} disabled={isPending} />
-        </div>
+      </div>
+
+      <div className={styles.field}>
+        <label htmlFor="truong_thpt" className={styles.label}>Trường THPT (tuỳ chọn)</label>
+        <input id="truong_thpt" name="truong_thpt" type="text" className={styles.input} disabled={isPending} />
       </div>
 
       <div className={styles.row}>

@@ -14,7 +14,7 @@ export type HocSinhRow = {
   ho_ten: string;
   sdt_phu_huynh: string | null;
   lop_hien_tai: string | null;
-  tinh_trang_dang_ky: string | null;
+  tinh_trang_dang_ky: string[] | null;
   ngay_sinh: string | null;
   gioi_tinh: string | null;
   email: string | null;
@@ -69,7 +69,9 @@ export default function HocSinhTable({
       hs.email ?? "",
       hs.cccd ?? "",
       hs.dia_chi ?? "",
-      hs.tinh_trang_dang_ky ? (TINH_TRANG_DANG_KY_LABEL[hs.tinh_trang_dang_ky] ?? hs.tinh_trang_dang_ky) : "",
+      hs.tinh_trang_dang_ky
+        ? hs.tinh_trang_dang_ky.map((t) => TINH_TRANG_DANG_KY_LABEL[t] ?? t).join(", ")
+        : "",
       hs.truong_thpt ?? "",
       hs.khoi_thi ?? "",
       hs.nv1 ?? "",
@@ -195,8 +197,8 @@ function HocSinhRowItem({
       <td>{hocSinh.khoi_thi ?? "—"}</td>
       <td>{hocSinh.nv1 ?? "—"}</td>
       <td>
-        {hocSinh.tinh_trang_dang_ky
-          ? (TINH_TRANG_DANG_KY_LABEL[hocSinh.tinh_trang_dang_ky] ?? hocSinh.tinh_trang_dang_ky)
+        {hocSinh.tinh_trang_dang_ky && hocSinh.tinh_trang_dang_ky.length > 0
+          ? hocSinh.tinh_trang_dang_ky.map((t) => TINH_TRANG_DANG_KY_LABEL[t] ?? t).join(", ")
           : "—"}
       </td>
       {(canEdit || canDelete) && (
