@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HocSinhForm from "@/components/HocSinhForm";
+import HocSinhTable, { type HocSinhRow } from "@/components/HocSinhTable";
 import styles from "./hoc-sinh.module.css";
 
 export default async function HocSinhPage() {
@@ -17,13 +18,25 @@ export default async function HocSinhPage() {
     supabase.from("lop").select("id, ma_lop, ten_lop").order("ma_lop", { ascending: false }),
     supabase
       .from("hoc_sinh")
-      .select("id, ma_hoc_sinh, ho_ten, sdt_phu_huynh, created_at")
+      .select("id, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at")
       .order("created_at", { ascending: false })
-      .limit(300),
+      .limit(1000),
   ]);
 
   const isActive = profile?.trang_thai === "active";
   const isAllowed = isActive && (profile?.vai_tro === "master_admin" || profile?.vai_tro === "admin_ts");
+
+  const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
+  const hocSinhRows: HocSinhRow[] = (hocSinhList ?? []).map((hs) => {
+    const lop = hs.lop_hien_tai_id != null ? lopMap.get(hs.lop_hien_tai_id) : null;
+    return {
+      id: hs.id,
+      ma_hoc_sinh: hs.ma_hoc_sinh,
+      ho_ten: hs.ho_ten,
+      sdt_phu_huynh: hs.sdt_phu_huynh,
+      lop_hien_tai: lop ? (lop.ten_lop ? `${lop.ma_lop} — ${lop.ten_lop}` : lop.ma_lop) : null,
+    };
+  });
 
   return (
     <main className={styles.page}>
@@ -45,28 +58,9 @@ export default async function HocSinhPage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách học sinh ({hocSinhList?.length ?? 0})</h2>
-        {hocSinhList && hocSinhList.length > 0 ? (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>ID học sinh</th>
-                  <th>Họ tên</th>
-                  <th>SĐT phụ huynh</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hocSinhList.map((hs) => (
-                  <tr key={hs.id}>
-                    <td className={styles.mono}>{hs.ma_hoc_sinh}</td>
-                    <td>{hs.ho_ten}</td>
-                    <td>{hs.sdt_phu_huynh ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <h2 className={styles.cardTitle}>Tra cứu &amp; xuất danh sách học sinh ({hocSinhRows.length})</h2>
+        {hocSinhRows.length > 0 ? (
+          <HocSinhTable list={hocSinhRows} />
         ) : (
           <p className={styles.empty}>Chưa có học sinh nào.</p>
         )}
