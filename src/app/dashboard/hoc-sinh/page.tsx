@@ -18,13 +18,18 @@ export default async function HocSinhPage() {
     supabase.from("lop").select("id, ma_lop, ten_lop").order("ma_lop", { ascending: false }),
     supabase
       .from("hoc_sinh")
-      .select("id, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at")
+      .select(
+        "id, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at, tinh_trang_dang_ky, ngay_sinh, gioi_tinh, email, sdt_hoc_sinh, cccd, truong_thpt, khoi_thi, nv1, ten_phu_huynh, dia_chi"
+      )
       .order("created_at", { ascending: false })
       .limit(1000),
   ]);
 
   const isActive = profile?.trang_thai === "active";
+  const isMasterAdmin = isActive && profile?.vai_tro === "master_admin";
   const isAllowed = isActive && (profile?.vai_tro === "master_admin" || profile?.vai_tro === "admin_ts");
+  const canEdit = isAllowed;
+  const canDelete = isMasterAdmin;
 
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
   const hocSinhRows: HocSinhRow[] = (hocSinhList ?? []).map((hs) => {
@@ -35,6 +40,17 @@ export default async function HocSinhPage() {
       ho_ten: hs.ho_ten,
       sdt_phu_huynh: hs.sdt_phu_huynh,
       lop_hien_tai: lop ? (lop.ten_lop ? `${lop.ma_lop} — ${lop.ten_lop}` : lop.ma_lop) : null,
+      tinh_trang_dang_ky: hs.tinh_trang_dang_ky,
+      ngay_sinh: hs.ngay_sinh,
+      gioi_tinh: hs.gioi_tinh,
+      email: hs.email,
+      sdt_hoc_sinh: hs.sdt_hoc_sinh,
+      cccd: hs.cccd,
+      truong_thpt: hs.truong_thpt,
+      khoi_thi: hs.khoi_thi,
+      nv1: hs.nv1,
+      ten_phu_huynh: hs.ten_phu_huynh,
+      dia_chi: hs.dia_chi,
     };
   });
 
@@ -60,7 +76,7 @@ export default async function HocSinhPage() {
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Tra cứu &amp; xuất danh sách học sinh ({hocSinhRows.length})</h2>
         {hocSinhRows.length > 0 ? (
-          <HocSinhTable list={hocSinhRows} />
+          <HocSinhTable list={hocSinhRows} canEdit={canEdit} canDelete={canDelete} />
         ) : (
           <p className={styles.empty}>Chưa có học sinh nào.</p>
         )}

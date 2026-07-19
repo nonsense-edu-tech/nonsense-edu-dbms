@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { taoHocSinh } from "@/app/dashboard/hoc-sinh/actions";
+import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
 import styles from "./Form.module.css";
 
 type LopOption = { id: number; ma_lop: string; ten_lop: string | null };
@@ -72,16 +73,85 @@ export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
         />
       </div>
 
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="ngay_sinh" className={styles.label}>Ngày sinh (tuỳ chọn)</label>
+          <input id="ngay_sinh" name="ngay_sinh" type="date" className={styles.input} disabled={isPending} />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="gioi_tinh" className={styles.label}>Giới tính (tuỳ chọn)</label>
+          <select id="gioi_tinh" name="gioi_tinh" className={styles.select} disabled={isPending} defaultValue="">
+            <option value="">— Chưa chọn —</option>
+            {GIOI_TINH_OPTIONS.map((g) => (
+              <option key={g} value={g}>{GIOI_TINH_LABEL[g]}</option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="cccd" className={styles.label}>Số CCCD (tuỳ chọn)</label>
+          <input id="cccd" name="cccd" type="text" className={styles.input} disabled={isPending} placeholder="0xxxxxxxxxxx" />
+        </div>
+      </div>
+
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="ten_phu_huynh" className={styles.label}>Tên phụ huynh (tuỳ chọn)</label>
+          <input id="ten_phu_huynh" name="ten_phu_huynh" type="text" className={styles.input} disabled={isPending} />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="sdt_phu_huynh" className={styles.label}>SĐT phụ huynh (tuỳ chọn)</label>
+          <input
+            id="sdt_phu_huynh"
+            name="sdt_phu_huynh"
+            type="tel"
+            className={styles.input}
+            disabled={isPending}
+            placeholder="09xxxxxxxx"
+          />
+        </div>
+      </div>
+
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="sdt_hoc_sinh" className={styles.label}>SĐT học sinh (tuỳ chọn)</label>
+          <input id="sdt_hoc_sinh" name="sdt_hoc_sinh" type="tel" className={styles.input} disabled={isPending} placeholder="09xxxxxxxx" />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="email" className={styles.label}>Email học sinh (tuỳ chọn)</label>
+          <input id="email" name="email" type="email" className={styles.input} disabled={isPending} placeholder="hocsinh@email.com" />
+        </div>
+      </div>
+
       <div className={styles.field}>
-        <label htmlFor="sdt_phu_huynh" className={styles.label}>SĐT phụ huynh (tuỳ chọn)</label>
-        <input
-          id="sdt_phu_huynh"
-          name="sdt_phu_huynh"
-          type="tel"
-          className={styles.input}
-          disabled={isPending}
-          placeholder="09xxxxxxxx"
-        />
+        <label htmlFor="dia_chi" className={styles.label}>Địa chỉ nhà ở (tuỳ chọn)</label>
+        <input id="dia_chi" name="dia_chi" type="text" className={styles.input} disabled={isPending} />
+      </div>
+
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="tinh_trang_dang_ky" className={styles.label}>Tình trạng đăng ký (tuỳ chọn)</label>
+          <select id="tinh_trang_dang_ky" name="tinh_trang_dang_ky" className={styles.select} disabled={isPending} defaultValue="">
+            <option value="">— Chưa chọn —</option>
+            {TINH_TRANG_DANG_KY_OPTIONS.map((t) => (
+              <option key={t} value={t}>{TINH_TRANG_DANG_KY_LABEL[t]}</option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="truong_thpt" className={styles.label}>Trường THPT (tuỳ chọn)</label>
+          <input id="truong_thpt" name="truong_thpt" type="text" className={styles.input} disabled={isPending} />
+        </div>
+      </div>
+
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="khoi_thi" className={styles.label}>Khối thi (tuỳ chọn)</label>
+          <input id="khoi_thi" name="khoi_thi" type="text" className={styles.input} disabled={isPending} placeholder="vd A00, D01" />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="nv1" className={styles.label}>Nguyện vọng 1 (tuỳ chọn)</label>
+          <input id="nv1" name="nv1" type="text" className={styles.input} disabled={isPending} />
+        </div>
       </div>
 
       {error && <div className={styles.errorBox} role="alert">{error}</div>}
