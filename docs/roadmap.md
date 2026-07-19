@@ -60,7 +60,11 @@ Khởi tạo & phân quyền:
   admin_ht/truong_bm theo cấp học/môn học) + `user_bai_hoc` (giới hạn gv theo bài học) +
   **RLS phân quyền theo vai trò** — đã có sẵn trên production, đúng thiết kế phân cấp
   master_admin → admin_ht → truong_bm → gv (+ admin_ts ngang hàng cho tuyển sinh).
-  **Chưa có UI quản trị users** — gán vai trò/phạm vi qua Supabase SQL Editor tạm thời.
+- ✅ **UI quản trị users** — `/dashboard/users` (gate `master_admin`): danh sách tài
+  khoản, sửa `vai_tro`/`trang_thai` tại chỗ. Tài khoản `master_admin` bị **khoá cứng**
+  khỏi sửa qua UI (chặn cả UI lẫn server action) để tránh tự khoá/đổi quyền admin cao
+  nhất. **Chưa có:** tạo tài khoản mới qua UI (vẫn mời qua Supabase Dashboard), quản lý
+  `user_pham_vi`/`user_bai_hoc` (vẫn qua SQL Editor).
 - 🟡 Kiểm thử phân quyền ở **cả UI lẫn CSDL** — RLS `lop`/`hoc_sinh`/`ghi_danh` đã đúng
   (master_admin + admin_ts ghi; còn lại chỉ đọc); đã kiểm tra logic qua SQL Editor,
   **chưa test thật qua giao diện web** (cần chạy migration `0004` trước).
