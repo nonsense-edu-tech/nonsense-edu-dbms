@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { xoaLop } from "@/app/dashboard/lop/actions";
 import { TINH_TRANG_LOP_LABEL, hienThiNienKhoa } from "./lopOptions";
+import { ngayHienThi } from "@/lib/formatDate";
 import LopEditModal from "./LopEditModal";
 import styles from "@/app/dashboard/lop/lop.module.css";
 
@@ -65,12 +66,6 @@ export default function LopTable({
       {editingRow && <LopEditModal lop={editingRow} onClose={() => setEditingRow(null)} />}
     </div>
   );
-}
-
-function ngayHienThi(iso: string | null): string {
-  if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
-  return `${d}-${m}-${y}`;
 }
 
 function LopRowItem({

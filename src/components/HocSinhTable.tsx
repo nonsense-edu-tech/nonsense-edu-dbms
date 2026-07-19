@@ -3,11 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { xoaHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL } from "./hocSinhOptions";
+import { ngayHienThi } from "@/lib/formatDate";
 import HocSinhEditModal from "./HocSinhEditModal";
 import styles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
 
 export type HocSinhRow = {
   id: number;
+  stt: number;
   ma_hoc_sinh: string;
   ho_ten: string;
   sdt_phu_huynh: string | null;
@@ -50,16 +52,17 @@ export default function HocSinhTable({
 
   function handleExport() {
     const header = [
-      "ID hoc sinh", "Ho va ten", "Lop hien tai", "SDT phu huynh", "Ten phu huynh",
+      "STT", "ID hoc sinh", "Ho va ten", "Lop hien tai", "Ten phu huynh", "SDT phu huynh",
       "Ngay sinh", "Gioi tinh", "SDT hoc sinh", "Email", "CCCD", "Dia chi",
       "Tinh trang dang ky", "Truong THPT", "Khoi thi", "NV1",
     ];
     const rows = filtered.map((hs) => [
+      String(hs.stt),
       hs.ma_hoc_sinh,
       hs.ho_ten,
       hs.lop_hien_tai ?? "",
-      hs.sdt_phu_huynh ?? "",
       hs.ten_phu_huynh ?? "",
+      hs.sdt_phu_huynh ?? "",
       hs.ngay_sinh ?? "",
       hs.gioi_tinh ? (GIOI_TINH_LABEL[hs.gioi_tinh] ?? hs.gioi_tinh) : "",
       hs.sdt_hoc_sinh ?? "",
@@ -109,10 +112,22 @@ export default function HocSinhTable({
           <table className={styles.table}>
             <thead>
               <tr>
+                <th>STT</th>
                 <th>ID học sinh</th>
                 <th>Họ tên</th>
                 <th>Lớp hiện tại</th>
+                <th>Ngày sinh</th>
+                <th>Giới tính</th>
+                <th>SĐT học sinh</th>
+                <th>Email</th>
+                <th>Số CCCD</th>
+                <th>Địa chỉ nhà ở</th>
+                <th>Tên phụ huynh</th>
                 <th>SĐT phụ huynh</th>
+                <th>Trường THPT</th>
+                <th>Khối thi</th>
+                <th>Nguyện vọng 1</th>
+                <th>Tình trạng đăng ký</th>
                 {(canEdit || canDelete) && <th></th>}
               </tr>
             </thead>
@@ -164,10 +179,26 @@ function HocSinhRowItem({
 
   return (
     <tr>
+      <td>{hocSinh.stt}</td>
       <td className={styles.mono}>{hocSinh.ma_hoc_sinh}</td>
       <td>{hocSinh.ho_ten}</td>
       <td>{hocSinh.lop_hien_tai ?? "—"}</td>
+      <td>{ngayHienThi(hocSinh.ngay_sinh)}</td>
+      <td>{hocSinh.gioi_tinh ? (GIOI_TINH_LABEL[hocSinh.gioi_tinh] ?? hocSinh.gioi_tinh) : "—"}</td>
+      <td>{hocSinh.sdt_hoc_sinh ?? "—"}</td>
+      <td>{hocSinh.email ?? "—"}</td>
+      <td>{hocSinh.cccd ?? "—"}</td>
+      <td>{hocSinh.dia_chi ?? "—"}</td>
+      <td>{hocSinh.ten_phu_huynh ?? "—"}</td>
       <td>{hocSinh.sdt_phu_huynh ?? "—"}</td>
+      <td>{hocSinh.truong_thpt ?? "—"}</td>
+      <td>{hocSinh.khoi_thi ?? "—"}</td>
+      <td>{hocSinh.nv1 ?? "—"}</td>
+      <td>
+        {hocSinh.tinh_trang_dang_ky
+          ? (TINH_TRANG_DANG_KY_LABEL[hocSinh.tinh_trang_dang_ky] ?? hocSinh.tinh_trang_dang_ky)
+          : "—"}
+      </td>
       {(canEdit || canDelete) && (
         <td>
           <div className={styles.rowActions}>

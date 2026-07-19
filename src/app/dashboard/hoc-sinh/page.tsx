@@ -19,7 +19,7 @@ export default async function HocSinhPage() {
     supabase
       .from("hoc_sinh")
       .select(
-        "id, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at, tinh_trang_dang_ky, ngay_sinh, gioi_tinh, email, sdt_hoc_sinh, cccd, truong_thpt, khoi_thi, nv1, ten_phu_huynh, dia_chi"
+        "id, stt, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at, tinh_trang_dang_ky, ngay_sinh, gioi_tinh, email, sdt_hoc_sinh, cccd, truong_thpt, khoi_thi, nv1, ten_phu_huynh, dia_chi"
       )
       .order("created_at", { ascending: false })
       .limit(1000),
@@ -36,6 +36,7 @@ export default async function HocSinhPage() {
     const lop = hs.lop_hien_tai_id != null ? lopMap.get(hs.lop_hien_tai_id) : null;
     return {
       id: hs.id,
+      stt: hs.stt,
       ma_hoc_sinh: hs.ma_hoc_sinh,
       ho_ten: hs.ho_ten,
       sdt_phu_huynh: hs.sdt_phu_huynh,
