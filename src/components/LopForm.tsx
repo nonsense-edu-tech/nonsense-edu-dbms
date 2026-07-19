@@ -4,7 +4,15 @@ import { useState, useTransition } from "react";
 import { taoLop } from "@/app/dashboard/lop/actions";
 import styles from "./Form.module.css";
 
-export default function LopForm() {
+type MaTen = { ma: string | number; ten: string };
+
+export default function LopForm({
+  capHocList,
+  chuongTrinhList,
+}: {
+  capHocList: MaTen[];
+  chuongTrinhList: MaTen[];
+}) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -27,37 +35,53 @@ export default function LopForm() {
     });
   }
 
+  if (capHocList.length === 0 || chuongTrinhList.length === 0) {
+    return (
+      <p className={styles.hint}>
+        Chưa có dữ liệu bảng mã <strong>cấp học</strong> hoặc <strong>chương trình</strong>.
+        Vào Supabase SQL Editor thêm trước, vd:
+        <br />
+        <code>insert into cap_hoc (ma, ten) values (3, &apos;THPT&apos;);</code>
+        <br />
+        <code>insert into chuong_trinh (ma, ten) values (&apos;012&apos;, &apos;V-ACT&apos;);</code>
+      </p>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
       <div className={styles.row}>
         <div className={styles.field}>
-          <label htmlFor="cap_hoc" className={styles.label}>Cấp học (1 số)</label>
-          <input
+          <label htmlFor="cap_hoc" className={styles.label}>Cấp học</label>
+          <select
             id="cap_hoc"
             name="cap_hoc"
-            type="number"
-            min={1}
-            max={9}
             required
-            className={styles.input}
+            className={styles.select}
             disabled={isPending}
-            placeholder="vd 3"
-          />
+            defaultValue=""
+          >
+            <option value="" disabled>— Chọn cấp học —</option>
+            {capHocList.map((c) => (
+              <option key={c.ma} value={c.ma}>{c.ten}</option>
+            ))}
+          </select>
         </div>
         <div className={styles.field}>
-          <label htmlFor="chuong_trinh" className={styles.label}>Chương trình (3 số)</label>
-          <input
+          <label htmlFor="chuong_trinh" className={styles.label}>Chương trình</label>
+          <select
             id="chuong_trinh"
             name="chuong_trinh"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]{3}"
-            maxLength={3}
             required
-            className={styles.input}
+            className={styles.select}
             disabled={isPending}
-            placeholder="vd 012"
-          />
+            defaultValue=""
+          >
+            <option value="" disabled>— Chọn chương trình —</option>
+            {chuongTrinhList.map((c) => (
+              <option key={c.ma} value={c.ma}>{c.ten}</option>
+            ))}
+          </select>
         </div>
         <div className={styles.field}>
           <label htmlFor="nam_hoc" className={styles.label}>Năm học (2 số)</label>
