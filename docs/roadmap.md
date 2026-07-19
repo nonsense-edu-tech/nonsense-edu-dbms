@@ -5,7 +5,13 @@ khi hoàn thành để Claude Code nắm được đang ở đâu.
 
 ## Trạng thái tổng quan
 
-- ✅ Trang đăng nhập (email/password) — xong, đã deploy Vercel.
+- ✅ Trang đăng nhập (email/password) — đã deploy Vercel, **đã xác nhận đăng nhập
+  thành công thật trên production** (19/07/2026). Trước đó từng tưởng xong nhưng
+  thực chất chưa chạy được, do 2 lỗi: (1) code nằm ở project con
+  `nonsense-edu-login-fe/` tách biệt, Vercel build nhầm project gốc (đã gộp vào
+  `src/`); (2) `NEXT_PUBLIC_SUPABASE_URL` trên Vercel bị dư đuôi `/rest/v1`
+  (đã sửa lại đúng Project URL trần). Cả hai đã fix ở commit `50796f0` + cấu
+  hình lại env var.
 - ✅ Project Supabase đã tạo (`it@nonsense.edu.vn`).
 - 🔜 Đang bước vào **GĐ1**.
 
