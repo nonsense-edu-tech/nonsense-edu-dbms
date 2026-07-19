@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
 import { redirect } from "next/navigation";
@@ -9,6 +10,12 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase
+    .from("users")
+    .select("vai_tro, trang_thai")
+    .eq("id", user.id)
+    .single();
+
   return (
     <main className={styles.page}>
       <div className={styles.card}>
@@ -16,10 +23,15 @@ export default async function DashboardPage() {
         <h1 className={styles.title}>Xin chào!</h1>
         <p className={styles.email}>{user.email}</p>
         <p className={styles.note}>
-          Dashboard đang được xây dựng theo lộ trình GĐ1.
-          <br />
-          Trang đăng nhập đã hoạt động đúng.
+          Vai trò:{" "}
+          {profile?.trang_thai === "active"
+            ? `"${profile.vai_tro ?? "chưa gán"}"`
+            : "chưa được Admin duyệt"}
         </p>
+        <nav className={styles.nav}>
+          <Link href="/dashboard/lop" className={styles.navLink}>Lớp học</Link>
+          <Link href="/dashboard/hoc-sinh" className={styles.navLink}>Học sinh</Link>
+        </nav>
         <form action={signOut}>
           <button type="submit" className={styles.btnSignOut}>
             Đăng xuất
