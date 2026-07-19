@@ -5,6 +5,14 @@ import HocSinhForm from "@/components/HocSinhForm";
 import HocSinhTable, { type HocSinhRow } from "@/components/HocSinhTable";
 import styles from "./hoc-sinh.module.css";
 
+// Phòng trường hợp dữ liệu cũ (trước khi đổi cột sang text[]) vẫn còn ở dạng
+// chuỗi đơn — tránh crash .map() ở client component.
+function chuanHoaMang(v: unknown): string[] | null {
+  if (v == null) return null;
+  if (Array.isArray(v)) return v;
+  return [String(v)];
+}
+
 export default async function HocSinhPage() {
   const supabase = await createClient();
   const {
@@ -41,7 +49,7 @@ export default async function HocSinhPage() {
       ho_ten: hs.ho_ten,
       sdt_phu_huynh: hs.sdt_phu_huynh,
       lop_hien_tai: lop ? (lop.ten_lop ? `${lop.ma_lop} — ${lop.ten_lop}` : lop.ma_lop) : null,
-      tinh_trang_dang_ky: hs.tinh_trang_dang_ky,
+      tinh_trang_dang_ky: chuanHoaMang(hs.tinh_trang_dang_ky),
       ngay_sinh: hs.ngay_sinh,
       gioi_tinh: hs.gioi_tinh,
       email: hs.email,
