@@ -23,6 +23,18 @@ export async function capNhatUser(formData: FormData): Promise<CapNhatUserResult
     return { error: "Trạng thái không hợp lệ." };
   }
 
+  const { data: target } = await supabase
+    .from("users")
+    .select("vai_tro")
+    .eq("id", userId)
+    .single();
+
+  if (target?.vai_tro === "master_admin") {
+    return {
+      error: "Tài khoản Master Admin bị khoá cứng — không thể đổi vai trò/trạng thái qua giao diện. Dùng Supabase SQL Editor nếu thực sự cần.",
+    };
+  }
+
   const { error } = await supabase
     .from("users")
     .update({ vai_tro: vaiTro, trang_thai: trangThai })

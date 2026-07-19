@@ -46,6 +46,7 @@ export default function UsersTable({ list, currentUserId }: { list: UserRow[]; c
 }
 
 function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
+  const isLocked = user.vai_tro === "master_admin";
   const [editing, setEditing] = useState(false);
   const [vaiTro, setVaiTro] = useState(user.vai_tro);
   const [trangThai, setTrangThai] = useState(user.trang_thai);
@@ -131,7 +132,11 @@ function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
       </td>
       <td>
         <div className={styles.rowActions}>
-          {editing ? (
+          {isLocked ? (
+            <span className={styles.lockBadge} title="Master Admin bị khoá cứng — không thể sửa qua giao diện">
+              🔒 Khoá cứng
+            </span>
+          ) : editing ? (
             <>
               <button type="button" className={styles.btnSave} onClick={handleSave} disabled={isPending}>
                 {isPending ? "Đang lưu…" : "Lưu"}
