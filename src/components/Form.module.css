@@ -113,3 +113,18 @@
   color: var(--text-mid);
   line-height: 1.6;
 }
+
+.checkGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 2px;
+}
+
+.checkItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-hi);
+}

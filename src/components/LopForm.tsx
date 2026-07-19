@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { taoLop } from "@/app/dashboard/lop/actions";
+import { TINH_TRANG_LOP_LABEL, TINH_TRANG_LOP_OPTIONS, danhSachNienKhoa } from "./lopOptions";
 import styles from "./Form.module.css";
 
 type MaTen = { ma: string | number; ten: string };
@@ -16,6 +17,7 @@ export default function LopForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const nienKhoaOptions = danhSachNienKhoa();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -84,18 +86,13 @@ export default function LopForm({
           </select>
         </div>
         <div className={styles.field}>
-          <label htmlFor="nam_hoc" className={styles.label}>Năm học (2 số)</label>
-          <input
-            id="nam_hoc"
-            name="nam_hoc"
-            type="number"
-            min={0}
-            max={99}
-            required
-            className={styles.input}
-            disabled={isPending}
-            placeholder="vd 25"
-          />
+          <label htmlFor="nam_hoc" className={styles.label}>Niên khoá</label>
+          <select id="nam_hoc" name="nam_hoc" required className={styles.select} disabled={isPending} defaultValue="">
+            <option value="" disabled>— Chọn niên khoá —</option>
+            {nienKhoaOptions.map((nk) => (
+              <option key={nk.value} value={nk.value}>{nk.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -109,6 +106,29 @@ export default function LopForm({
           disabled={isPending}
           placeholder="vd V-ACT 12A1"
         />
+      </div>
+
+      <div className={styles.row}>
+        <div className={styles.field}>
+          <label htmlFor="ngay_khai_giang" className={styles.label}>Ngày khai giảng (tuỳ chọn)</label>
+          <input id="ngay_khai_giang" name="ngay_khai_giang" type="date" className={styles.input} disabled={isPending} />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="ngay_ket_thuc" className={styles.label}>Ngày kết thúc (tuỳ chọn)</label>
+          <input id="ngay_ket_thuc" name="ngay_ket_thuc" type="date" className={styles.input} disabled={isPending} />
+        </div>
+      </div>
+
+      <div className={styles.field}>
+        <span className={styles.label}>Tình trạng (tuỳ chọn, chọn được nhiều)</span>
+        <div className={styles.checkGroup}>
+          {TINH_TRANG_LOP_OPTIONS.map((t) => (
+            <label key={t} className={styles.checkItem}>
+              <input type="checkbox" name="tinh_trang" value={t} disabled={isPending} />
+              {TINH_TRANG_LOP_LABEL[t]}
+            </label>
+          ))}
+        </div>
       </div>
 
       {error && <div className={styles.errorBox} role="alert">{error}</div>}
