@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-const VAI_TRO_HOP_LE = ["master_admin", "admin_ts", "admin_ht", "truong_bm", "gv"] as const;
+const VAI_TRO_HOP_LE = ["master_admin", "admin_ts", "admin_ht", "truong_bm", "gv", "ke_toan", "thu_ngan"] as const;
 const TRANG_THAI_HOP_LE = ["active", "disabled"] as const;
 
 export type CapNhatUserResult = { error: string } | { ok: true };

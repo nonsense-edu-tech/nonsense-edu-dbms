@@ -18,6 +18,8 @@ const VAI_TRO_LABEL: Record<string, string> = {
   admin_ht: "Admin Hiệu trưởng",
   truong_bm: "Trưởng bộ môn",
   gv: "Giáo viên",
+  ke_toan: "Kế toán",
+  thu_ngan: "Thu ngân",
 };
 
 const VAI_TRO_OPTIONS = Object.keys(VAI_TRO_LABEL);
