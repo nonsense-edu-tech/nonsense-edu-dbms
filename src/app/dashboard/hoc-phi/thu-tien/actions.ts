@@ -28,6 +28,11 @@ export async function taoPhieuThu(formData: FormData): Promise<TaoPhieuThuResult
   if (!ngayThu) return { error: "Vui lòng chọn ngày thu." };
   if (!HINH_THUC_HOP_LE.includes(hinhThuc)) return { error: "Hình thức thu không hợp lệ." };
 
+  // Tên người thu lấy từ hồ sơ của CHÍNH người đang đăng nhập (RLS chỉ cho đọc
+  // chính mình) — không nhận từ client, đảm bảo không sửa được qua form.
+  const { data: hoSo } = await supabase.from("users").select("ho_ten").eq("id", user.id).single();
+  const nguoiThuTen = hoSo?.ho_ten?.trim() || user.email || "?";
+
   const tepList = formData
     .getAll("tep_dinh_kem")
     .filter((v): v is File => v instanceof File && v.size > 0)
@@ -79,6 +84,7 @@ export async function taoPhieuThu(formData: FormData): Promise<TaoPhieuThuResult
     hinh_thuc: hinhThuc,
     ghi_chu: ghiChu,
     nguoi_thu: user.id,
+    nguoi_thu_ten: nguoiThuTen,
     tep_dinh_kem_id: tepDinhKemIds[0] ?? null,
     tep_dinh_kem_id_2: tepDinhKemIds[1] ?? null,
   });

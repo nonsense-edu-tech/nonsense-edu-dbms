@@ -26,7 +26,7 @@ export default async function ThuTienPage() {
     { data: phieuThuList },
     { data: tepDinhKemList },
   ] = await Promise.all([
-    supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
+    supabase.from("users").select("vai_tro, trang_thai, ho_ten").eq("id", user.id).single(),
     supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, ghi_danh_id, chuong_trinh_ma, con_phai_thu, trang_thai"),
     supabase.from("ghi_danh").select("id, hoc_sinh_id").is("deleted_at", null),
     supabase.from("hoc_sinh").select("id, ho_ten, ma_hoc_sinh").is("deleted_at", null),
@@ -34,7 +34,7 @@ export default async function ThuTienPage() {
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null),
     supabase
       .from("phieu_thu")
-      .select("id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, tep_dinh_kem_id, tep_dinh_kem_id_2")
+      .select("id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, nguoi_thu_ten, tep_dinh_kem_id, tep_dinh_kem_id_2")
       .order("created_at", { ascending: false })
       .limit(100),
     supabase.from("tep_dinh_kem").select("id, ten_tep, duong_dan_luu_tru"),
@@ -44,6 +44,7 @@ export default async function ThuTienPage() {
   const vaiTro = profile?.vai_tro ?? "";
   const canRead = isActive && VAI_TRO_DOC.includes(vaiTro);
   const canEdit = isActive && VAI_TRO_GHI.includes(vaiTro);
+  const nguoiDungHienTai = profile?.ho_ten?.trim() || user.email || "?";
 
   const hocSinhMap = new Map((hocSinhList ?? []).map((h) => [h.id, h]));
   const ghiDanhMap = new Map((ghiDanhList ?? []).map((g) => [g.id, g]));
@@ -84,6 +85,7 @@ export default async function ThuTienPage() {
       hinh_thuc: pt.hinh_thuc,
       la_phieu_dao: pt.la_phieu_dao,
       ghi_chu: pt.ghi_chu,
+      nguoi_thu_ten: pt.nguoi_thu_ten ?? "?",
       bien_lai: bienLai,
     };
   });
@@ -114,7 +116,7 @@ export default async function ThuTienPage() {
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Ghi phiếu thu</h2>
             {canEdit ? (
-              <PhieuThuForm hopDongList={hopDongDangHoatDong} />
+              <PhieuThuForm hopDongList={hopDongDangHoatDong} nguoiDungHienTai={nguoiDungHienTai} />
             ) : (
               <p className={styles.noticeBox}>Bạn không có quyền ghi phiếu thu.</p>
             )}

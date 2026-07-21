@@ -21,7 +21,13 @@ const SO_TEP_TOI_DA = 2;
 
 type BienLaiDaChon = { file: File; dungLuongGoc: number; daNen: boolean };
 
-export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDangHoatDong[] }) {
+export default function PhieuThuForm({
+  hopDongList,
+  nguoiDungHienTai,
+}: {
+  hopDongList: HopDongDangHoatDong[];
+  nguoiDungHienTai: string;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -89,7 +95,8 @@ export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDang
 
     if (hopDongChon) {
       const confirmed = window.confirm(
-        `Xác nhận thu học phí\n\nHọc sinh: ${hopDongChon.ho_ten} (${hopDongChon.ma_hoc_sinh})\n` +
+        `Xác nhận thu học phí\n\nNgười thu: ${nguoiDungHienTai}\n` +
+          `Học sinh: ${hopDongChon.ho_ten} (${hopDongChon.ma_hoc_sinh})\n` +
           `Chương trình: ${hopDongChon.chuong_trinh_ten}\n` +
           `Số thực nhận: ${tienHienThi(Number(formData.get("so_tien")) || 0)}\n` +
           `Biên lai đính kèm: ${bienLaiList.length > 0 ? bienLaiList.map((b) => b.file.name).join(", ") : "không có"}\n\n` +
@@ -117,6 +124,12 @@ export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDang
 
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
+      <div className={styles.field}>
+        <label className={styles.label}>Người thu</label>
+        <input type="text" className={styles.input} value={nguoiDungHienTai} disabled readOnly />
+        <span className={styles.hint}>Tự động lấy theo tài khoản đang đăng nhập — không sửa được.</span>
+      </div>
+
       <div className={styles.field}>
         <label htmlFor="hop_dong_id" className={styles.label}>Hợp đồng</label>
         <select

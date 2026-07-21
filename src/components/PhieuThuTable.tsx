@@ -19,6 +19,7 @@ export type PhieuThuRow = {
   hinh_thuc: string;
   la_phieu_dao: boolean;
   ghi_chu: string | null;
+  nguoi_thu_ten: string;
   bien_lai: BienLaiRow[];
 };
 
@@ -33,6 +34,7 @@ export default function PhieuThuTable({ list }: { list: PhieuThuRow[] }) {
             <th>Số tiền</th>
             <th>Ngày thu</th>
             <th>Hình thức</th>
+            <th>Người thu</th>
             <th>Biên lai</th>
             <th>Ghi chú</th>
           </tr>
@@ -48,6 +50,7 @@ export default function PhieuThuTable({ list }: { list: PhieuThuRow[] }) {
               </td>
               <td>{ngayHienThi(pt.ngay_thu.slice(0, 10))}</td>
               <td>{HINH_THUC_THU_LABEL[pt.hinh_thuc] ?? pt.hinh_thuc}</td>
+              <td>{pt.nguoi_thu_ten}</td>
               <td>
                 {pt.bien_lai.length === 0 ? (
                   "—"
