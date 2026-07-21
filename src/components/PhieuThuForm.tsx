@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { taoPhieuThu } from "@/app/dashboard/hoc-phi/thu-tien/actions";
 import { HINH_THUC_THU_LABEL } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
+import { nenAnhBienLai, dungLuongHienThi } from "@/lib/resizeImage";
 import styles from "./Form.module.css";
 
 export type HopDongDangHoatDong = {
@@ -14,13 +15,67 @@ export type HopDongDangHoatDong = {
   con_phai_thu: number;
 };
 
+const MIME_HOP_LE = ["image/jpeg", "image/png", "image/heic", "application/pdf"];
+const DUNG_LUONG_GOC_TOI_DA = 20 * 1024 * 1024;
+const SO_TEP_TOI_DA = 2;
+
+type BienLaiDaChon = { file: File; dungLuongGoc: number; daNen: boolean };
+
 export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDangHoatDong[] }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [hopDongId, setHopDongId] = useState("");
+  const [bienLaiList, setBienLaiList] = useState<BienLaiDaChon[]>([]);
+  const [dangNen, setDangNen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hopDongChon = hopDongList.find((h) => String(h.id) === hopDongId);
+
+  async function handleChonFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    setError(null);
+
+    const conCho = SO_TEP_TOI_DA - bienLaiList.length;
+    if (conCho <= 0) {
+      setError(`Chỉ được đính kèm tối đa ${SO_TEP_TOI_DA} file biên lai.`);
+      return;
+    }
+    const chonDuoc = files.slice(0, conCho);
+    if (files.length > conCho) {
+      setError(`Chỉ được đính kèm tối đa ${SO_TEP_TOI_DA} file — đã lấy ${conCho} file đầu.`);
+    }
+
+    for (const f of chonDuoc) {
+      if (!MIME_HOP_LE.includes(f.type)) {
+        setError(`File "${f.name}" sai định dạng. Chỉ nhận jpg/png/heic/pdf.`);
+        return;
+      }
+      if (f.size > DUNG_LUONG_GOC_TOI_DA) {
+        setError(`File "${f.name}" quá lớn (>20MB).`);
+        return;
+      }
+    }
+
+    setDangNen(true);
+    try {
+      const ketQua: BienLaiDaChon[] = [];
+      for (const f of chonDuoc) {
+        const { file, daNen } = await nenAnhBienLai(f);
+        ketQua.push({ file, dungLuongGoc: f.size, daNen });
+      }
+      setBienLaiList((cur) => [...cur, ...ketQua]);
+    } finally {
+      setDangNen(false);
+    }
+  }
+
+  function xoaBienLai(index: number) {
+    setBienLaiList((cur) => cur.filter((_, i) => i !== index));
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,12 +83,16 @@ export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDang
     setSuccess(null);
     const form = e.currentTarget;
     const formData = new FormData(form);
+    for (const bienLai of bienLaiList) {
+      formData.append("tep_dinh_kem", bienLai.file);
+    }
 
     if (hopDongChon) {
       const confirmed = window.confirm(
         `Xác nhận thu học phí\n\nHọc sinh: ${hopDongChon.ho_ten} (${hopDongChon.ma_hoc_sinh})\n` +
           `Chương trình: ${hopDongChon.chuong_trinh_ten}\n` +
-          `Số thực nhận: ${tienHienThi(Number(formData.get("so_tien")) || 0)}\n\n` +
+          `Số thực nhận: ${tienHienThi(Number(formData.get("so_tien")) || 0)}\n` +
+          `Biên lai đính kèm: ${bienLaiList.length > 0 ? bienLaiList.map((b) => b.file.name).join(", ") : "không có"}\n\n` +
           `Xác nhận lưu phiếu thu?`
       );
       if (!confirmed) return;
@@ -47,6 +106,7 @@ export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDang
         setSuccess(`Đã ghi phiếu thu — mã ${result.data.ma_phieu_thu}`);
         form.reset();
         setHopDongId("");
+        setBienLaiList([]);
       }
     });
   }
@@ -106,10 +166,45 @@ export default function PhieuThuForm({ hopDongList }: { hopDongList: HopDongDang
         <input id="ghi_chu" name="ghi_chu" type="text" className={styles.input} disabled={isPending} />
       </div>
 
+      <div className={styles.field}>
+        <label htmlFor="tep_dinh_kem_input" className={styles.label}>
+          Biên lai chuyển khoản (tối đa {SO_TEP_TOI_DA} file — jpg/png/heic/pdf, ảnh sẽ tự nén nhỏ lại)
+        </label>
+        <input
+          id="tep_dinh_kem_input"
+          type="file"
+          accept="image/jpeg,image/png,image/heic,application/pdf"
+          multiple
+          ref={fileInputRef}
+          onChange={handleChonFile}
+          className={styles.input}
+          disabled={isPending || dangNen || bienLaiList.length >= SO_TEP_TOI_DA}
+        />
+        {dangNen && <span className={styles.hint}>Đang nén ảnh…</span>}
+        {bienLaiList.length > 0 && (
+          <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+            {bienLaiList.map((b, i) => (
+              <li key={i} className={styles.hint} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                📎 {b.file.name} — {dungLuongHienThi(b.file.size)}
+                {b.daNen && ` (đã nén từ ${dungLuongHienThi(b.dungLuongGoc)})`}
+                <button
+                  type="button"
+                  onClick={() => xoaBienLai(i)}
+                  disabled={isPending}
+                  style={{ background: "transparent", border: "none", color: "var(--danger)", cursor: "pointer" }}
+                >
+                  Bỏ
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {error && <div className={styles.errorBox} role="alert">{error}</div>}
       {success && <div className={styles.successBox} role="status">{success}</div>}
 
-      <button type="submit" className={styles.btnPrimary} disabled={isPending}>
+      <button type="submit" className={styles.btnPrimary} disabled={isPending || dangNen}>
         {isPending ? "Đang lưu…" : "Ghi phiếu thu"}
       </button>
     </form>

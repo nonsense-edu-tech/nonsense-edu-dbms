@@ -24,6 +24,7 @@ export default async function ThuTienPage() {
     { data: lopList },
     { data: chuongTrinhList },
     { data: phieuThuList },
+    { data: tepDinhKemList },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, ghi_danh_id, chuong_trinh_ma, con_phai_thu, trang_thai"),
@@ -33,9 +34,10 @@ export default async function ThuTienPage() {
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null),
     supabase
       .from("phieu_thu")
-      .select("id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu")
+      .select("id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, tep_dinh_kem_id, tep_dinh_kem_id_2")
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase.from("tep_dinh_kem").select("id, ten_tep, duong_dan_luu_tru"),
   ]);
 
   const isActive = profile?.trang_thai === "active";
@@ -46,6 +48,7 @@ export default async function ThuTienPage() {
   const hocSinhMap = new Map((hocSinhList ?? []).map((h) => [h.id, h]));
   const ghiDanhMap = new Map((ghiDanhList ?? []).map((g) => [g.id, g]));
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
+  const tepDinhKemMap = new Map((tepDinhKemList ?? []).map((t) => [t.id, t]));
 
   const hopDongDangHoatDong: HopDongDangHoatDong[] = (taiChinhList ?? [])
     .filter((tc) => tc.trang_thai === "dang_hoat_dong")
@@ -66,6 +69,11 @@ export default async function ThuTienPage() {
 
   const phieuThuRows: PhieuThuRow[] = (phieuThuList ?? []).map((pt) => {
     const info = hopDongHocSinhMap.get(pt.hop_dong_id);
+    const bienLai = [pt.tep_dinh_kem_id, pt.tep_dinh_kem_id_2]
+      .filter((id): id is number => id != null)
+      .map((id) => tepDinhKemMap.get(id))
+      .filter((t): t is { id: number; ten_tep: string; duong_dan_luu_tru: string } => t != null)
+      .map((t) => ({ ten_tep: t.ten_tep, duong_dan_luu_tru: t.duong_dan_luu_tru }));
     return {
       id: pt.id,
       ma_phieu_thu: pt.ma_phieu_thu,
@@ -76,6 +84,7 @@ export default async function ThuTienPage() {
       hinh_thuc: pt.hinh_thuc,
       la_phieu_dao: pt.la_phieu_dao,
       ghi_chu: pt.ghi_chu,
+      bien_lai: bienLai,
     };
   });
 
