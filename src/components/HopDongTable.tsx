@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { kichHoatHopDong, huyHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
-import { TRANG_THAI_HOP_DONG_LABEL } from "./hocPhiOptions";
+import { TRANG_THAI_HOP_DONG_LABEL, TRANG_THAI_THU_LABEL, tinhTrangThaiThu } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
@@ -15,6 +15,7 @@ export type HopDongRow = {
   gia_niem_yet: number;
   so_tien_giam: number;
   doanh_thu_thuan: number;
+  thuc_thu: number;
   trang_thai: string;
 };
 
@@ -25,6 +26,14 @@ const BADGE_CLASS: Record<string, string> = {
   hoan_thanh: "badgeHoanThanh",
   da_huy: "badgeHuy",
 };
+
+const BADGE_CLASS_THU: Record<string, string> = {
+  chua_du: "badgeChuaDu",
+  du: "badgeDu",
+  du_thua: "badgeDuThua",
+};
+
+const TRANG_THAI_CO_THU_TIEN = ["dang_hoat_dong", "hoan_thanh"];
 
 export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; canEdit: boolean }) {
   return (
@@ -38,7 +47,9 @@ export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; ca
             <th>Giá niêm yết</th>
             <th>Giảm</th>
             <th>Doanh thu thuần</th>
+            <th>Thực thu</th>
             <th>Trạng thái</th>
+            <th>Trạng thái thu</th>
             {canEdit && <th></th>}
           </tr>
         </thead>
@@ -55,6 +66,9 @@ export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; ca
 function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const coTinhTrangThaiThu = TRANG_THAI_CO_THU_TIEN.includes(hd.trang_thai);
+  const trangThaiThu = coTinhTrangThaiThu ? tinhTrangThaiThu(hd.doanh_thu_thuan, hd.thuc_thu) : null;
 
   function handleKichHoat() {
     setError(null);
@@ -82,10 +96,20 @@ function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
       <td>{tienHienThi(hd.gia_niem_yet)}</td>
       <td>{tienHienThi(hd.so_tien_giam)}</td>
       <td className={styles.mono}>{tienHienThi(hd.doanh_thu_thuan)}</td>
+      <td>{coTinhTrangThaiThu ? tienHienThi(hd.thuc_thu) : "—"}</td>
       <td>
         <span className={`${styles.badge} ${styles[BADGE_CLASS[hd.trang_thai] ?? "badgeNhap"]}`}>
           {TRANG_THAI_HOP_DONG_LABEL[hd.trang_thai] ?? hd.trang_thai}
         </span>
+      </td>
+      <td>
+        {trangThaiThu ? (
+          <span className={`${styles.badge} ${styles[BADGE_CLASS_THU[trangThaiThu]]}`}>
+            {TRANG_THAI_THU_LABEL[trangThaiThu]}
+          </span>
+        ) : (
+          "—"
+        )}
       </td>
       {canEdit && (
         <td>

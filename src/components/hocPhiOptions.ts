@@ -25,6 +25,20 @@ export const HINH_THUC_THU_LABEL: Record<string, string> = {
   chuyen_khoan: "Chuyển khoản",
 };
 
+export type TrangThaiThu = "chua_du" | "du" | "du_thua";
+
+export const TRANG_THAI_THU_LABEL: Record<TrangThaiThu, string> = {
+  chua_du: "Chưa thu đủ",
+  du: "Đã thu đủ",
+  du_thua: "Thu dư",
+};
+
+export function tinhTrangThaiThu(doanhThuThuan: number, thucThu: number): TrangThaiThu {
+  if (thucThu < doanhThuThuan) return "chua_du";
+  if (thucThu > doanhThuThuan) return "du_thua";
+  return "du";
+}
+
 export function tinhDoanhThuThuan(
   giaNiemYet: number,
   loaiGiamGia: string,

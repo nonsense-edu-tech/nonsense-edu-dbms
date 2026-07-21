@@ -175,6 +175,10 @@
 .badgeHoanThanh { background: rgba(139, 146, 169, 0.15); color: var(--text-mid); }
 .badgeHuy { background: rgba(224, 87, 87, 0.15); color: #F08080; }
 
+.badgeChuaDu { background: rgba(245, 166, 35, 0.15); color: var(--accent); }
+.badgeDu { background: rgba(60, 200, 138, 0.15); color: var(--success); }
+.badgeDuThua { background: rgba(126, 182, 255, 0.15); color: #7EB6FF; }
+
 /* ── Dashboard: KPI + biểu đồ + bộ lọc ─────────────────────────────── */
 
 .filterRow {

@@ -24,6 +24,7 @@ export default async function HopDongPage() {
     { data: lopList },
     { data: hopDongList },
     { data: goiList },
+    { data: taiChinhList },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
@@ -36,6 +37,7 @@ export default async function HopDongPage() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase.from("goi_hoc_phi").select("id, ten, chuong_trinh_ma, gia_niem_yet, dang_ap_dung, hieu_luc_den").is("deleted_at", null),
+    supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, thuc_thu"),
   ]);
 
   const isActive = profile?.trang_thai === "active";
@@ -47,6 +49,7 @@ export default async function HopDongPage() {
   const hocSinhMap = new Map((hocSinhList ?? []).map((h) => [h.id, h]));
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
   const goiMap = new Map((goiList ?? []).map((g) => [g.id, g]));
+  const thucThuMap = new Map((taiChinhList ?? []).map((tc) => [tc.hop_dong_id, tc.thuc_thu]));
 
   const usedGhiDanhIds = new Set((hopDongList ?? []).map((hd) => hd.ghi_danh_id));
 
@@ -84,6 +87,7 @@ export default async function HopDongPage() {
       gia_niem_yet: hd.gia_niem_yet,
       so_tien_giam: hd.so_tien_giam,
       doanh_thu_thuan: hd.doanh_thu_thuan,
+      thuc_thu: thucThuMap.get(hd.id) ?? 0,
       trang_thai: hd.trang_thai,
     };
   });
