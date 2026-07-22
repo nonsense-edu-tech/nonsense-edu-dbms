@@ -20,6 +20,7 @@ const VAI_TRO_LABEL: Record<string, string> = {
   gv: "Giáo viên",
   ke_toan: "Kế toán",
   thu_ngan: "Thu ngân",
+  quan_ly_chi_nhanh: "Quản lý chi nhánh",
 };
 
 const VAI_TRO_OPTIONS = Object.keys(VAI_TRO_LABEL);
