@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 type Lop = {
-  id: number;
+  id: string;
   ma_lop: string;
   ten_lop: string | null;
 };
@@ -43,6 +43,7 @@ export async function taoLop(formData: FormData): Promise<TaoLopResult> {
   const chuongTrinh = String(formData.get("chuong_trinh") ?? "").trim();
   const namHoc = Number(formData.get("nam_hoc"));
   const tenLop = String(formData.get("ten_lop") ?? "").trim() || null;
+  const chiNhanhId = String(formData.get("chi_nhanh_id") ?? "").trim() || null;
 
   if (!Number.isInteger(capHoc) || capHoc < 1 || capHoc > 9) {
     return { error: "Cấp học phải là số từ 1-9." };
@@ -62,6 +63,7 @@ export async function taoLop(formData: FormData): Promise<TaoLopResult> {
     p_chuong_trinh: chuongTrinh,
     p_nam_hoc: namHoc,
     p_ten_lop: tenLop,
+    p_chi_nhanh_id: chiNhanhId,
   });
 
   if (error) return { error: mapDbError(error.message) };
@@ -81,10 +83,10 @@ export async function taoLop(formData: FormData): Promise<TaoLopResult> {
 export async function suaLop(formData: FormData): Promise<SuaLopResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const tenLop = String(formData.get("ten_lop") ?? "").trim() || null;
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID lớp." };
+  if (!id) return { error: "Thiếu ID lớp." };
 
   const boSung = docThongTinBoSungLop(formData);
   if ("error" in boSung) return boSung;
@@ -100,10 +102,10 @@ export async function suaLop(formData: FormData): Promise<SuaLopResult> {
   return { ok: true };
 }
 
-export async function xoaLop(id: number): Promise<XoaLopResult> {
+export async function xoaLop(id: string): Promise<XoaLopResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID lớp." };
+  if (!id) return { error: "Thiếu ID lớp." };
 
   const { error } = await supabase
     .from("lop")
@@ -118,7 +120,7 @@ export async function xoaLop(id: number): Promise<XoaLopResult> {
 
 function mapDbError(msg: string): string {
   if (msg.includes("permission denied") || msg.includes("row-level security"))
-    return "Bạn không có quyền thực hiện thao tác này (chỉ Master Admin / admin_ts).";
+    return "Bạn không có quyền thực hiện thao tác này (chỉ Master Admin / admin_ts / quản lý chi nhánh trong phạm vi của mình).";
   if (msg.includes("Chỉ Master Admin được xoá"))
     return "Chỉ Master Admin được xoá lớp học.";
   return msg;

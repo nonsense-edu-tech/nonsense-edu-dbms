@@ -8,29 +8,30 @@ import LopEditModal from "./LopEditModal";
 import styles from "@/app/dashboard/lop/lop.module.css";
 
 export type LopRow = {
-  id: number;
+  id: string;
   ma_lop: string;
   ten_lop: string | null;
   cap_hoc_ten: string;
   chuong_trinh_ten: string;
+  chi_nhanh_ten: string | null;
   nam_hoc: number;
   so_lop: number;
   ngay_khai_giang: string | null;
   ngay_ket_thuc: string | null;
   tinh_trang: string[] | null;
   so_hoc_sinh: number;
+  coTheSua: boolean;
 };
 
 export default function LopTable({
   list,
-  canEdit,
   canDelete,
 }: {
   list: LopRow[];
-  canEdit: boolean;
   canDelete: boolean;
 }) {
   const [editingRow, setEditingRow] = useState<LopRow | null>(null);
+  const coCotHanhDong = canDelete || list.some((l) => l.coTheSua);
 
   return (
     <div className={styles.tableWrap}>
@@ -42,12 +43,13 @@ export default function LopTable({
             <th>Tên lớp</th>
             <th>Cấp học</th>
             <th>Chương trình</th>
+            <th>Chi nhánh</th>
             <th>Niên khoá</th>
             <th>Ngày khai giảng</th>
             <th>Ngày kết thúc</th>
             <th>Tình trạng</th>
             <th>Tổng số học sinh</th>
-            {(canEdit || canDelete) && <th></th>}
+            {coCotHanhDong && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -55,8 +57,8 @@ export default function LopTable({
             <LopRowItem
               key={lop.id}
               lop={lop}
-              canEdit={canEdit}
               canDelete={canDelete}
+              coCotHanhDong={coCotHanhDong}
               onEdit={() => setEditingRow(lop)}
             />
           ))}
@@ -70,13 +72,13 @@ export default function LopTable({
 
 function LopRowItem({
   lop,
-  canEdit,
   canDelete,
+  coCotHanhDong,
   onEdit,
 }: {
   lop: LopRow;
-  canEdit: boolean;
   canDelete: boolean;
+  coCotHanhDong: boolean;
   onEdit: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +101,7 @@ function LopRowItem({
       <td>{lop.ten_lop ?? "—"}</td>
       <td>{lop.cap_hoc_ten}</td>
       <td>{lop.chuong_trinh_ten}</td>
+      <td>{lop.chi_nhanh_ten ?? "—"}</td>
       <td>{hienThiNienKhoa(lop.nam_hoc)}</td>
       <td>{ngayHienThi(lop.ngay_khai_giang)}</td>
       <td>{ngayHienThi(lop.ngay_ket_thuc)}</td>
@@ -108,10 +111,10 @@ function LopRowItem({
           : "—"}
       </td>
       <td>{lop.so_hoc_sinh}</td>
-      {(canEdit || canDelete) && (
+      {coCotHanhDong && (
         <td>
           <div className={styles.rowActions}>
-            {canEdit && (
+            {lop.coTheSua && (
               <button type="button" className={styles.btnEdit} onClick={onEdit} disabled={isPending}>
                 Sửa
               </button>

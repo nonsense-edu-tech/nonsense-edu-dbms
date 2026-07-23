@@ -5,7 +5,7 @@ import { taoHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
 import styles from "./Form.module.css";
 
-type LopOption = { id: number; ma_lop: string; ten_lop: string | null };
+type LopOption = { id: string; ma_lop: string; ten_lop: string | null };
 
 export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
   const [error, setError] = useState<string | null>(null);

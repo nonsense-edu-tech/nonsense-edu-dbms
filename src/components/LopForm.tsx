@@ -6,13 +6,18 @@ import { TINH_TRANG_LOP_LABEL, TINH_TRANG_LOP_OPTIONS, danhSachNienKhoa } from "
 import styles from "./Form.module.css";
 
 type MaTen = { ma: string | number; ten: string };
+type ChiNhanh = { id: string; ten: string };
 
 export default function LopForm({
   capHocList,
   chuongTrinhList,
+  chiNhanhList,
+  batBuocChiNhanh,
 }: {
   capHocList: MaTen[];
   chuongTrinhList: MaTen[];
+  chiNhanhList: ChiNhanh[];
+  batBuocChiNhanh: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -46,6 +51,14 @@ export default function LopForm({
         <code>insert into cap_hoc (ma, ten) values (3, &apos;THPT&apos;);</code>
         <br />
         <code>insert into chuong_trinh (ma, ten) values (&apos;012&apos;, &apos;V-ACT&apos;);</code>
+      </p>
+    );
+  }
+
+  if (batBuocChiNhanh && chiNhanhList.length === 0) {
+    return (
+      <p className={styles.hint}>
+        Bạn chưa được gán chi nhánh nào — liên hệ Master Admin để được gán chi nhánh trước khi tạo lớp.
       </p>
     );
   }
@@ -95,6 +108,33 @@ export default function LopForm({
           </select>
         </div>
       </div>
+
+      {chiNhanhList.length === 1 && batBuocChiNhanh ? (
+        <input type="hidden" name="chi_nhanh_id" value={chiNhanhList[0].id} />
+      ) : chiNhanhList.length > 0 ? (
+        <div className={styles.field}>
+          <label htmlFor="chi_nhanh_id" className={styles.label}>
+            Chi nhánh{batBuocChiNhanh ? "" : " (tuỳ chọn)"}
+          </label>
+          <select
+            id="chi_nhanh_id"
+            name="chi_nhanh_id"
+            required={batBuocChiNhanh}
+            className={styles.select}
+            disabled={isPending}
+            defaultValue=""
+          >
+            {batBuocChiNhanh ? (
+              <option value="" disabled>— Chọn chi nhánh —</option>
+            ) : (
+              <option value="">— Không chọn (chỉ trung tâm) —</option>
+            )}
+            {chiNhanhList.map((c) => (
+              <option key={c.id} value={c.id}>{c.ten}</option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       <div className={styles.field}>
         <label htmlFor="ten_lop" className={styles.label}>Tên lớp (tuỳ chọn)</label>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 type HocSinh = {
-  id: number;
+  id: string;
   ma_hoc_sinh: string;
   ho_ten: string;
 };
@@ -12,9 +12,12 @@ type HocSinh = {
 export type TaoHocSinhResult = { error: string } | { data: HocSinh };
 export type SuaHocSinhResult = { error: string } | { ok: true };
 export type XoaHocSinhResult = { error: string } | { ok: true };
+export type ChuyenLopResult = { error: string } | { ok: true };
+export type CapNhatTrangThaiGhiDanhResult = { error: string } | { ok: true };
 
 const GIOI_TINH_HOP_LE = ["nam", "nu", "khac"] as const;
 const TINH_TRANG_HOP_LE = ["da_dang_ky", "da_xac_nhan", "da_nhap_hoc", "huy_dang_ky"];
+const TRANG_THAI_GHI_DANH_HOP_LE = ["dang_hoc", "da_nghi", "bao_luu", "hoan_thanh", "da_chuyen_lop"];
 
 type ThongTinBoSung = {
   tinh_trang_dang_ky: string[] | null;
@@ -61,11 +64,11 @@ function docThongTinBoSung(formData: FormData): ThongTinBoSung | { error: string
 export async function taoHocSinh(formData: FormData): Promise<TaoHocSinhResult> {
   const supabase = await createClient();
 
-  const lopId = Number(formData.get("lop_id"));
+  const lopId = String(formData.get("lop_id") ?? "").trim();
   const hoTen = String(formData.get("ho_ten") ?? "").trim();
   const sdtPhuHuynh = String(formData.get("sdt_phu_huynh") ?? "").trim() || null;
 
-  if (!Number.isInteger(lopId) || lopId <= 0) {
+  if (!lopId) {
     return { error: "Vui lòng chọn lớp." };
   }
   if (!hoTen) {
@@ -98,11 +101,11 @@ export async function taoHocSinh(formData: FormData): Promise<TaoHocSinhResult> 
 export async function suaHocSinh(formData: FormData): Promise<SuaHocSinhResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const hoTen = String(formData.get("ho_ten") ?? "").trim();
   const sdtPhuHuynh = String(formData.get("sdt_phu_huynh") ?? "").trim() || null;
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID học sinh." };
+  if (!id) return { error: "Thiếu ID học sinh." };
   if (!hoTen) return { error: "Vui lòng nhập họ tên học sinh." };
 
   const boSung = docThongTinBoSung(formData);
@@ -119,10 +122,10 @@ export async function suaHocSinh(formData: FormData): Promise<SuaHocSinhResult> 
   return { ok: true };
 }
 
-export async function xoaHocSinh(id: number): Promise<XoaHocSinhResult> {
+export async function xoaHocSinh(id: string): Promise<XoaHocSinhResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID học sinh." };
+  if (!id) return { error: "Thiếu ID học sinh." };
 
   const { error } = await supabase
     .from("hoc_sinh")
@@ -135,9 +138,48 @@ export async function xoaHocSinh(id: number): Promise<XoaHocSinhResult> {
   return { ok: true };
 }
 
+export async function chuyenLop(hocSinhId: string, lopMoiId: string): Promise<ChuyenLopResult> {
+  const supabase = await createClient();
+
+  if (!hocSinhId || !lopMoiId) return { error: "Thiếu học sinh hoặc lớp đích." };
+
+  const { error } = await supabase.rpc("chuyen_lop", {
+    p_hoc_sinh_id: hocSinhId,
+    p_lop_moi_id: lopMoiId,
+  });
+
+  if (error) return { error: mapDbError(error.message) };
+
+  revalidatePath("/dashboard/hoc-sinh");
+  revalidatePath("/dashboard/lop");
+  return { ok: true };
+}
+
+export async function capNhatTrangThaiGhiDanh(
+  ghiDanhId: string,
+  trangThaiMoi: string
+): Promise<CapNhatTrangThaiGhiDanhResult> {
+  const supabase = await createClient();
+
+  if (!ghiDanhId) return { error: "Thiếu ghi danh." };
+  if (!TRANG_THAI_GHI_DANH_HOP_LE.includes(trangThaiMoi)) {
+    return { error: "Trạng thái ghi danh không hợp lệ." };
+  }
+
+  const { error } = await supabase.rpc("cap_nhat_trang_thai_ghi_danh", {
+    p_ghi_danh_id: ghiDanhId,
+    p_trang_thai_moi: trangThaiMoi,
+  });
+
+  if (error) return { error: mapDbError(error.message) };
+
+  revalidatePath("/dashboard/hoc-sinh");
+  return { ok: true };
+}
+
 function mapDbError(msg: string): string {
   if (msg.includes("permission denied") || msg.includes("row-level security"))
-    return "Bạn không có quyền thực hiện thao tác này.";
+    return "Bạn không có quyền thực hiện thao tác này (chỉ Master Admin / admin_ts / quản lý chi nhánh trong phạm vi của mình).";
   if (msg.includes("Chỉ Master Admin được xoá"))
     return "Chỉ Master Admin được xoá học sinh.";
   return msg;

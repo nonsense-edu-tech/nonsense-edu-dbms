@@ -1,18 +1,23 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { xoaHocSinh } from "@/app/dashboard/hoc-sinh/actions";
-import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL } from "./hocSinhOptions";
+import { xoaHocSinh, capNhatTrangThaiGhiDanh } from "@/app/dashboard/hoc-sinh/actions";
+import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL, TRANG_THAI_GHI_DANH_LABEL, TRANG_THAI_GHI_DANH_OPTIONS } from "./hocSinhOptions";
 import { ngayHienThi } from "@/lib/formatDate";
 import HocSinhEditModal from "./HocSinhEditModal";
+import ChuyenLopModal from "./ChuyenLopModal";
 import styles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
 
+type LopOption = { id: string; ma_lop: string; ten_lop: string | null; chi_nhanh_id: string | null };
+type ChiNhanhOption = { id: string; ten: string };
+
 export type HocSinhRow = {
-  id: number;
+  id: string;
   stt: number;
   ma_hoc_sinh: string;
   ho_ten: string;
   sdt_phu_huynh: string | null;
+  lop_hien_tai_id: string | null;
   lop_hien_tai: string | null;
   tinh_trang_dang_ky: string[] | null;
   ngay_sinh: string | null;
@@ -25,30 +30,54 @@ export type HocSinhRow = {
   nv1: string | null;
   ten_phu_huynh: string | null;
   dia_chi: string | null;
+  ghi_danh_id: string | null;
+  trang_thai_ghi_danh: string | null;
+  coTheSua: boolean;
 };
 
 export default function HocSinhTable({
   list,
-  canEdit,
+  lopList,
+  chiNhanhList,
   canDelete,
 }: {
   list: HocSinhRow[];
-  canEdit: boolean;
+  lopList: LopOption[];
+  chiNhanhList: ChiNhanhOption[];
   canDelete: boolean;
 }) {
   const [query, setQuery] = useState("");
+  const [lopFilter, setLopFilter] = useState("");
+  const [chiNhanhFilter, setChiNhanhFilter] = useState("");
+  const [trangThaiFilter, setTrangThaiFilter] = useState("");
   const [editingRow, setEditingRow] = useState<HocSinhRow | null>(null);
+  const [chuyenLopRow, setChuyenLopRow] = useState<HocSinhRow | null>(null);
+  const coCotHanhDong = canDelete || list.some((hs) => hs.coTheSua);
+
+  const lopIdToChiNhanhId = useMemo(
+    () => new Map(lopList.map((l) => [l.id, l.chi_nhanh_id])),
+    [lopList]
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (hs) =>
-        hs.ma_hoc_sinh.toLowerCase().includes(q) ||
-        hs.ho_ten.toLowerCase().includes(q) ||
-        (hs.lop_hien_tai ?? "").toLowerCase().includes(q)
-    );
-  }, [list, query]);
+    return list.filter((hs) => {
+      if (q) {
+        const khop =
+          hs.ma_hoc_sinh.toLowerCase().includes(q) ||
+          hs.ho_ten.toLowerCase().includes(q) ||
+          (hs.lop_hien_tai ?? "").toLowerCase().includes(q);
+        if (!khop) return false;
+      }
+      if (lopFilter && hs.lop_hien_tai_id !== lopFilter) return false;
+      if (chiNhanhFilter) {
+        const chiNhanhCuaHs = hs.lop_hien_tai_id != null ? lopIdToChiNhanhId.get(hs.lop_hien_tai_id) : null;
+        if (chiNhanhCuaHs !== chiNhanhFilter) return false;
+      }
+      if (trangThaiFilter && hs.trang_thai_ghi_danh !== trangThaiFilter) return false;
+      return true;
+    });
+  }, [list, query, lopFilter, chiNhanhFilter, trangThaiFilter, lopIdToChiNhanhId]);
 
   function handleExport() {
     const header = [
@@ -99,6 +128,41 @@ export default function HocSinhTable({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <select
+          className={styles.rowSelect}
+          value={lopFilter}
+          onChange={(e) => setLopFilter(e.target.value)}
+        >
+          <option value="">— Tất cả lớp —</option>
+          {lopList.map((lop) => (
+            <option key={lop.id} value={lop.id}>
+              {lop.ma_lop}
+              {lop.ten_lop ? ` — ${lop.ten_lop}` : ""}
+            </option>
+          ))}
+        </select>
+        {chiNhanhList.length > 0 && (
+          <select
+            className={styles.rowSelect}
+            value={chiNhanhFilter}
+            onChange={(e) => setChiNhanhFilter(e.target.value)}
+          >
+            <option value="">— Tất cả chi nhánh —</option>
+            {chiNhanhList.map((c) => (
+              <option key={c.id} value={c.id}>{c.ten}</option>
+            ))}
+          </select>
+        )}
+        <select
+          className={styles.rowSelect}
+          value={trangThaiFilter}
+          onChange={(e) => setTrangThaiFilter(e.target.value)}
+        >
+          <option value="">— Tất cả trạng thái ghi danh —</option>
+          {TRANG_THAI_GHI_DANH_OPTIONS.map((t) => (
+            <option key={t} value={t}>{TRANG_THAI_GHI_DANH_LABEL[t]}</option>
+          ))}
+        </select>
         <button
           type="button"
           className={styles.btnExport}
@@ -118,6 +182,7 @@ export default function HocSinhTable({
                 <th>ID học sinh</th>
                 <th>Họ tên</th>
                 <th>Lớp hiện tại</th>
+                <th>Trạng thái ghi danh</th>
                 <th>Ngày sinh</th>
                 <th>Giới tính</th>
                 <th>SĐT học sinh</th>
@@ -130,7 +195,7 @@ export default function HocSinhTable({
                 <th>Khối thi</th>
                 <th>Nguyện vọng 1</th>
                 <th>Tình trạng đăng ký</th>
-                {(canEdit || canDelete) && <th></th>}
+                {coCotHanhDong && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -138,9 +203,10 @@ export default function HocSinhTable({
                 <HocSinhRowItem
                   key={hs.id}
                   hocSinh={hs}
-                  canEdit={canEdit}
                   canDelete={canDelete}
+                  coCotHanhDong={coCotHanhDong}
                   onEdit={() => setEditingRow(hs)}
+                  onChuyenLop={() => setChuyenLopRow(hs)}
                 />
               ))}
             </tbody>
@@ -151,23 +217,30 @@ export default function HocSinhTable({
       )}
 
       {editingRow && <HocSinhEditModal hocSinh={editingRow} onClose={() => setEditingRow(null)} />}
+      {chuyenLopRow && (
+        <ChuyenLopModal hocSinh={chuyenLopRow} lopList={lopList} onClose={() => setChuyenLopRow(null)} />
+      )}
     </div>
   );
 }
 
 function HocSinhRowItem({
   hocSinh,
-  canEdit,
   canDelete,
+  coCotHanhDong,
   onEdit,
+  onChuyenLop,
 }: {
   hocSinh: HocSinhRow;
-  canEdit: boolean;
   canDelete: boolean;
+  coCotHanhDong: boolean;
   onEdit: () => void;
+  onChuyenLop: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isTrangThaiPending, startTrangThaiTransition] = useTransition();
+  const [trangThaiError, setTrangThaiError] = useState<string | null>(null);
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá học sinh "${hocSinh.ho_ten}" (${hocSinh.ma_hoc_sinh})? Có thể khôi phục sau (xoá mềm).`);
@@ -179,12 +252,45 @@ function HocSinhRowItem({
     });
   }
 
+  function handleTrangThaiChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const trangThaiMoi = e.target.value;
+    if (!hocSinh.ghi_danh_id) return;
+    setTrangThaiError(null);
+    startTrangThaiTransition(async () => {
+      const result = await capNhatTrangThaiGhiDanh(hocSinh.ghi_danh_id!, trangThaiMoi);
+      if ("error" in result) setTrangThaiError(result.error);
+    });
+  }
+
   return (
     <tr>
       <td>{hocSinh.stt}</td>
       <td className={styles.mono}>{hocSinh.ma_hoc_sinh}</td>
       <td>{hocSinh.ho_ten}</td>
       <td>{hocSinh.lop_hien_tai ?? "—"}</td>
+      <td>
+        {hocSinh.ghi_danh_id ? (
+          hocSinh.coTheSua ? (
+            <>
+              <select
+                className={styles.rowSelect}
+                value={hocSinh.trang_thai_ghi_danh ?? ""}
+                onChange={handleTrangThaiChange}
+                disabled={isTrangThaiPending}
+              >
+                {TRANG_THAI_GHI_DANH_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{TRANG_THAI_GHI_DANH_LABEL[t]}</option>
+                ))}
+              </select>
+              {trangThaiError && <div className={styles.errorText}>{trangThaiError}</div>}
+            </>
+          ) : (
+            TRANG_THAI_GHI_DANH_LABEL[hocSinh.trang_thai_ghi_danh ?? ""] ?? hocSinh.trang_thai_ghi_danh
+          )
+        ) : (
+          "—"
+        )}
+      </td>
       <td>{ngayHienThi(hocSinh.ngay_sinh)}</td>
       <td>{hocSinh.gioi_tinh ? (GIOI_TINH_LABEL[hocSinh.gioi_tinh] ?? hocSinh.gioi_tinh) : "—"}</td>
       <td>{hocSinh.sdt_hoc_sinh ?? "—"}</td>
@@ -201,12 +307,17 @@ function HocSinhRowItem({
           ? hocSinh.tinh_trang_dang_ky.map((t) => TINH_TRANG_DANG_KY_LABEL[t] ?? t).join(", ")
           : "—"}
       </td>
-      {(canEdit || canDelete) && (
+      {coCotHanhDong && (
         <td>
           <div className={styles.rowActions}>
-            {canEdit && (
+            {hocSinh.coTheSua && (
               <button type="button" className={styles.btnEdit} onClick={onEdit} disabled={isPending}>
                 Sửa
+              </button>
+            )}
+            {hocSinh.coTheSua && hocSinh.ghi_danh_id && (
+              <button type="button" className={styles.btnChuyenLop} onClick={onChuyenLop} disabled={isPending}>
+                Chuyển lớp
               </button>
             )}
             {canDelete && (

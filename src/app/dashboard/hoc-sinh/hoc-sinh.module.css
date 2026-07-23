@@ -205,6 +205,45 @@
   margin-top: 4px;
 }
 
+.rowSelect {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--text-hi);
+  outline: none;
+}
+
+.rowSelect:focus {
+  border-color: var(--accent);
+}
+
+.rowSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnChuyenLop {
+  background: transparent;
+  border: 1px solid rgba(94, 156, 255, 0.35);
+  color: #7FB3FF;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.btnChuyenLop:hover:not(:disabled) {
+  background: rgba(94, 156, 255, 0.1);
+}
+
+.btnChuyenLop:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .modalOverlay {
   position: fixed;
   inset: 0;
