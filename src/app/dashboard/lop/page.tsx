@@ -28,11 +28,12 @@ export default async function LopPage() {
       .select(
         "id, ma_lop, ten_lop, cap_hoc_ma, chuong_trinh_ma, chi_nhanh_id, nam_hoc, so_lop, ngay_khai_giang, ngay_ket_thuc, tinh_trang, created_at"
       )
+      .is("deleted_at", null)
       .order("ma_lop", { ascending: false })
       .limit(100),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
-    supabase.from("hoc_sinh").select("lop_hien_tai_id").limit(2000),
+    supabase.from("hoc_sinh").select("lop_hien_tai_id").is("deleted_at", null).limit(2000),
     supabase.from("chi_nhanh").select("id, ten").is("deleted_at", null).order("ten"),
     supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id),
   ]);

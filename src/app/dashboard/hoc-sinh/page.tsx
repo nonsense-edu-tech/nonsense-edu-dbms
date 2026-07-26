@@ -30,12 +30,13 @@ export default async function HocSinhPage() {
     { data: chiNhanhList },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
-    supabase.from("lop").select("id, ma_lop, ten_lop, chi_nhanh_id").order("ma_lop", { ascending: false }),
+    supabase.from("lop").select("id, ma_lop, ten_lop, chi_nhanh_id").is("deleted_at", null).order("ma_lop", { ascending: false }),
     supabase
       .from("hoc_sinh")
       .select(
         "id, stt, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at, tinh_trang_dang_ky, ngay_sinh, gioi_tinh, email, sdt_hoc_sinh, cccd, truong_thpt, khoi_thi, nv1, ten_phu_huynh, dia_chi"
       )
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1000),
     // Lấy TOÀN BỘ ghi_danh (không lọc ngay_ket_thuc IS NULL) — bản ghi mới
