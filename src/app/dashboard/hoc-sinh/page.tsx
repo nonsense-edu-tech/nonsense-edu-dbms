@@ -25,7 +25,7 @@ export default async function HocSinhPage() {
     { data: profile },
     { data: lopList },
     { data: hocSinhList },
-    { data: ghiDanhMoList },
+    { data: ghiDanhList },
     { data: userChiNhanhList },
     { data: chiNhanhList },
   ] = await Promise.all([
@@ -38,11 +38,15 @@ export default async function HocSinhPage() {
       )
       .order("created_at", { ascending: false })
       .limit(1000),
+    // Lấy TOÀN BỘ ghi_danh (không lọc ngay_ket_thuc IS NULL) — bản ghi mới
+    // nhất mỗi học sinh mới là "hiện tại", kể cả khi đã đóng (bảo lưu/nghỉ/
+    // chuyển lớp). Lọc theo ngay_ket_thuc IS NULL sẽ khiến dropdown biến
+    // mất ngay sau khi đổi sang trạng thái khác "Đang học".
     supabase
       .from("ghi_danh")
-      .select("id, hoc_sinh_id, trang_thai")
+      .select("id, hoc_sinh_id, trang_thai, ngay_bat_dau")
       .is("deleted_at", null)
-      .is("ngay_ket_thuc", null),
+      .order("ngay_bat_dau", { ascending: false }),
     supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id),
     supabase.from("chi_nhanh").select("id, ten").is("deleted_at", null).order("ten"),
   ]);
@@ -71,10 +75,17 @@ export default async function HocSinhPage() {
     : (chiNhanhList ?? []);
 
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
-  const ghiDanhMoMap = new Map((ghiDanhMoList ?? []).map((gd) => [gd.hoc_sinh_id, gd]));
+  // ghiDanhList đã sắp ngay_bat_dau giảm dần — dòng đầu tiên gặp cho mỗi
+  // hoc_sinh_id chính là ghi danh mới nhất (hiện tại), dù đang mở hay đã đóng.
+  const ghiDanhHienTaiMap = new Map<string, { id: string; trang_thai: string }>();
+  for (const gd of ghiDanhList ?? []) {
+    if (!ghiDanhHienTaiMap.has(gd.hoc_sinh_id)) {
+      ghiDanhHienTaiMap.set(gd.hoc_sinh_id, gd);
+    }
+  }
   const hocSinhRows: HocSinhRow[] = (hocSinhList ?? []).map((hs) => {
     const lop = hs.lop_hien_tai_id != null ? lopMap.get(hs.lop_hien_tai_id) : null;
-    const ghiDanhMo = ghiDanhMoMap.get(hs.id);
+    const ghiDanhMo = ghiDanhHienTaiMap.get(hs.id);
     return {
       id: hs.id,
       stt: hs.stt,
