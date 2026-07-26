@@ -97,6 +97,11 @@ thụ trực tiếp `ma_hoc_sinh` làm Person ID (giới hạn ≤16 ký tự, c
   message: "<Tên hành động> thất bại: " + result.error})` khi thất bại — bổ
   sung THÊM vào khung lỗi/thành công inline hiện có (không thay thế). Xem các
   component ở `lop`/`hoc-sinh`/`chi-nhanh`/`van-hanh`/`hoc-phi` làm mẫu.
+- **Sau MỖI lần deploy (áp dụng migration DB, hoặc đổi hành vi/RLS đáng kể)
+  PHẢI ghi 1 mục mới vào `CHANGELOG.md`** ở gốc dự án — nêu rõ tóm tắt, tên
+  file migration (nếu có), và trạng thái riêng cho staging (`yxfgwzdxoxuoaulcjlcf`)
+  và production (`pdyerenojwrtejyhlcbs`) vì hai môi trường không luôn đồng bộ.
+  Xem đầu file `CHANGELOG.md` để biết cấu trúc mục cần ghi.
 
 ## Trạng thái & lộ trình
 
