@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const TRANG_THAI_HOP_LE = ["du_kien", "da_day", "huy"];
 
-export type TaoBuoiHocResult = { error: string } | { data: { id: number } };
+export type TaoBuoiHocResult = { error: string } | { data: { id: string } };
 export type SuaBuoiHocResult = { error: string } | { ok: true };
 export type XoaBuoiHocResult = { error: string } | { ok: true };
 export type GanChiPhiResult = { error: string } | { ok: true };
@@ -20,7 +20,7 @@ function docChuoiTuyChon(formData: FormData, key: string): string | null {
 export async function taoBuoiHoc(formData: FormData): Promise<TaoBuoiHocResult> {
   const supabase = await createClient();
 
-  const lopId = Number(formData.get("lop_id"));
+  const lopId = String(formData.get("lop_id") ?? "").trim();
   const monHocMa = Number(formData.get("mon_hoc_ma"));
   const ngay = String(formData.get("ngay") ?? "").trim();
   const gvId = docChuoiTuyChon(formData, "gv_id");
@@ -28,7 +28,7 @@ export async function taoBuoiHoc(formData: FormData): Promise<TaoBuoiHocResult> 
   const gioBatDau = docChuoiTuyChon(formData, "gio_bat_dau");
   const gioKetThuc = docChuoiTuyChon(formData, "gio_ket_thuc");
 
-  if (!Number.isInteger(lopId) || lopId <= 0) return { error: "Vui lòng chọn lớp." };
+  if (!lopId) return { error: "Vui lòng chọn lớp." };
   if (!Number.isInteger(monHocMa) || monHocMa <= 0) return { error: "Vui lòng chọn môn học." };
   if (!ngay) return { error: "Vui lòng chọn ngày học." };
 
@@ -39,7 +39,7 @@ export async function taoBuoiHoc(formData: FormData): Promise<TaoBuoiHocResult> 
       mon_hoc_ma: monHocMa,
       ngay,
       gv_id: gvId,
-      phong_hoc_id: phongHocId ? Number(phongHocId) : null,
+      phong_hoc_id: phongHocId,
       gio_bat_dau: gioBatDau,
       gio_ket_thuc: gioKetThuc,
     })
@@ -49,14 +49,14 @@ export async function taoBuoiHoc(formData: FormData): Promise<TaoBuoiHocResult> 
   if (error) return { error: mapDbError(error.message) };
 
   revalidatePath("/dashboard/van-hanh/buoi-hoc");
-  return { data: data as { id: number } };
+  return { data: data as { id: string } };
 }
 
 export async function suaBuoiHoc(formData: FormData): Promise<SuaBuoiHocResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID buổi học." };
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "Thiếu ID buổi học." };
 
   const patch: Record<string, unknown> = {};
 
@@ -69,8 +69,7 @@ export async function suaBuoiHoc(formData: FormData): Promise<SuaBuoiHocResult> 
     patch.gv_id = docChuoiTuyChon(formData, "gv_id");
   }
   if (formData.has("phong_hoc_id")) {
-    const phongHocId = docChuoiTuyChon(formData, "phong_hoc_id");
-    patch.phong_hoc_id = phongHocId ? Number(phongHocId) : null;
+    patch.phong_hoc_id = docChuoiTuyChon(formData, "phong_hoc_id");
   }
   if (formData.has("ngay")) {
     const ngay = String(formData.get("ngay") ?? "").trim();
@@ -97,10 +96,10 @@ export async function suaBuoiHoc(formData: FormData): Promise<SuaBuoiHocResult> 
   return { ok: true };
 }
 
-export async function xoaBuoiHoc(id: number): Promise<XoaBuoiHocResult> {
+export async function xoaBuoiHoc(id: string): Promise<XoaBuoiHocResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID buổi học." };
+  if (!id) return { error: "Thiếu ID buổi học." };
 
   const { error } = await supabase
     .from("buoi_hoc")
@@ -116,11 +115,11 @@ export async function xoaBuoiHoc(id: number): Promise<XoaBuoiHocResult> {
 export async function ganChiPhiBuoiHoc(formData: FormData): Promise<GanChiPhiResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const thuLaoGv = Number(formData.get("thu_lao_gv") || 0);
   const chiPhiPhong = Number(formData.get("chi_phi_phong") || 0);
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID buổi học." };
+  if (!id) return { error: "Thiếu ID buổi học." };
   if (!Number.isFinite(thuLaoGv) || thuLaoGv < 0) return { error: "Thù lao GV phải là số ≥ 0." };
   if (!Number.isFinite(chiPhiPhong) || chiPhiPhong < 0) return { error: "Chi phí phòng phải là số ≥ 0." };
 

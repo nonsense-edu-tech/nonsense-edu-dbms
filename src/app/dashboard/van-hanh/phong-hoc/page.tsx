@@ -28,10 +28,10 @@ export default async function PhongHocPage() {
       supabase.from("chi_nhanh").select("id, ma, ten").is("deleted_at", null).order("ma"),
       canReadLoaiPhong
         ? supabase.from("loai_phong").select("id, ten").is("deleted_at", null).order("ten")
-        : Promise.resolve({ data: [] as { id: number; ten: string }[] }),
+        : Promise.resolve({ data: [] as { id: string; ten: string }[] }),
       isQuanLyChiNhanh
         ? supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id)
-        : Promise.resolve({ data: [] as { chi_nhanh_id: number }[] }),
+        : Promise.resolve({ data: [] as { chi_nhanh_id: string }[] }),
     ]);
 
   const chiNhanhMap = new Map((chiNhanhList ?? []).map((c) => [c.id, c.ten]));
@@ -48,7 +48,7 @@ export default async function PhongHocPage() {
 
   const myScopeIds = (myScope ?? []).map((s) => s.chi_nhanh_id);
 
-  const editableChiNhanhIds: number[] | "all" | "none" =
+  const editableChiNhanhIds: string[] | "all" | "none" =
     isMasterAdmin || isAdminTs ? "all" : isQuanLyChiNhanh ? myScopeIds : "none";
   const deletableChiNhanhIds = editableChiNhanhIds;
 

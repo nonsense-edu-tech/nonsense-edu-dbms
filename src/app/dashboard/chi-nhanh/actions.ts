@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 type ChiNhanh = {
-  id: number;
+  id: string;
   ma: string;
   ten: string;
 };
@@ -40,11 +40,11 @@ export async function taoChiNhanh(formData: FormData): Promise<TaoChiNhanhResult
 export async function suaChiNhanh(formData: FormData): Promise<SuaChiNhanhResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const ten = String(formData.get("ten") ?? "").trim();
   const diaChi = String(formData.get("dia_chi") ?? "").trim() || null;
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID chi nhánh." };
+  if (!id) return { error: "Thiếu ID chi nhánh." };
   if (!ten) return { error: "Tên chi nhánh không được để trống." };
 
   const { error } = await supabase
@@ -58,10 +58,10 @@ export async function suaChiNhanh(formData: FormData): Promise<SuaChiNhanhResult
   return { ok: true };
 }
 
-export async function xoaChiNhanh(id: number): Promise<XoaChiNhanhResult> {
+export async function xoaChiNhanh(id: string): Promise<XoaChiNhanhResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID chi nhánh." };
+  if (!id) return { error: "Thiếu ID chi nhánh." };
 
   const { error } = await supabase
     .from("chi_nhanh")
@@ -77,10 +77,10 @@ export async function xoaChiNhanh(id: number): Promise<XoaChiNhanhResult> {
 export async function ganQuanLy(formData: FormData): Promise<GanQuanLyResult> {
   const supabase = await createClient();
 
-  const chiNhanhId = Number(formData.get("chi_nhanh_id"));
+  const chiNhanhId = String(formData.get("chi_nhanh_id") ?? "").trim();
   const userId = String(formData.get("user_id") ?? "").trim();
 
-  if (!Number.isInteger(chiNhanhId) || chiNhanhId <= 0) return { error: "Thiếu chi nhánh." };
+  if (!chiNhanhId) return { error: "Thiếu chi nhánh." };
   if (!userId) return { error: "Vui lòng chọn người quản lý." };
 
   const { error } = await supabase
@@ -93,10 +93,10 @@ export async function ganQuanLy(formData: FormData): Promise<GanQuanLyResult> {
   return { ok: true };
 }
 
-export async function goQuanLy(id: number): Promise<GoQuanLyResult> {
+export async function goQuanLy(id: string): Promise<GoQuanLyResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID phân công." };
+  if (!id) return { error: "Thiếu ID phân công." };
 
   const { error } = await supabase.from("user_chi_nhanh").delete().eq("id", id);
 

@@ -8,7 +8,7 @@ import LoaiPhongEditModal from "./LoaiPhongEditModal";
 import styles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 
 export type LoaiPhongRow = {
-  id: number;
+  id: string;
   ten: string;
   don_gia_thue_gio: number;
   don_gia_dien_nuoc_gio: number;

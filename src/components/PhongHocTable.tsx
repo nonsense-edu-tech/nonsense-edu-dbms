@@ -8,11 +8,11 @@ import styles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 type MaTen = { ma: string | number; ten: string };
 
 export type PhongHocRow = {
-  id: number;
+  id: string;
   ten: string;
-  chi_nhanh_id: number;
+  chi_nhanh_id: string;
   chi_nhanh_ten: string;
-  loai_phong_id: number;
+  loai_phong_id: string;
   loai_phong_ten: string | null;
 };
 
@@ -27,15 +27,15 @@ export default function PhongHocTable({
 }: {
   list: PhongHocRow[];
   isMasterAdmin: boolean;
-  editableChiNhanhIds: number[] | "all" | "none";
-  deletableChiNhanhIds: number[] | "all" | "none";
+  editableChiNhanhIds: string[] | "all" | "none";
+  deletableChiNhanhIds: string[] | "all" | "none";
   showLoaiPhongColumn: boolean;
   chiNhanhList: MaTen[];
   loaiPhongList: MaTen[];
 }) {
   const [editingRow, setEditingRow] = useState<PhongHocRow | null>(null);
 
-  function canOn(scope: number[] | "all" | "none", chiNhanhId: number): boolean {
+  function canOn(scope: string[] | "all" | "none", chiNhanhId: string): boolean {
     if (scope === "all") return true;
     if (scope === "none") return false;
     return scope.includes(chiNhanhId);

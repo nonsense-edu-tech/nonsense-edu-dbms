@@ -5,11 +5,11 @@ import { xoaChiNhanh, ganQuanLy, goQuanLy } from "@/app/dashboard/chi-nhanh/acti
 import ChiNhanhEditModal from "./ChiNhanhEditModal";
 import styles from "@/app/dashboard/chi-nhanh/chi-nhanh.module.css";
 
-export type QuanLyGan = { assignment_id: number; user_id: string; ten_hien_thi: string };
+export type QuanLyGan = { assignment_id: string; user_id: string; ten_hien_thi: string };
 export type QuanLyOption = { user_id: string; ten_hien_thi: string };
 
 export type ChiNhanhRow = {
-  id: number;
+  id: string;
   ma: string;
   ten: string;
   dia_chi: string | null;
@@ -103,7 +103,7 @@ function ChiNhanhRowItem({
     });
   }
 
-  function handleRemove(assignmentId: number) {
+  function handleRemove(assignmentId: string) {
     setError(null);
     startTransition(async () => {
       const result = await goQuanLy(assignmentId);

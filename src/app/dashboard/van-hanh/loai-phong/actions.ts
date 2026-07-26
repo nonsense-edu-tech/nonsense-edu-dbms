@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 type LoaiPhong = {
-  id: number;
+  id: string;
   ten: string;
 };
 
@@ -59,12 +59,12 @@ export async function taoLoaiPhong(formData: FormData): Promise<TaoLoaiPhongResu
 export async function suaLoaiPhong(formData: FormData): Promise<SuaLoaiPhongResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const ten = String(formData.get("ten") ?? "").trim();
   const hieuLucTu = String(formData.get("hieu_luc_tu") ?? "").trim();
   const hieuLucDen = String(formData.get("hieu_luc_den") ?? "").trim() || null;
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID loại phòng." };
+  if (!id) return { error: "Thiếu ID loại phòng." };
   if (!ten) return { error: "Tên loại phòng không được để trống." };
   if (!hieuLucTu) return { error: "Vui lòng chọn ngày hiệu lực từ." };
 
@@ -93,10 +93,10 @@ export async function suaLoaiPhong(formData: FormData): Promise<SuaLoaiPhongResu
   return { ok: true };
 }
 
-export async function xoaLoaiPhong(id: number): Promise<XoaLoaiPhongResult> {
+export async function xoaLoaiPhong(id: string): Promise<XoaLoaiPhongResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID loại phòng." };
+  if (!id) return { error: "Thiếu ID loại phòng." };
 
   const { error } = await supabase
     .from("loai_phong")

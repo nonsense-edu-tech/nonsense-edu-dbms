@@ -22,15 +22,15 @@ const TRANG_THAI_BADGE: Record<string, string> = {
 };
 
 export type BuoiHocRow = {
-  id: number;
-  lop_id: number;
+  id: string;
+  lop_id: string;
   lop_nhan: string;
   mon_hoc_ma: number;
   mon_hoc_ten: string;
   cap_hoc_ma: number;
   gv_id: string | null;
   gv_ten: string | null;
-  phong_hoc_id: number | null;
+  phong_hoc_id: string | null;
   phong_hoc_ten: string | null;
   ngay: string;
   gio_bat_dau: string | null;
@@ -51,8 +51,8 @@ export default function BuoiHocTable({
   phongHocList,
 }: {
   list: BuoiHocRow[];
-  editableIds: number[] | "all";
-  deletableIds: number[] | "all";
+  editableIds: string[] | "all";
+  deletableIds: string[] | "all";
   canReassignGv: boolean;
   canSeeCost: boolean;
   monHocList: MonHocOption[];
@@ -62,7 +62,7 @@ export default function BuoiHocTable({
   const [editingRow, setEditingRow] = useState<BuoiHocRow | null>(null);
   const [costRow, setCostRow] = useState<BuoiHocRow | null>(null);
 
-  function canOn(scope: number[] | "all", id: number): boolean {
+  function canOn(scope: string[] | "all", id: string): boolean {
     return scope === "all" || scope.includes(id);
   }
 

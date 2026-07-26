@@ -4,10 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { taoBuoiHoc } from "@/app/dashboard/van-hanh/buoi-hoc/actions";
 import styles from "./Form.module.css";
 
-export type LopOption = { id: number; nhan: string; cap_hoc_ma: number };
+export type LopOption = { id: string; nhan: string; cap_hoc_ma: number };
 export type MonHocOption = { ma: number; cap_hoc_ma: number; ten: string };
 export type GvOption = { id: string; ho_ten: string };
-export type PhongHocOption = { id: number; ten: string };
+export type PhongHocOption = { id: string; ten: string };
 
 export default function BuoiHocForm({
   lopList,

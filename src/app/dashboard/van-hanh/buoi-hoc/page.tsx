@@ -48,11 +48,11 @@ export default async function BuoiHocPage() {
       .limit(200),
     canSeeCost
       ? supabase.from("buoi_hoc_chi_phi").select("id, thu_lao_gv, chi_phi_phong").is("deleted_at", null)
-      : Promise.resolve({ data: [] as { id: number; thu_lao_gv: number | null; chi_phi_phong: number | null }[] }),
+      : Promise.resolve({ data: [] as { id: string; thu_lao_gv: number | null; chi_phi_phong: number | null }[] }),
     supabase.rpc("danh_sach_gv") as unknown as Promise<{ data: { id: string; ho_ten: string }[] | null }>,
     isQuanLyChiNhanh
       ? supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id)
-      : Promise.resolve({ data: [] as { chi_nhanh_id: number }[] }),
+      : Promise.resolve({ data: [] as { chi_nhanh_id: string }[] }),
   ]);
 
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
@@ -66,7 +66,7 @@ export default async function BuoiHocPage() {
     (lopList ?? []).filter((l) => l.chi_nhanh_id != null && myScopeIds.includes(l.chi_nhanh_id)).map((l) => l.id)
   );
 
-  function lopNhan(lopId: number): string {
+  function lopNhan(lopId: string): string {
     const lop = lopMap.get(lopId);
     if (!lop) return String(lopId);
     return lop.ten_lop ? `${lop.ma_lop} - ${lop.ten_lop}` : lop.ma_lop;
@@ -95,7 +95,7 @@ export default async function BuoiHocPage() {
     };
   });
 
-  const editableIds: number[] | "all" =
+  const editableIds: string[] | "all" =
     isMasterAdmin || isAdminTs
       ? "all"
       : isQuanLyChiNhanh

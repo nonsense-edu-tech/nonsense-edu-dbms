@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 type PhongHoc = {
-  id: number;
+  id: string;
   ten: string;
 };
 
@@ -16,12 +16,12 @@ export async function taoPhongHoc(formData: FormData): Promise<TaoPhongHocResult
   const supabase = await createClient();
 
   const ten = String(formData.get("ten") ?? "").trim();
-  const chiNhanhId = Number(formData.get("chi_nhanh_id"));
-  const loaiPhongId = Number(formData.get("loai_phong_id"));
+  const chiNhanhId = String(formData.get("chi_nhanh_id") ?? "").trim();
+  const loaiPhongId = String(formData.get("loai_phong_id") ?? "").trim();
 
   if (!ten) return { error: "Tên phòng không được để trống." };
-  if (!Number.isInteger(chiNhanhId) || chiNhanhId <= 0) return { error: "Vui lòng chọn chi nhánh." };
-  if (!Number.isInteger(loaiPhongId) || loaiPhongId <= 0) return { error: "Vui lòng chọn loại phòng." };
+  if (!chiNhanhId) return { error: "Vui lòng chọn chi nhánh." };
+  if (!loaiPhongId) return { error: "Vui lòng chọn loại phòng." };
 
   const { data, error } = await supabase
     .from("phong_hoc")
@@ -38,23 +38,23 @@ export async function taoPhongHoc(formData: FormData): Promise<TaoPhongHocResult
 export async function suaPhongHoc(formData: FormData): Promise<SuaPhongHocResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const ten = String(formData.get("ten") ?? "").trim();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID phòng học." };
+  if (!id) return { error: "Thiếu ID phòng học." };
   if (!ten) return { error: "Tên phòng không được để trống." };
 
   const patch: Record<string, unknown> = { ten };
 
   if (formData.has("chi_nhanh_id")) {
-    const chiNhanhId = Number(formData.get("chi_nhanh_id"));
-    if (!Number.isInteger(chiNhanhId) || chiNhanhId <= 0) return { error: "Chi nhánh không hợp lệ." };
+    const chiNhanhId = String(formData.get("chi_nhanh_id") ?? "").trim();
+    if (!chiNhanhId) return { error: "Chi nhánh không hợp lệ." };
     patch.chi_nhanh_id = chiNhanhId;
   }
 
   if (formData.has("loai_phong_id")) {
-    const loaiPhongId = Number(formData.get("loai_phong_id"));
-    if (!Number.isInteger(loaiPhongId) || loaiPhongId <= 0) return { error: "Loại phòng không hợp lệ." };
+    const loaiPhongId = String(formData.get("loai_phong_id") ?? "").trim();
+    if (!loaiPhongId) return { error: "Loại phòng không hợp lệ." };
     patch.loai_phong_id = loaiPhongId;
   }
 
@@ -66,10 +66,10 @@ export async function suaPhongHoc(formData: FormData): Promise<SuaPhongHocResult
   return { ok: true };
 }
 
-export async function xoaPhongHoc(id: number): Promise<XoaPhongHocResult> {
+export async function xoaPhongHoc(id: string): Promise<XoaPhongHocResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID phòng học." };
+  if (!id) return { error: "Thiếu ID phòng học." };
 
   const { error } = await supabase
     .from("phong_hoc")
