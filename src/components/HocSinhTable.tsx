@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { xoaHocSinh, capNhatTrangThaiGhiDanh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL, TRANG_THAI_GHI_DANH_LABEL, TRANG_THAI_GHI_DANH_OPTIONS } from "./hocSinhOptions";
 import { ngayHienThi } from "@/lib/formatDate";
+import { useToast } from "./ToastProvider";
 import HocSinhEditModal from "./HocSinhEditModal";
 import ChuyenLopModal from "./ChuyenLopModal";
 import styles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
@@ -241,6 +242,7 @@ function HocSinhRowItem({
   const [isPending, startTransition] = useTransition();
   const [isTrangThaiPending, startTrangThaiTransition] = useTransition();
   const [trangThaiError, setTrangThaiError] = useState<string | null>(null);
+  const showToast = useToast();
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá học sinh "${hocSinh.ho_ten}" (${hocSinh.ma_hoc_sinh})? Có thể khôi phục sau (xoá mềm).`);
@@ -248,7 +250,12 @@ function HocSinhRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaHocSinh(hocSinh.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá học sinh thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã xoá học sinh "${hocSinh.ho_ten}" thành công.` });
+      }
     });
   }
 
@@ -258,7 +265,12 @@ function HocSinhRowItem({
     setTrangThaiError(null);
     startTrangThaiTransition(async () => {
       const result = await capNhatTrangThaiGhiDanh(hocSinh.ghi_danh_id!, trangThaiMoi);
-      if ("error" in result) setTrangThaiError(result.error);
+      if ("error" in result) {
+        setTrangThaiError(result.error);
+        showToast({ type: "error", message: `Đổi trạng thái ghi danh thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã đổi trạng thái ghi danh của "${hocSinh.ho_ten}" thành công.` });
+      }
     });
   }
 

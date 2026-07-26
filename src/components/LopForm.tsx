@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { taoLop } from "@/app/dashboard/lop/actions";
 import { TINH_TRANG_LOP_LABEL, TINH_TRANG_LOP_OPTIONS, danhSachNienKhoa } from "./lopOptions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 type MaTen = { ma: string | number; ten: string };
@@ -22,6 +23,7 @@ export default function LopForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
   const nienKhoaOptions = danhSachNienKhoa();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -35,8 +37,10 @@ export default function LopForm({
       const result = await taoLop(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo lớp thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo lớp — ID: ${result.data.ma_lop}`);
+        showToast({ type: "success", message: `Đã tạo lớp "${result.data.ma_lop}" thành công.` });
         form.reset();
       }
     });

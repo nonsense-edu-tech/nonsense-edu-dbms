@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { suaHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
+import { useToast } from "./ToastProvider";
 import type { HocSinhRow } from "./HocSinhTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
@@ -10,6 +11,7 @@ import modalStyles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
 export default function HocSinhEditModal({ hocSinh, onClose }: { hocSinh: HocSinhRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +23,9 @@ export default function HocSinhEditModal({ hocSinh, onClose }: { hocSinh: HocSin
       const result = await suaHocSinh(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa học sinh thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã sửa học sinh "${hocSinh.ho_ten}" thành công.` });
         onClose();
       }
     });

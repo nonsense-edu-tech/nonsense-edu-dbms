@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { xoaLoaiPhong } from "@/app/dashboard/van-hanh/loai-phong/actions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { ngayHienThi } from "@/lib/formatDate";
+import { useToast } from "./ToastProvider";
 import LoaiPhongEditModal from "./LoaiPhongEditModal";
 import styles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 
@@ -73,6 +74,7 @@ function LoaiPhongRowItem({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá loại phòng "${loaiPhong.ten}"? Có thể khôi phục sau (xoá mềm).`);
@@ -80,7 +82,12 @@ function LoaiPhongRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaLoaiPhong(loaiPhong.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá loại phòng thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã xoá loại phòng "${loaiPhong.ten}" thành công.` });
+      }
     });
   }
 

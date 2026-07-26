@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { chuyenLop } from "@/app/dashboard/hoc-sinh/actions";
+import { useToast } from "./ToastProvider";
 import type { HocSinhRow } from "./HocSinhTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
@@ -19,6 +20,7 @@ export default function ChuyenLopModal({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
   const lopDich = lopList.filter((l) => l.id !== hocSinh.lop_hien_tai_id);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -34,7 +36,9 @@ export default function ChuyenLopModal({
       const result = await chuyenLop(hocSinh.id, lopMoiId);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Chuyển lớp thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã chuyển lớp cho "${hocSinh.ho_ten}" thành công.` });
         onClose();
       }
     });

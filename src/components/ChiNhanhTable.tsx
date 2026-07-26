@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { xoaChiNhanh, ganQuanLy, goQuanLy } from "@/app/dashboard/chi-nhanh/actions";
+import { useToast } from "./ToastProvider";
 import ChiNhanhEditModal from "./ChiNhanhEditModal";
 import styles from "@/app/dashboard/chi-nhanh/chi-nhanh.module.css";
 
@@ -76,6 +77,7 @@ function ChiNhanhRowItem({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [selectedUserId, setSelectedUserId] = useState("");
+  const showToast = useToast();
 
   const assignedIds = new Set(chiNhanh.quan_ly.map((q) => q.user_id));
   const khaDung = quanLyOptions.filter((o) => !assignedIds.has(o.user_id));
@@ -86,7 +88,12 @@ function ChiNhanhRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaChiNhanh(chiNhanh.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá chi nhánh thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã xoá chi nhánh "${chiNhanh.ten}" thành công.` });
+      }
     });
   }
 
@@ -98,8 +105,13 @@ function ChiNhanhRowItem({
     formData.set("user_id", selectedUserId);
     startTransition(async () => {
       const result = await ganQuanLy(formData);
-      if ("error" in result) setError(result.error);
-      else setSelectedUserId("");
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Gán quản lý chi nhánh thất bại: ${result.error}` });
+      } else {
+        setSelectedUserId("");
+        showToast({ type: "success", message: "Đã gán quản lý chi nhánh thành công." });
+      }
     });
   }
 
@@ -107,7 +119,12 @@ function ChiNhanhRowItem({
     setError(null);
     startTransition(async () => {
       const result = await goQuanLy(assignmentId);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Gỡ quản lý chi nhánh thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: "Đã gỡ quản lý chi nhánh thành công." });
+      }
     });
   }
 

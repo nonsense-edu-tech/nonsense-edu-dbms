@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { xoaBuoiHoc } from "@/app/dashboard/van-hanh/buoi-hoc/actions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { ngayHienThi } from "@/lib/formatDate";
+import { useToast } from "./ToastProvider";
 import BuoiHocEditModal from "./BuoiHocEditModal";
 import BuoiHocChiPhiModal from "./BuoiHocChiPhiModal";
 import type { MonHocOption, GvOption, PhongHocOption } from "./BuoiHocForm";
@@ -138,6 +139,7 @@ function BuoiHocRowItem({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá buổi học "${buoiHoc.lop_nhan}" ngày ${ngayHienThi(buoiHoc.ngay)}?`);
@@ -145,7 +147,12 @@ function BuoiHocRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaBuoiHoc(buoiHoc.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá buổi học thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: "Đã xoá buổi học thành công." });
+      }
     });
   }
 

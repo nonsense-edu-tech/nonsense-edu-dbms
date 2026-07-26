@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { taoLoaiPhong } from "@/app/dashboard/van-hanh/loai-phong/actions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export default function LoaiPhongForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,8 +22,10 @@ export default function LoaiPhongForm() {
       const result = await taoLoaiPhong(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo loại phòng thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo loại phòng "${result.data.ten}"`);
+        showToast({ type: "success", message: `Đã tạo loại phòng "${result.data.ten}" thành công.` });
         form.reset();
       }
     });

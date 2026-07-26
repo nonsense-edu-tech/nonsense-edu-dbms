@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { taoBuoiHoc } from "@/app/dashboard/van-hanh/buoi-hoc/actions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export type LopOption = { id: string; nhan: string; cap_hoc_ma: number };
@@ -26,6 +27,7 @@ export default function BuoiHocForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [lopId, setLopId] = useState("");
+  const showToast = useToast();
 
   const capHocMaCuaLop = lopList.find((l) => String(l.id) === lopId)?.cap_hoc_ma;
   const monHocKhaDung = useMemo(
@@ -45,8 +47,10 @@ export default function BuoiHocForm({
       const result = await taoBuoiHoc(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo buổi học thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo buổi học — ID ${result.data.id}`);
+        showToast({ type: "success", message: "Đã tạo buổi học thành công." });
         form.reset();
         setLopId("");
       }

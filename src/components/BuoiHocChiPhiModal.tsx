@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ganChiPhiBuoiHoc } from "@/app/dashboard/van-hanh/buoi-hoc/actions";
+import { useToast } from "./ToastProvider";
 import type { BuoiHocRow } from "./BuoiHocTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/van-hanh/van-hanh.module.css";
@@ -9,6 +10,7 @@ import modalStyles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 export default function BuoiHocChiPhiModal({ buoiHoc, onClose }: { buoiHoc: BuoiHocRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,9 @@ export default function BuoiHocChiPhiModal({ buoiHoc, onClose }: { buoiHoc: Buoi
       const result = await ganChiPhiBuoiHoc(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Ghi nhận chi phí thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: "Đã ghi nhận chi phí thành công." });
         onClose();
       }
     });

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { xoaLop } from "@/app/dashboard/lop/actions";
 import { TINH_TRANG_LOP_LABEL, hienThiNienKhoa } from "./lopOptions";
 import { ngayHienThi } from "@/lib/formatDate";
+import { useToast } from "./ToastProvider";
 import LopEditModal from "./LopEditModal";
 import styles from "@/app/dashboard/lop/lop.module.css";
 
@@ -83,6 +84,7 @@ function LopRowItem({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá lớp "${lop.ma_lop}"? Có thể khôi phục sau (xoá mềm).`);
@@ -90,7 +92,12 @@ function LopRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaLop(lop.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá lớp thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã xoá lớp "${lop.ma_lop}" thành công.` });
+      }
     });
   }
 

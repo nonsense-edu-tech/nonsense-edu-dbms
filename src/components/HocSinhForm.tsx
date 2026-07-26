@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { taoHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 type LopOption = { id: string; ma_lop: string; ten_lop: string | null };
@@ -11,6 +12,7 @@ export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,8 +25,10 @@ export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
       const result = await taoHocSinh(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo học sinh thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo học sinh "${result.data.ho_ten}" — ID: ${result.data.ma_hoc_sinh}`);
+        showToast({ type: "success", message: `Đã tạo học sinh "${result.data.ho_ten}" thành công.` });
         form.reset();
       }
     });

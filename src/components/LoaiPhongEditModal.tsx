@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { suaLoaiPhong } from "@/app/dashboard/van-hanh/loai-phong/actions";
+import { useToast } from "./ToastProvider";
 import type { LoaiPhongRow } from "./LoaiPhongTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/van-hanh/van-hanh.module.css";
@@ -9,6 +10,7 @@ import modalStyles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 export default function LoaiPhongEditModal({ loaiPhong, onClose }: { loaiPhong: LoaiPhongRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,9 @@ export default function LoaiPhongEditModal({ loaiPhong, onClose }: { loaiPhong: 
       const result = await suaLoaiPhong(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa loại phòng thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã sửa loại phòng "${loaiPhong.ten}" thành công.` });
         onClose();
       }
     });

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { suaPhongHoc } from "@/app/dashboard/van-hanh/phong-hoc/actions";
+import { useToast } from "./ToastProvider";
 import type { PhongHocRow } from "./PhongHocTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/van-hanh/van-hanh.module.css";
@@ -23,6 +24,7 @@ export default function PhongHocEditModal({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,7 +40,9 @@ export default function PhongHocEditModal({
       const result = await suaPhongHoc(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa phòng học thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã sửa phòng "${phongHoc.ten}" thành công.` });
         onClose();
       }
     });

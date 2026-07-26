@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { taoPhongHoc } from "@/app/dashboard/van-hanh/phong-hoc/actions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 type MaTen = { ma: string | number; ten: string };
@@ -16,6 +17,7 @@ export default function PhongHocForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,8 +30,10 @@ export default function PhongHocForm({
       const result = await taoPhongHoc(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo phòng học thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo phòng "${result.data.ten}"`);
+        showToast({ type: "success", message: `Đã tạo phòng "${result.data.ten}" thành công.` });
         form.reset();
       }
     });

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { suaBuoiHoc } from "@/app/dashboard/van-hanh/buoi-hoc/actions";
+import { useToast } from "./ToastProvider";
 import type { BuoiHocRow } from "./BuoiHocTable";
 import type { GvOption, PhongHocOption, MonHocOption } from "./BuoiHocForm";
 import formStyles from "./Form.module.css";
@@ -30,6 +31,7 @@ export default function BuoiHocEditModal({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   const monHocKhaDung = monHocList.filter((m) => m.cap_hoc_ma === buoiHoc.cap_hoc_ma);
 
@@ -44,7 +46,9 @@ export default function BuoiHocEditModal({
       const result = await suaBuoiHoc(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa buổi học thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: "Đã sửa buổi học thành công." });
         onClose();
       }
     });

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { suaChiNhanh } from "@/app/dashboard/chi-nhanh/actions";
+import { useToast } from "./ToastProvider";
 import type { ChiNhanhRow } from "./ChiNhanhTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/chi-nhanh/chi-nhanh.module.css";
@@ -9,6 +10,7 @@ import modalStyles from "@/app/dashboard/chi-nhanh/chi-nhanh.module.css";
 export default function ChiNhanhEditModal({ chiNhanh, onClose }: { chiNhanh: ChiNhanhRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,9 @@ export default function ChiNhanhEditModal({ chiNhanh, onClose }: { chiNhanh: Chi
       const result = await suaChiNhanh(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa chi nhánh thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã sửa chi nhánh "${chiNhanh.ma}" thành công.` });
         onClose();
       }
     });

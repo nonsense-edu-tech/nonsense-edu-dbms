@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { xoaPhongHoc } from "@/app/dashboard/van-hanh/phong-hoc/actions";
+import { useToast } from "./ToastProvider";
 import PhongHocEditModal from "./PhongHocEditModal";
 import styles from "@/app/dashboard/van-hanh/van-hanh.module.css";
 
@@ -105,6 +106,7 @@ function PhongHocRowItem({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleDelete() {
     const confirmed = window.confirm(`Xoá phòng "${phongHoc.ten}"? Có thể khôi phục sau (xoá mềm).`);
@@ -112,7 +114,12 @@ function PhongHocRowItem({
     setError(null);
     startTransition(async () => {
       const result = await xoaPhongHoc(phongHoc.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Xoá phòng học thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã xoá phòng "${phongHoc.ten}" thành công.` });
+      }
     });
   }
 

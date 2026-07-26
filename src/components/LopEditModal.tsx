@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { suaLop } from "@/app/dashboard/lop/actions";
 import { TINH_TRANG_LOP_LABEL, TINH_TRANG_LOP_OPTIONS } from "./lopOptions";
+import { useToast } from "./ToastProvider";
 import type { LopRow } from "./LopTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/lop/lop.module.css";
@@ -10,6 +11,7 @@ import modalStyles from "@/app/dashboard/lop/lop.module.css";
 export default function LopEditModal({ lop, onClose }: { lop: LopRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +23,9 @@ export default function LopEditModal({ lop, onClose }: { lop: LopRow; onClose: (
       const result = await suaLop(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Sửa lớp thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã sửa lớp "${lop.ma_lop}" thành công.` });
         onClose();
       }
     });

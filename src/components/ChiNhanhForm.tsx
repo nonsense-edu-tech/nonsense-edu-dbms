@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { taoChiNhanh } from "@/app/dashboard/chi-nhanh/actions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export default function ChiNhanhForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,8 +22,10 @@ export default function ChiNhanhForm() {
       const result = await taoChiNhanh(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo chi nhánh thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo chi nhánh — ${result.data.ma}`);
+        showToast({ type: "success", message: `Đã tạo chi nhánh "${result.data.ma}" thành công.` });
         form.reset();
       }
     });
