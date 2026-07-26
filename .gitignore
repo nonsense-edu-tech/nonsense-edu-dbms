@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code local state (settings, worktrees, scheduled task locks)
+.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

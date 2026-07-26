@@ -1,4 +1,29 @@
-# ĐẶC TẢ HỆ THỐNG ID NỘI BỘ — TRUNG TÂM NONSENSE EDU
+# ĐẶC TẢ MODULE QUẢN LÝ ID — KHỐI 2-3 (HỌC SINH/ENROLLMENT & TÀI LIỆU-HỌC THUẬT), HỆ THỐNG ERP NONSENSE EDU
+
+> **Phạm vi tài liệu này:** đặc tả quy ước ID và mô hình dữ liệu cho **Khối 2
+> (Học sinh & Enrollment)** và **Khối 3 (Tài liệu & học thuật)** — hai trong số
+> 5 khối của hệ thống ERP Nonsense Edu. **Không phải đặc tả toàn bộ hệ thống.**
+> Các khối còn lại (1. Nhân sự, 4. Tài chính, 5. Bảo mật) có tài liệu riêng —
+> xem `CLAUDE_new_22.07.26.md` (bản đồ 5 khối) và `docs/adr/` (quyết định kiến trúc chính
+> thức, ưu tiên cao hơn tài liệu này nếu có mâu thuẫn).
+>
+> ✅ **Đã sửa 1 chỗ sai trong tài liệu này** (mục 2.4, `ma_cau_hoi`): mục 2.4
+> gốc ghi 16 số. **Đã xác nhận chính xác qua cột `GENERATED` thật trên
+> `cau_hoi` production (22/07/2026): 17 số**, cấu trúc đúng là:
+>
+> | Thành phần | Số chữ số | Vị trí |
+> |---|:---:|:---:|
+> | Cấp học | 1 | 1 |
+> | Chương trình | 3 | 2-4 |
+> | **Môn học** | **2** (không phải 1 như bản gốc) | 5-6 |
+> | Học phần | 2 | 7-8 |
+> | Bài học | 2 | 9-10 |
+> | Chủ đề | 2 | 11-12 |
+> | Dạng câu hỏi | 1 | 13 |
+> | STT câu hỏi | 4 | 14-17 |
+>
+> Bảng ở mục 2.4 bên dưới **vẫn giữ nguyên nội dung gốc (16 số) để đối chiếu
+> lịch sử** — dùng bảng trên đây làm chuẩn khi code, không dùng bảng ở mục 2.4.
 
 > Tài liệu tham chiếu cho toàn bộ quy ước đặt ID và kế hoạch xây dựng hệ thống web quản lý ID.
 > Cập nhật lần cuối: 16/07/2026 (bản 3) · Trạng thái: đang chốt thiết kế, chuẩn bị code.
@@ -126,6 +151,13 @@ Lưu ý khi dùng trong Google Sheets: đặt định dạng cột ID là **Plai
 
 ### 5.1. Vai trò & phân quyền
 
+> ⚠️ **Bảng dưới đây đã lạc hậu — chỉ giữ lại vì giá trị lịch sử thiết kế.**
+> Production thật có **8 vai trò** (`master_admin, admin_ts, admin_ht,
+> truong_bm, gv, ke_toan, thu_ngan, quan_ly_chi_nhanh`), phân quyền qua
+> `users.vai_tro` + 3 bảng phạm vi riêng (`user_pham_vi`, `user_bai_hoc`,
+> `user_chi_nhanh`) — xem `CLAUDE_new_22.07.26.md` và `docs/adr/ADR-002-...md` để biết mô
+> hình RBAC hiện hành.
+
 | Chức năng | Admin | Tuyển sinh | GV & Trợ giảng |
 |---|:---:|:---:|:---:|
 | Quản lý bảng mã gốc | ✅ | — | — |
@@ -139,6 +171,13 @@ Lưu ý khi dùng trong Google Sheets: đặt định dạng cột ID là **Plai
 Phân quyền kiểm ở **cả giao diện lẫn cơ sở dữ liệu** (không chỉ ẩn nút).
 
 ### 5.2. Mô hình dữ liệu (bảng chính)
+
+> ⚠️ **Danh sách dưới đây chỉ đúng cho phạm vi Khối 2-3 tại thời điểm 15-16/07.**
+> Production thật có thêm nhiều bảng ngoài phạm vi tài liệu này (Khối 1:
+> `user_pham_vi`, `user_bai_hoc`, `user_chi_nhanh`, `chi_nhanh`; Khối 4:
+> `hop_dong_hoc_phi`, `ky_dong_hoc_phi`, `phieu_thu`; sắp tới: `loai_phong`,
+> `phong_hoc`, `buoi_hoc`, `chi_phi_co_dinh`). Không dùng danh sách này để suy
+> ra toàn bộ schema — xem `docs/adr/ADR-002-...md` Mục 3-4.
 
 - `users` — email, tên, vai trò, trạng thái.
 - `cap_hoc`, `chuong_trinh`, `mon_hoc`, `hinh_thuc`, `dang_cau` — bảng mã gốc.
@@ -157,16 +196,25 @@ Mỗi cột ID có **ràng buộc duy nhất** ở tầng CSDL → không thể 
 ### 5.3. Ba cải tiến so với file Excel
 
 1. **Tự đánh số thứ tự** (chống trùng tự động): hệ thống cấp số kế tiếp cho STT học sinh, số lớp, số tài liệu — người dùng không phải nhớ "đã tới số mấy".
-2. **Đăng nhập Google Workspace** của trung tâm, giới hạn theo domain.
+2. ~~**Đăng nhập Google Workspace** của trung tâm, giới hạn theo domain.~~ **ĐÃ ĐỔI:** quyết định thật dùng đăng nhập email + mật khẩu qua Supabase Auth, **không dùng Google OAuth** (xem `CLAUDE_new_22.07.26.md`). Đừng triển khai theo mục này.
 3. **Nhật ký thao tác** để truy vết.
 
 ### 5.4. Công nghệ (xếp theo mức khuyến nghị)
+
+> ⚠️ **Đã chốt phương án 1 (Supabase + Next.js) trên thực tế** — mục này giữ
+> nguyên để tham khảo lý do lựa chọn, không còn là khuyến nghị mở. Chi tiết
+> stack thật (Vercel, 2 project Supabase tách staging/production...) xem
+> `CLAUDE_new_22.07.26.md`.
 
 1. **(Khuyến nghị) Supabase + React/Next.js** — CSDL PostgreSQL + đăng nhập Google + phân quyền theo dòng (RLS) sẵn có; frontend deploy Vercel/Cloudflare, trỏ subdomain trung tâm. Nhanh, dễ bảo trì.
 2. **Next.js full-stack + PostgreSQL trên VPS** — tự chủ hoàn toàn, mọi thứ trên hạ tầng trung tâm; đổi lại tự làm auth và tự vận hành.
 3. **Nền tảng internal-tool (Budibase / Appsmith / NocoDB) self-host** — ít code nhất, có sẵn phân quyền; kém linh hoạt khi tùy biến sâu.
 
 ### 5.5. Lộ trình
+
+> ⚠️ Lộ trình chi tiết đã chuyển sang tổ chức theo **5 khối ERP** trong
+> `docs/roadmap.md` — 3 gạch đầu dòng dưới đây chỉ còn giá trị lịch sử
+> (tương ứng Khối 2-3 giai đoạn đầu).
 
 - **GĐ1:** Admin + bảng mã + tạo lớp + tạo ID học sinh (đủ cho tuyển sinh chạy).
 - **GĐ2:** Tạo ID tài liệu + tra cứu/xuất.
