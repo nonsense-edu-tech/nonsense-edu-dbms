@@ -20,6 +20,54 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-27 — Đồng bộ production lên ngang staging: DB (bảng vận hành + chuyển lớp + fix RLS/tao_hoc_sinh) và code (merge develop → main)
+
+**Tóm tắt:** Phát hiện qua kiểm tra trực tiếp Supabase MCP: DB production đã
+âm thầm được migrate UUID (ADR-003, 8 phase) từ trước, nhưng code production
+(branch `main`, dừng ở commit `cf89ed3` ngày 2026-07-21 — trước cả khi
+ADR-003 được quyết định) chưa từng được cập nhật theo. Hệ quả xác nhận thật
+trên production: (1) sửa/xoá lớp, học sinh, gói học phí, hợp đồng, phiếu thu
+báo lỗi "Thiếu ID..." (frontend còn `Number()` parse uuid); (2) `tao_hoc_sinh()`
+insert `id_old` (bigint) vào `ghi_danh` (uuid) → **tạo học sinh mới hoàn toàn
+không chạy được**; (3) RLS `p_write` trên `lop`/`hoc_sinh` còn `deleted_at IS
+NULL` trong `USING` của policy `FOR ALL` → xoá mềm bị Postgres từ chối.
+
+Quyết định (sau khi cân nhắc phạm vi hẹp "chỉ vá lỗi" rồi user chọn mở rộng):
+đưa **toàn bộ** tính năng đã hoàn thiện trên staging lên production trong 1
+đợt, kể cả các bảng/tính năng production chưa từng có (chi nhánh, vận hành
+lớp học, chuyển lớp). Bảng `loai_phong`/`phong_hoc`/`chuong_trinh_mon_hoc`/
+`buoi_hoc` được TẠO MỚI trên production (trước đó chỉ tồn tại trên staging,
+xem quyết định ngày 2026-07-23) — đối chiếu trực tiếp schema/RLS/trigger/view
+thật đang chạy trên staging qua Supabase MCP (không lấy nguyên si các file
+migration root vì một số đã lệch so với schema thật do lịch sử debug — bài
+học từ vụ `tao_hoc_sinh()` ở trên).
+
+Thứ tự áp dụng: (1) tạo 4 bảng vận hành, (2) hàm `chuyen_lop()`/
+`cap_nhat_trang_thai_ghi_danh()` + enum `da_chuyen_lop`, (3) fix
+`tao_hoc_sinh()`/`tao_lop()`/RLS `lop`/`hoc_sinh` — verify bằng
+`get_advisors` (không có lỗi mới ngoài các warning đã tồn tại sẵn ở project,
+ví dụ `search_path` mutable) + đối chiếu `list_tables`/`pg_policies`/
+`pg_get_functiondef` giữa 2 môi trường. Sau đó merge `develop` (11 commit,
+gồm cả fix học phí ở mục dưới) → `main`, push.
+**Migration:**
+`supabase/migrations/production-followups/0030_create_van_hanh_tables_production.sql`,
+`0031_chuyen_lop_ghi_danh_production.sql`,
+`0032_fix_tao_hoc_sinh_tao_lop_rls_production.sql`.
+**Staging:** ✅ (đã có từ trước) | **Production:** ✅ (áp dụng 2026-07-27)
+**Commit:** `4e494e8` (merge commit trên `main`, fast-forward từ `develop`)
+
+## 2026-07-27 — Sửa nốt lỗi id:number ở module học phí (gói/hợp đồng/thu tiền)
+
+**Tóm tắt:** Cùng pattern `id: number` → cần `uuid` như các module trước —
+phát hiện ở `GoiHocPhiTable`, `HopDongForm`/`HopDongTable`, `PhieuThuForm`/
+`PhieuThuTable`, `HocPhiDashboardClient` và các `actions.ts` tương ứng. Xác
+nhận kiểu cột thật (`uuid`) qua Supabase MCP trước khi sửa. Xác nhận chạy
+đúng trên staging qua UI thật (role master_admin) trước khi đưa lên production
+ở mục trên.
+**Migration:** không có (chỉ code frontend).
+**Staging:** ✅ | **Production:** ✅ (đi cùng merge `develop`→`main` ở mục trên)
+**Commit:** `3b4fd4f`
+
 ## 2026-07-26 — Mở rộng toast sang module học phí + ghi quy ước bắt buộc
 
 **Tóm tắt:** Nối `useToast()` vào 7 component còn lại của module học phí
@@ -62,7 +110,9 @@ này). **Bài học: RLS cho ghi ảnh hưởng cả đọc nếu dùng `FOR ALL
 khi thêm điều kiện vào USING của policy `FOR ALL`.**
 **Migration:** `0034_fix_ro_ri_deleted_at_qua_policy_all.sql` (bị 0035 đảo
 ngược một phần), `0035_revert_split_ve_for_all_va_giai_thich.sql`.
-**Staging:** ✅ | **Production:** 🔲 chưa
+**Staging:** ✅ | **Production:** ✅ (áp dụng 2026-07-27 qua
+`production-followups/0032_fix_tao_hoc_sinh_tao_lop_rls_production.sql` —
+gộp trạng thái CUỐI CÙNG của 0032-0035 cho lop/hoc_sinh, xem mục 2026-07-27)
 **Commit:** `658a814`
 
 ## 2026-07-26 — Vá lỗi id:number ở chi-nhanh/van-hanh + trùng mã STT/so_lop + RLS phong_hoc/buoi_hoc
@@ -78,7 +128,9 @@ nguyên tắc "cố định vĩnh viễn"). `phong_hoc`/`buoi_hoc` cũng có cù
 RLS `deleted_at IS NULL` trong `USING` như `lop`/`hoc_sinh` — vá tương tự
 (sau đó phát hiện tác dụng phụ, xem mục kế tiếp).
 **Migration:** `0033_fix_stt_solop_va_rls_phong_buoi_hoc.sql`.
-**Staging:** ✅ | **Production:** 🔲 chưa
+**Staging:** ✅ | **Production:** ✅ (phần lop/hoc_sinh áp dụng 2026-07-27
+qua `production-followups/0032_...production.sql`; phần phong_hoc/buoi_hoc
+áp dụng cùng lúc bảng được TẠO MỚI trên production, xem mục 2026-07-27)
 **Commit:** `a196b05`
 
 ## 2026-07-26 — Vá lỗi xoá mềm lop/hoc_sinh bị RLS chặn + tao_hoc_sinh() lệch id_old
@@ -90,9 +142,14 @@ policy ghi có `deleted_at IS NULL` trong `USING` nên dòng sau khi xoá mềm
 không còn thoả policy nào → Postgres từ chối cả câu lệnh; (2) `tao_hoc_sinh()`
 đang chạy trên staging bị lệch so với file migration trong repo — vẫn dùng
 `id_old` (bigint) thay vì `id` (uuid) khi insert vào `ghi_danh`, gây lỗi kiểu
-dữ liệu. Production không dính lỗi (2) vì đã áp dụng đúng bản chuẩn từ trước.
+dữ liệu.
+**ĐÍNH CHÍNH (2026-07-27):** dòng "Production không dính lỗi (2)" ở trên SAI
+— kiểm tra trực tiếp qua Supabase MCP ngày 2026-07-27 xác nhận `tao_hoc_sinh()`
+trên production **vẫn đang** insert `id_old`/bigint vào `ghi_danh` (cùng lỗi
+y hệt staging), tức tạo học sinh mới trên production đã lỗi kiểu dữ liệu từ
+lúc ADR-003 áp dụng cho tới khi vá — xem mục 2026-07-27.
 **Migration:** `0032_fix_soft_delete_rls_va_tao_hoc_sinh.sql`.
-**Staging:** ✅ | **Production:** 🔲 chưa
+**Staging:** ✅ | **Production:** ✅ (áp dụng 2026-07-27, xem mục 2026-07-27)
 **Commit:** `93225fe`
 
 ## 2026-07-26 — Hoàn thiện Khối 2: CRUD, chuyển lớp, trạng thái ghi danh, UI quan_ly_chi_nhanh
@@ -108,7 +165,9 @@ danh sách học sinh. (5) Generate lại TypeScript types từ schema thật, l
 `src/lib/database.types.ts` làm tài liệu tham chiếu (chưa gắn cứng vào
 `createClient()` toàn cục để tránh vỡ các module chưa sửa).
 **Migration:** `0031_chuyen_lop_ghi_danh.sql`.
-**Staging:** ✅ | **Production:** 🔲 chưa
+**Staging:** ✅ | **Production:** ✅ (áp dụng 2026-07-27 qua
+`production-followups/0031_chuyen_lop_ghi_danh_production.sql`, xem mục
+2026-07-27)
 **Commit:** `cb6f780`
 
 ## 2026-07-23 — ADR-003: chuyển toàn bộ khóa chính sang UUIDv7 (8 phase)
