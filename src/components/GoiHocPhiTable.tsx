@@ -5,6 +5,7 @@ import { ngungApDungGoi } from "@/app/dashboard/hoc-phi/goi/actions";
 import { HINH_THUC_DONG_LABEL } from "./hocPhiOptions";
 import { ngayHienThi } from "@/lib/formatDate";
 import { tienHienThi } from "@/lib/formatCurrency";
+import { useToast } from "./ToastProvider";
 import GoiHocPhiDoiGiaModal from "./GoiHocPhiDoiGiaModal";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
@@ -60,6 +61,7 @@ function GoiRowItem({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
   const dangApDungHienHanh = goi.dang_ap_dung && goi.hieu_luc_den === null;
 
   function handleNgungApDung() {
@@ -68,7 +70,12 @@ function GoiRowItem({
     setError(null);
     startTransition(async () => {
       const result = await ngungApDungGoi(goi.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Ngừng áp dụng gói học phí thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã ngừng áp dụng gói "${goi.ten}" thành công.` });
+      }
     });
   }
 

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { kichHoatHopDong, huyHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
 import { TRANG_THAI_HOP_DONG_LABEL, TRANG_THAI_THU_LABEL, tinhTrangThaiThu } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
+import { useToast } from "./ToastProvider";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type HopDongRow = {
@@ -66,6 +67,7 @@ export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; ca
 function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   const coTinhTrangThaiThu = TRANG_THAI_CO_THU_TIEN.includes(hd.trang_thai);
   const trangThaiThu = coTinhTrangThaiThu ? tinhTrangThaiThu(hd.doanh_thu_thuan, hd.thuc_thu) : null;
@@ -74,7 +76,12 @@ function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
     setError(null);
     startTransition(async () => {
       const result = await kichHoatHopDong(hd.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Kích hoạt hợp đồng thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã kích hoạt hợp đồng của "${hd.ho_ten}" thành công.` });
+      }
     });
   }
 
@@ -84,7 +91,12 @@ function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
     setError(null);
     startTransition(async () => {
       const result = await huyHopDong(hd.id);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        showToast({ type: "error", message: `Huỷ hợp đồng thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã huỷ hợp đồng của "${hd.ho_ten}" thành công.` });
+      }
     });
   }
 

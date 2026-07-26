@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { taoHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
 import { LOAI_GIAM_GIA_LABEL, tinhDoanhThuThuan } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export type GhiDanhOption = {
@@ -32,6 +33,7 @@ export default function HopDongForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   const [ghiDanhId, setGhiDanhId] = useState("");
   const [goiId, setGoiId] = useState("");
@@ -60,8 +62,10 @@ export default function HopDongForm({
       const result = await taoHopDong(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo hợp đồng thất bại: ${result.error}` });
       } else {
         setSuccess("Đã tạo hợp đồng (trạng thái nháp).");
+        showToast({ type: "success", message: "Đã tạo hợp đồng thành công (trạng thái nháp)." });
         form.reset();
         setGhiDanhId("");
         setGoiId("");

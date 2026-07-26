@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { taoGoiHocPhi } from "@/app/dashboard/hoc-phi/goi/actions";
 import { HINH_THUC_DONG_LABEL, HINH_THUC_DONG_OPTIONS } from "./hocPhiOptions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 type MaTen = { ma: string; ten: string };
@@ -11,6 +12,7 @@ export default function GoiHocPhiForm({ chuongTrinhList }: { chuongTrinhList: Ma
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,8 +25,10 @@ export default function GoiHocPhiForm({ chuongTrinhList }: { chuongTrinhList: Ma
       const result = await taoGoiHocPhi(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Tạo gói học phí thất bại: ${result.error}` });
       } else {
         setSuccess("Đã tạo gói học phí.");
+        showToast({ type: "success", message: "Đã tạo gói học phí thành công." });
         form.reset();
       }
     });

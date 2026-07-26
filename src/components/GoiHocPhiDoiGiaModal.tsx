@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { doiGiaGoi } from "@/app/dashboard/hoc-phi/goi/actions";
+import { useToast } from "./ToastProvider";
 import type { GoiHocPhiRow } from "./GoiHocPhiTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
@@ -9,6 +10,7 @@ import modalStyles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 export default function GoiHocPhiDoiGiaModal({ goi, onClose }: { goi: GoiHocPhiRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,9 @@ export default function GoiHocPhiDoiGiaModal({ goi, onClose }: { goi: GoiHocPhiR
       const result = await doiGiaGoi(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Đổi giá gói học phí thất bại: ${result.error}` });
       } else {
+        showToast({ type: "success", message: `Đã đổi giá gói "${goi.ten}" thành công.` });
         onClose();
       }
     });

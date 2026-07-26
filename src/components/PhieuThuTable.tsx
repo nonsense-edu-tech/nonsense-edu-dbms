@@ -5,6 +5,7 @@ import { layDuongDanBienLai } from "@/app/dashboard/hoc-phi/thu-tien/actions";
 import { HINH_THUC_THU_LABEL } from "./hocPhiOptions";
 import { ngayHienThi } from "@/lib/formatDate";
 import { tienHienThi } from "@/lib/formatCurrency";
+import { useToast } from "./ToastProvider";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type BienLaiRow = { ten_tep: string; duong_dan_luu_tru: string };
@@ -74,6 +75,7 @@ export default function PhieuThuTable({ list }: { list: PhieuThuRow[] }) {
 function XemBienLaiButton({ bienLai }: { bienLai: BienLaiRow }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const showToast = useToast();
 
   function handleClick() {
     setError(null);
@@ -81,6 +83,7 @@ function XemBienLaiButton({ bienLai }: { bienLai: BienLaiRow }) {
       const result = await layDuongDanBienLai(bienLai.duong_dan_luu_tru);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Mở biên lai thất bại: ${result.error}` });
       } else {
         window.open(result.url, "_blank", "noopener,noreferrer");
       }

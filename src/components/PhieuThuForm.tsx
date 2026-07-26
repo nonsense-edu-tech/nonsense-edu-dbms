@@ -5,6 +5,7 @@ import { taoPhieuThu } from "@/app/dashboard/hoc-phi/thu-tien/actions";
 import { HINH_THUC_THU_LABEL } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { nenAnhBienLai, dungLuongHienThi } from "@/lib/resizeImage";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export type HopDongDangHoatDong = {
@@ -31,6 +32,7 @@ export default function PhieuThuForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
   const [hopDongId, setHopDongId] = useState("");
   const [bienLaiList, setBienLaiList] = useState<BienLaiDaChon[]>([]);
   const [dangNen, setDangNen] = useState(false);
@@ -109,8 +111,10 @@ export default function PhieuThuForm({
       const result = await taoPhieuThu(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Ghi phiếu thu thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã ghi phiếu thu — mã ${result.data.ma_phieu_thu}`);
+        showToast({ type: "success", message: `Đã ghi phiếu thu "${result.data.ma_phieu_thu}" thành công.` });
         form.reset();
         setHopDongId("");
         setBienLaiList([]);
