@@ -15,13 +15,13 @@ export async function taoHopDong(formData: FormData): Promise<HopDongActionResul
   } = await supabase.auth.getUser();
   if (!user) return { error: "Chưa đăng nhập." };
 
-  const ghiDanhId = Number(formData.get("ghi_danh_id"));
-  const goiHocPhiId = Number(formData.get("goi_hoc_phi_id"));
+  const ghiDanhId = String(formData.get("ghi_danh_id") ?? "").trim();
+  const goiHocPhiId = String(formData.get("goi_hoc_phi_id") ?? "").trim();
   const loaiGiamGia = String(formData.get("loai_giam_gia") ?? "khong").trim();
   const giaTriGiamGia = Number(formData.get("gia_tri_giam_gia") || 0);
 
-  if (!Number.isInteger(ghiDanhId) || ghiDanhId <= 0) return { error: "Vui lòng chọn lượt ghi danh." };
-  if (!Number.isInteger(goiHocPhiId) || goiHocPhiId <= 0) return { error: "Vui lòng chọn gói học phí." };
+  if (!ghiDanhId) return { error: "Vui lòng chọn lượt ghi danh." };
+  if (!goiHocPhiId) return { error: "Vui lòng chọn gói học phí." };
   if (!LOAI_GIAM_GIA_HOP_LE.includes(loaiGiamGia)) return { error: "Loại giảm giá không hợp lệ." };
   if (!Number.isFinite(giaTriGiamGia) || giaTriGiamGia < 0) return { error: "Giá trị giảm giá phải là số ≥ 0." };
   if (loaiGiamGia === "phan_tram" && giaTriGiamGia > 100) return { error: "Giảm theo % không được vượt quá 100." };
@@ -54,14 +54,14 @@ export async function taoHopDong(formData: FormData): Promise<HopDongActionResul
   return { ok: true };
 }
 
-export async function kichHoatHopDong(id: number): Promise<HopDongActionResult> {
+export async function kichHoatHopDong(id: string): Promise<HopDongActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Chưa đăng nhập." };
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID hợp đồng." };
+  if (!id) return { error: "Thiếu ID hợp đồng." };
 
   const { error } = await supabase
     .from("hop_dong_hoc_phi")
@@ -75,10 +75,10 @@ export async function kichHoatHopDong(id: number): Promise<HopDongActionResult> 
   return { ok: true };
 }
 
-export async function huyHopDong(id: number): Promise<HopDongActionResult> {
+export async function huyHopDong(id: string): Promise<HopDongActionResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID hợp đồng." };
+  if (!id) return { error: "Thiếu ID hợp đồng." };
 
   const { error } = await supabase.from("hop_dong_hoc_phi").update({ trang_thai: "da_huy" }).eq("id", id);
 

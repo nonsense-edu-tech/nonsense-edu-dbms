@@ -17,13 +17,13 @@ export async function taoPhieuThu(formData: FormData): Promise<TaoPhieuThuResult
   } = await supabase.auth.getUser();
   if (!user) return { error: "Chưa đăng nhập." };
 
-  const hopDongId = Number(formData.get("hop_dong_id"));
+  const hopDongId = String(formData.get("hop_dong_id") ?? "").trim();
   const soTien = Number(formData.get("so_tien"));
   const ngayThu = String(formData.get("ngay_thu") ?? "").trim();
   const hinhThuc = String(formData.get("hinh_thuc") ?? "").trim();
   const ghiChu = String(formData.get("ghi_chu") ?? "").trim() || null;
 
-  if (!Number.isInteger(hopDongId) || hopDongId <= 0) return { error: "Vui lòng chọn hợp đồng." };
+  if (!hopDongId) return { error: "Vui lòng chọn hợp đồng." };
   if (!Number.isFinite(soTien) || soTien <= 0) return { error: "Số tiền phải lớn hơn 0." };
   if (!ngayThu) return { error: "Vui lòng chọn ngày thu." };
   if (!HINH_THUC_HOP_LE.includes(hinhThuc)) return { error: "Hình thức thu không hợp lệ." };
@@ -47,7 +47,7 @@ export async function taoPhieuThu(formData: FormData): Promise<TaoPhieuThuResult
     }
   }
 
-  const tepDinhKemIds: number[] = [];
+  const tepDinhKemIds: string[] = [];
   for (const [index, tep] of tepList.entries()) {
     const tenAnToan = tep.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const duongDan = `hd-${hopDongId}/${Date.now()}-${index}-${tenAnToan}`;

@@ -8,7 +8,7 @@ import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export type GhiDanhOption = {
-  id: number;
+  id: string;
   ho_ten: string;
   ma_hoc_sinh: string;
   ten_lop: string | null;
@@ -17,7 +17,7 @@ export type GhiDanhOption = {
 };
 
 export type GoiOption = {
-  id: number;
+  id: string;
   ten: string;
   chuong_trinh_ma: string;
   gia_niem_yet: number;

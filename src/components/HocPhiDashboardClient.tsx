@@ -7,7 +7,7 @@ import { ngayHienThi } from "@/lib/formatDate";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type HopDongTaiChinh = {
-  id: number;
+  id: string;
   chuong_trinh_ma: string;
   doanh_thu_thuan: number;
   trang_thai: string;
@@ -15,7 +15,7 @@ export type HopDongTaiChinh = {
 };
 
 export type PhieuThuTaiChinh = {
-  hop_dong_id: number;
+  hop_dong_id: string;
   chuong_trinh_ma: string;
   so_tien: number;
   ngay_thu: string; // mốc lọc "thực thu"
@@ -23,7 +23,7 @@ export type PhieuThuTaiChinh = {
 };
 
 export type HopDongQuaHan = {
-  hop_dong_id: number;
+  hop_dong_id: string;
   ho_ten: string;
   ma_hoc_sinh: string;
   ten_lop: string | null;

@@ -10,7 +10,7 @@ import GoiHocPhiDoiGiaModal from "./GoiHocPhiDoiGiaModal";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type GoiHocPhiRow = {
-  id: number;
+  id: string;
   ten: string;
   chuong_trinh_ten: string;
   hinh_thuc_dong: string;

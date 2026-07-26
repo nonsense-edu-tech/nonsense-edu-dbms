@@ -38,11 +38,11 @@ export async function taoGoiHocPhi(formData: FormData): Promise<TaoGoiResult> {
 export async function doiGiaGoi(formData: FormData): Promise<TaoGoiResult> {
   const supabase = await createClient();
 
-  const id = Number(formData.get("id"));
+  const id = String(formData.get("id") ?? "").trim();
   const giaMoi = Number(formData.get("gia_niem_yet_moi"));
   const ngayDoiGia = String(formData.get("ngay_doi_gia") ?? "").trim();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID gói học phí." };
+  if (!id) return { error: "Thiếu ID gói học phí." };
   if (!Number.isFinite(giaMoi) || giaMoi < 0) return { error: "Giá mới phải là số ≥ 0." };
   if (!ngayDoiGia) return { error: "Thiếu ngày áp dụng giá mới." };
 
@@ -79,10 +79,10 @@ export async function doiGiaGoi(formData: FormData): Promise<TaoGoiResult> {
   return { ok: true };
 }
 
-export async function ngungApDungGoi(id: number): Promise<TaoGoiResult> {
+export async function ngungApDungGoi(id: string): Promise<TaoGoiResult> {
   const supabase = await createClient();
 
-  if (!Number.isInteger(id) || id <= 0) return { error: "Thiếu ID gói học phí." };
+  if (!id) return { error: "Thiếu ID gói học phí." };
 
   const { error } = await supabase.from("goi_hoc_phi").update({ dang_ap_dung: false }).eq("id", id);
 

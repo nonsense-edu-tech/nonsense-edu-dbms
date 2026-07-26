@@ -8,7 +8,7 @@ import { useToast } from "./ToastProvider";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type HopDongRow = {
-  id: number;
+  id: string;
   ho_ten: string;
   ma_hoc_sinh: string;
   chuong_trinh_ten: string;

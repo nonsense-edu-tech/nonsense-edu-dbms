@@ -9,7 +9,7 @@ import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 export type HopDongDangHoatDong = {
-  id: number;
+  id: string;
   ho_ten: string;
   ma_hoc_sinh: string;
   chuong_trinh_ten: string;

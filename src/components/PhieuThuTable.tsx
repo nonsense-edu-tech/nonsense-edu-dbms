@@ -11,7 +11,7 @@ import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 export type BienLaiRow = { ten_tep: string; duong_dan_luu_tru: string };
 
 export type PhieuThuRow = {
-  id: number;
+  id: string;
   ma_phieu_thu: string;
   ho_ten: string;
   ma_hoc_sinh: string;

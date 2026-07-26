@@ -71,9 +71,9 @@ export default async function ThuTienPage() {
   const phieuThuRows: PhieuThuRow[] = (phieuThuList ?? []).map((pt) => {
     const info = hopDongHocSinhMap.get(pt.hop_dong_id);
     const bienLai = [pt.tep_dinh_kem_id, pt.tep_dinh_kem_id_2]
-      .filter((id): id is number => id != null)
+      .filter((id): id is string => id != null)
       .map((id) => tepDinhKemMap.get(id))
-      .filter((t): t is { id: number; ten_tep: string; duong_dan_luu_tru: string } => t != null)
+      .filter((t): t is { id: string; ten_tep: string; duong_dan_luu_tru: string } => t != null)
       .map((t) => ({ ten_tep: t.ten_tep, duong_dan_luu_tru: t.duong_dan_luu_tru }));
     return {
       id: pt.id,

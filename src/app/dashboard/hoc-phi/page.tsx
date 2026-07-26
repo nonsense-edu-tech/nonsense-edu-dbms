@@ -47,7 +47,7 @@ export default async function HocPhiDashboardPage() {
   const ghiDanhLopMap = new Map((ghiDanhList ?? []).map((g) => [g.id, g.lop_id]));
   const hopDongGhiDanhMap = new Map((hopDongList ?? []).map((h) => [h.id, h.ghi_danh_id]));
 
-  function chuongTrinhCuaGhiDanh(ghiDanhId: number): string {
+  function chuongTrinhCuaGhiDanh(ghiDanhId: string): string {
     const lopId = ghiDanhLopMap.get(ghiDanhId);
     return lopId != null ? lopChuongTrinhMap.get(lopId) ?? "" : "";
   }
