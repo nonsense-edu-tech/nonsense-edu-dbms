@@ -228,10 +228,15 @@ nhất tính đến nay.
   hiện 22/07/2026 khi thiết kế vai trò `quan_ly_chi_nhanh`.
 - ⚠️ `docs/dac-ta-he-thong.md` ghi sai `ma_cau_hoi` là 16 số (thật 17 số) —
   cần xác định vị trí ký tự chính xác qua SQL rồi sửa tài liệu.
-- ⚠️ **Toàn bộ Khối 2 (CRUD/chuyển lớp/trạng thái ghi danh/UI
-  `quan_ly_chi_nhanh`) mới chỉ trên staging** — cần đưa lên production
-  (migration `0031`-`0035` + code frontend liên quan), theo đúng quy trình
-  đối chiếu số liệu từng bước như ADR-003.
+- ⚠️ **CẬP NHẬT 27/07/2026:** `0030`-`0032` (bảng vận hành + `chuyen_lop()` +
+  fix `tao_hoc_sinh`/RLS) đã lên production (xem CHANGELOG 27/07/2026). Vẫn
+  còn thiếu trên production: `0033_fix_stt_solop_va_rls_phong_buoi_hoc`,
+  `0034_fix_ro_ri_deleted_at_qua_policy_all`,
+  `0035_revert_split_ve_for_all_va_giai_thich` — xác nhận qua Supabase MCP
+  `list_migrations` cùng ngày. Đây là loại lệch mà ADR-004 (Lớp 3, GitHub
+  Action `db-parity-check`) từ nay sẽ tự phát hiện — xử lý theo đúng luật (a)
+  của ADR-004 (qua pipeline merge → CI, không áp tay), không lặp lại cách làm
+  cũ.
 - ⚠️ **Nghi ngờ `hoc-phi/*` dính cùng lỗi kiểu ID `number`→`uuid`** như các
   module khác (phát hiện qua đọc code, chưa xác nhận thực tế) — có task nền
   đang kiểm tra.

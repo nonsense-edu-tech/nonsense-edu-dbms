@@ -1,0 +1,103 @@
+name: DB parity check (ADR-004)
+
+# Bắt migration có trong repo nhưng CHƯA lên production — chính là lỗi gây
+# outage 2026-07-27 (DB đi trước/lệch code mà không có gì chặn).
+# Xem docs/adr/ADR-004-hang-rao-parity-migration-db-code.md để biết đầy đủ bối cảnh.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC = 09:00 giờ Việt Nam, chạy mỗi ngày kể cả khi không ai push gì
+  workflow_dispatch: {}
+
+jobs:
+  migration-parity:
+    name: "Migration parity: repo vs production DB"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link tới project production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase link --project-ref pdyerenojwrtejyhlcbs
+
+      - name: So sánh migration local (repo) với production đã áp dụng
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: |
+          set -e
+          supabase migration list --linked | tee migration_list.txt
+
+          # Dòng nào có cột "Local" nhưng cột "Remote" trống -> migration có
+          # trong repo nhưng chưa từng chạy trên production. Đây là đúng loại
+          # lệch gây ra sự cố 2026-07-27.
+          awk -F'|' '
+            $1 ~ /Local/ { next }
+            $1 ~ /^[- ]+$/ { next }
+            NF < 2 { next }
+            {
+              local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              if (local != "" && remote == "") print local
+            }
+          ' migration_list.txt > unapplied.txt || true
+
+          if [ -s unapplied.txt ]; then
+            echo "::error::Các migration sau có trong supabase/migrations nhưng CHƯA áp dụng lên production:"
+            cat unapplied.txt
+            echo ""
+            echo "Xem docs/adr/ADR-004-hang-rao-parity-migration-db-code.md — luật (a): migration chỉ vào production qua pipeline ship code."
+            exit 1
+          fi
+
+          echo "OK: không có migration nào trong repo bị thiếu trên production."
+
+  vercel-commit-check:
+    name: "Best-effort: commit main vs Vercel production"
+    runs-on: ubuntu-latest
+    continue-on-error: true # kiểm phụ — không chặn merge, chỉ báo
+    steps:
+      - name: So sánh commit main với deployment production trên Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Bỏ qua: chưa cấu hình VERCEL_TOKEN/VERCEL_PROJECT_ID (kiểm phụ, không bắt buộc)."
+            exit 0
+          fi
+
+          TEAM_QUERY=""
+          if [ -n "$VERCEL_TEAM_ID" ]; then
+            TEAM_QUERY="&teamId=$VERCEL_TEAM_ID"
+          fi
+
+          RESPONSE=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v6/deployments?projectId=$VERCEL_PROJECT_ID&target=production&limit=1$TEAM_QUERY")
+
+          DEPLOYED_SHA=$(echo "$RESPONSE" | jq -r '.deployments[0].meta.githubCommitSha // empty')
+          CURRENT_SHA="${{ github.sha }}"
+
+          if [ -z "$DEPLOYED_SHA" ]; then
+            echo "Không đọc được commit từ Vercel API. Phản hồi:"
+            echo "$RESPONSE"
+            exit 0
+          fi
+
+          echo "Commit main hiện tại : $CURRENT_SHA"
+          echo "Commit Vercel production đang chạy: $DEPLOYED_SHA"
+
+          if [ "$DEPLOYED_SHA" != "$CURRENT_SHA" ]; then
+            echo "::warning::Vercel production đang chạy commit khác main hiện tại (có thể do deploy đang chạy dở, hoặc bị chặn) — kiểm tra dashboard Vercel."
+          else
+            echo "OK: Vercel production khớp commit main."
+          fi
