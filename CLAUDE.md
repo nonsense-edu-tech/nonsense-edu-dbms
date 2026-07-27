@@ -146,11 +146,11 @@ thụ trực tiếp `ma_hoc_sinh` làm Person ID (giới hạn ≤16 ký tự, c
 
 ## Nợ kỹ thuật đã ghi nhận (xem `docs/roadmap.md` để biết chi tiết)
 
-- ⚠️ **Production hiện đang thiếu `0017`, `0018`, `0033`, `0034`, `0035` so
-  với staging** (xác nhận qua Supabase MCP `list_migrations`, 27/07/2026) —
-  phải xử lý trước khi GitHub Action parity-check (ADR-004) được coi là đáng
-  tin cậy, nếu không Action sẽ FAIL ngay từ lần chạy đầu vì lệch có từ trước
-  ADR chứ không phải vi phạm mới. Xem ADR-004 Mục 6.
+- ✅ **`0033`-`0035` đã ghi nhận vào lịch sử migration production** (27/07/2026,
+  xem CHANGELOG) — chỉ là lỗi sổ sách, schema/RLS thật đã khớp sẵn từ trước.
+  `0017`/`0018` vẫn không có trong lịch sử production (đã có bản thay thế
+  tương đương qua `0030_create_van_hanh_tables_production`) — chấp nhận được,
+  không phải lệch cần vá, xem ADR-004 Mục 6.
 - `admin_ts`/`quan_ly_chi_nhanh` chưa bị chặn ở CSDL khi tự duyệt hợp đồng học
   phí (`trang_thai: nhap→cho_duyet`) — hiện chỉ là quy ước UI.
 - ~~`docs/dac-ta-he-thong.md` ghi sai `ma_cau_hoi` là 16 số~~ **ĐÃ XÁC NHẬN

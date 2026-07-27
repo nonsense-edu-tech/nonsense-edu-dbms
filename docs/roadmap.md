@@ -228,15 +228,13 @@ nhất tính đến nay.
   hiện 22/07/2026 khi thiết kế vai trò `quan_ly_chi_nhanh`.
 - ⚠️ `docs/dac-ta-he-thong.md` ghi sai `ma_cau_hoi` là 16 số (thật 17 số) —
   cần xác định vị trí ký tự chính xác qua SQL rồi sửa tài liệu.
-- ⚠️ **CẬP NHẬT 27/07/2026:** `0030`-`0032` (bảng vận hành + `chuyen_lop()` +
-  fix `tao_hoc_sinh`/RLS) đã lên production (xem CHANGELOG 27/07/2026). Vẫn
-  còn thiếu trên production: `0033_fix_stt_solop_va_rls_phong_buoi_hoc`,
-  `0034_fix_ro_ri_deleted_at_qua_policy_all`,
-  `0035_revert_split_ve_for_all_va_giai_thich` — xác nhận qua Supabase MCP
-  `list_migrations` cùng ngày. Đây là loại lệch mà ADR-004 (Lớp 3, GitHub
-  Action `db-parity-check`) từ nay sẽ tự phát hiện — xử lý theo đúng luật (a)
-  của ADR-004 (qua pipeline merge → CI, không áp tay), không lặp lại cách làm
-  cũ.
+- ✅ **CẬP NHẬT 27/07/2026:** `0030`-`0035` đều đã ghi nhận trên production
+  (xem CHANGELOG 27/07/2026, 2 mục cùng ngày). `0033`-`0035` từng bị thiếu
+  trong lịch sử migration production — xác nhận qua Supabase MCP đây chỉ là
+  lỗi sổ sách (schema/RLS thật đã khớp sẵn), đã áp đúng 3 file gốc để lịch sử
+  khớp lại. GitHub Action `db-parity-check` (ADR-004, Lớp 3) giờ chạy trên
+  nền lịch sử đã khớp — nếu Action FAIL sau lần này nghĩa là có lệch MỚI,
+  không phải nợ cũ.
 - ⚠️ **Nghi ngờ `hoc-phi/*` dính cùng lỗi kiểu ID `number`→`uuid`** như các
   module khác (phát hiện qua đọc code, chưa xác nhận thực tế) — có task nền
   đang kiểm tra.

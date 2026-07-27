@@ -140,11 +140,15 @@ của một migration Expand, việc mà máy không tự đánh giá được).
 
 ## 6. Nợ kỹ thuật đã ghi nhận (xem `docs/roadmap.md`)
 
-- ⚠️ Production đang thiếu `0017`, `0018`, `0033`, `0034`, `0035` so với
-  staging (Mục 1) — **phải xử lý (áp lên production hoặc xác nhận đã được
-  thay thế bởi migration khác) trước khi bật Lớp 3, nếu không Action sẽ FAIL
-  ngay lần chạy đầu tiên** vì lệch đã tồn tại từ trước ADR này, không phải do
-  vi phạm luật mới.
+- ✅ **Đã xử lý (27/07/2026):** `0033`, `0034`, `0035` từng thiếu trong lịch
+  sử migration production (Mục 1) — kiểm tra qua Supabase MCP xác nhận schema/
+  RLS thật đã khớp sẵn (phiên trước gộp nội dung tương đương vào
+  `0030`/`0032`-production), chỉ là lỗi sổ sách. Đã áp đúng nội dung 3 file
+  gốc để lịch sử khớp lại, verify `pg_policies`/`get_advisors` không đổi hành
+  vi/không phát sinh lỗi mới. Xem CHANGELOG.md 27/07/2026. `0017`/`0018` vẫn
+  không có trong lịch sử production — **chấp nhận, không xử lý**, vì đã có
+  bản thay thế tương đương (`0030_create_van_hanh_tables_production` tạo lại
+  đúng các bảng đó từ đầu bằng UUID, không cần replay 2 file bigint cũ).
 - ⚠️ 5 migration mồ côi trên staging (Mục 1, `0021_uuidv7_pin_search_path`
   và 4 file khác) chưa được ghi lại thành file chính thức trong repo — nợ kỹ
   thuật lịch sử, không chặn Lớp 3 (vì đã áp cả hai môi trường theo cách khác
