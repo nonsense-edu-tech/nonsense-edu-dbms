@@ -36,13 +36,36 @@ thuộc Khối 2.
 - `docs/dac-ta-he-thong.md` — đặc tả quy ước ID (có 1 chỗ sai đã biết, xem dưới).
 - `docs/roadmap.md` — lộ trình + nợ kỹ thuật đã ghi nhận.
 - `supabase/migrations/` — SQL migration, đặt tên `NNNN_mo_ta.sql` tăng dần.
-- `AGENTS.md` — **chưa được đối chiếu với CLAUDE_new_22.07.26.md này, đọc cả hai và báo nếu có mâu thuẫn trước khi bắt đầu.**
+- `AGENTS.md` — **chưa được đối chiếu với `CLAUDE.md` này, đọc cả hai và báo nếu có mâu thuẫn trước khi bắt đầu.**
 
 ## Nguồn sự thật kiến trúc
 
-- `docs/adr/ADR-003-chuyen-doi-uuid-toan-bo.md` (Status: **Accepted**) — quyết định MỚI NHẤT, thay thế riêng luật #1 (khóa chính) của ADR-002. Đọc file này TRƯỚC khi làm việc với bất kỳ PK/FK nào.
+- `docs/adr/ADR-004-hang-rao-parity-migration-db-code.md` (Status: **Accepted**) — quy trình đưa migration vào staging/production, sau sự cố production DB đi trước code không ai biết (2026-07-27). **Đọc TRƯỚC khi áp bất kỳ migration nào** — không thay đổi luật nghiệp vụ/schema của ADR-002/003, chỉ định lại quy trình. Tóm tắt 3 luật cứng ở mục "Quy tắc bắt buộc — migration & deploy" bên dưới.
+- `docs/adr/ADR-003-chuyen-doi-uuid-toan-bo.md` (Status: **Accepted**) — quyết định MỚI NHẤT về schema, thay thế riêng luật #1 (khóa chính) của ADR-002. Đọc file này TRƯỚC khi làm việc với bất kỳ PK/FK nào.
 - `docs/adr/ADR-002-mo-rong-tren-nen-production-that.md` (Status: **Accepted**) — vẫn đúng cho MỌI luật khác (định dạng mã bất biến, tiền là bigint, RBAC 3 bảng phạm vi, tài chính gắn `hop_dong_hoc_phi`, RLS chỉ thêm không sửa, ẩn chi phí khỏi vận hành). **Chỉ luật #1 (PK) đã bị ADR-003 thay.**
 - `docs/adr/ADR-001-mo-hinh-du-lieu-hoc-thuat-tai-chinh.md` chỉ tham khảo cho 6 luật nghiệp vụ tài chính gốc — **KHÔNG dùng DDL của ADR-001**, đã bị ADR-002 thay thế.
+
+## Quy tắc bắt buộc — migration & deploy (ADR-004, sau sự cố 2026-07-27)
+
+Sự cố gốc: DB production được migrate UUID bằng cách áp tay, code trên `main`
+không hề biết, lệch nhau 4 ngày không ai phát hiện cho tới khi kiểm tra thủ
+công. Từ nay:
+
+1. **Migration chỉ vào mỗi môi trường qua pipeline ship code** (merge → CI).
+   **Cấm áp migration tay lên production DB** (SQL Editor, `supabase db push`
+   từ máy cá nhân, MCP `apply_migration` trực tiếp lên production). Thử trên
+   staging thì được, nhưng bất kỳ gì giữ lại phải thành file migration trong
+   repo trước khi coi là xong.
+2. **Migration phá huỷ (Contract — đổi tên/kiểu cột, `DROP`) chỉ chạy trên
+   production SAU KHI** code phụ thuộc đã live thật trên production.
+3. **Migration Expand (thêm cột/bảng/hàm) phải backward-compatible** — code
+   CŨ đang chạy trên production vẫn phải chạy được bình thường trên schema
+   mới, cho tới khi code mới lên.
+
+Lớp chặn thật (không dựa vào ai nhớ luật trên): GitHub Action
+`.github/workflows/db-parity-check.yml` tự so migration trong repo với
+migration đã áp trên production, FAIL nếu lệch — chạy khi push `main` và mỗi
+ngày. Chi tiết đầy đủ + nợ kỹ thuật đã biết: xem ADR-004.
 
 ## Quy ước ID (BẤT BIẾN — nhớ kỹ, có hệ thống ngoài phụ thuộc)
 
@@ -123,6 +146,11 @@ thụ trực tiếp `ma_hoc_sinh` làm Person ID (giới hạn ≤16 ký tự, c
 
 ## Nợ kỹ thuật đã ghi nhận (xem `docs/roadmap.md` để biết chi tiết)
 
+- ✅ **`0033`-`0035` đã ghi nhận vào lịch sử migration production** (27/07/2026,
+  xem CHANGELOG) — chỉ là lỗi sổ sách, schema/RLS thật đã khớp sẵn từ trước.
+  `0017`/`0018` vẫn không có trong lịch sử production (đã có bản thay thế
+  tương đương qua `0030_create_van_hanh_tables_production`) — chấp nhận được,
+  không phải lệch cần vá, xem ADR-004 Mục 6.
 - `admin_ts`/`quan_ly_chi_nhanh` chưa bị chặn ở CSDL khi tự duyệt hợp đồng học
   phí (`trang_thai: nhap→cho_duyet`) — hiện chỉ là quy ước UI.
 - ~~`docs/dac-ta-he-thong.md` ghi sai `ma_cau_hoi` là 16 số~~ **ĐÃ XÁC NHẬN

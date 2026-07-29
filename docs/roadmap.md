@@ -228,10 +228,13 @@ nhất tính đến nay.
   hiện 22/07/2026 khi thiết kế vai trò `quan_ly_chi_nhanh`.
 - ⚠️ `docs/dac-ta-he-thong.md` ghi sai `ma_cau_hoi` là 16 số (thật 17 số) —
   cần xác định vị trí ký tự chính xác qua SQL rồi sửa tài liệu.
-- ⚠️ **Toàn bộ Khối 2 (CRUD/chuyển lớp/trạng thái ghi danh/UI
-  `quan_ly_chi_nhanh`) mới chỉ trên staging** — cần đưa lên production
-  (migration `0031`-`0035` + code frontend liên quan), theo đúng quy trình
-  đối chiếu số liệu từng bước như ADR-003.
+- ✅ **CẬP NHẬT 27/07/2026:** `0030`-`0035` đều đã ghi nhận trên production
+  (xem CHANGELOG 27/07/2026, 2 mục cùng ngày). `0033`-`0035` từng bị thiếu
+  trong lịch sử migration production — xác nhận qua Supabase MCP đây chỉ là
+  lỗi sổ sách (schema/RLS thật đã khớp sẵn), đã áp đúng 3 file gốc để lịch sử
+  khớp lại. GitHub Action `db-parity-check` (ADR-004, Lớp 3) giờ chạy trên
+  nền lịch sử đã khớp — nếu Action FAIL sau lần này nghĩa là có lệch MỚI,
+  không phải nợ cũ.
 - ⚠️ **Nghi ngờ `hoc-phi/*` dính cùng lỗi kiểu ID `number`→`uuid`** như các
   module khác (phát hiện qua đọc code, chưa xác nhận thực tế) — có task nền
   đang kiểm tra.

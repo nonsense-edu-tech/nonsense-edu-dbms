@@ -20,6 +20,80 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-29 — Repair version lịch sử migration production khớp tên file local (ADR-004 #3a)
+
+**Tóm tắt:** Phát hiện khi verify GitHub Action `db-parity-check` thật (chưa
+chạy CI, verify thủ công bằng cách tái dựng đúng thuật toán `makeTable()` của
+`supabase/cli` — apps/cli-go/internal/migration/list/list.go, bản v2.110.0 —
+với dữ liệu local/remote 100% thật): `migration list --linked` so khớp Local↔
+Remote bằng **so sánh SỐ NGUYÊN TUYỆT ĐỐI** của cột `version`. Local lấy version
+từ tên file (`0033` → 33). Remote lấy từ `supabase_migrations.schema_migrations
+.version` — nhưng vì project áp migration production qua Supabase MCP
+`apply_migration` (không phải `supabase db push`), version bị tự sinh dạng
+timestamp 14 số (`20260727045454`), không liên quan gì tới tên file. Hệ quả:
+**0/33 migration khớp**, kể cả những cái vừa áp đúng — awk dù đã sửa (commit
+trước) vẫn báo FAIL toàn bộ.
+
+Xử lý: dùng đúng SQL mà lệnh `supabase migration repair` thực thi (lấy từ
+source `apps/cli-go/pkg/migration/history.go` — `DELETE ... WHERE version =
+ANY($1)` rồi `INSERT INTO supabase_migrations.schema_migrations(version, name)`)
+để sửa lại **20 dòng lịch sử** có tương ứng 1-1 rõ ràng giữa local và nội dung
+thật đã chạy: `0011`-`0016`, `0019`-`0029`, `0033`-`0035` — version đổi từ
+timestamp tự sinh sang đúng số 4 chữ số khớp tên file. Chạy trong 1 transaction
+(`begin;...commit;`), chỉ sửa bảng bookkeeping `schema_migrations` (cột
+`version`/`name`), **không đụng schema/dữ liệu nghiệp vụ nào**.
+
+**KHÔNG đụng 3 dòng** `0030_create_van_hanh_tables_production`,
+`0031_chuyen_lop_ghi_danh_production`, `0032_fix_tao_hoc_sinh_tao_lop_rls
+_production` — nội dung thật KHÁC file local cùng số (đặc biệt `0030` là 2
+migration hoàn toàn khác nhau về nội dung), ép khớp số sẽ ghi sai lịch sử. Giữ
+nguyên, coi là gap đã chấp nhận — nối dài đúng tiền lệ đã ghi ở ADR-004 §6 cho
+`0017`/`0018`. Cũng không đụng `0003`-`0010` (chưa từng có dòng lịch sử nào,
+và `docs/roadmap.md` đã tự cảnh báo không tin file `0003` khớp production
+thật) — để nguyên, không đủ cơ sở backfill an toàn.
+
+Verify sau khi repair: tái dựng lại bảng `makeTable()` bằng dữ liệu thật —
+đúng 20/20 dòng khớp, đúng 13 dòng còn lại (`0003`-`0010`, `0017`, `0018`,
+`0030`-`0032`) hiện "chỉ Local" **như dự kiến** (gap đã biết, chưa có cơ chế
+allowlist trong workflow nên Action vẫn sẽ FAIL cho tới khi xử lý tiếp — xem
+`docs/adr/ADR-004...md` Mục 6).
+
+**Migration:** không có (chỉ sửa bookkeeping `supabase_migrations
+.schema_migrations`, không phải migration SQL nghiệp vụ).
+**Staging:** không áp dụng (vấn đề chỉ phát sinh khi thiết kế Action mới, chưa
+kiểm tra staging có cùng lệch không). **Production:** ✅ đã repair 2026-07-29.
+**Commit:** (theo sau, cùng đợt cập nhật docs)
+
+## 2026-07-27 — Ghi nhận `0033`-`0035` vào lịch sử migration production (ADR-004)
+
+**Tóm tắt:** Sau khi dựng ADR-004 (hàng rào chống lệch DB↔code), GitHub Action
+`db-parity-check` phát hiện production thiếu `0033`, `0034`, `0035` trong lịch
+sử migration so với staging. Kiểm tra trực tiếp qua Supabase MCP trước khi áp
+bất cứ gì: schema/RLS thật trên production **đã khớp chính xác** trạng thái
+cuối cùng của cả 3 migration này (phiên trước đã gộp nội dung tương đương vào
+`0030`/`0032`-production riêng, xem ghi chú trong 2 file đó) — đối chiếu từng
+policy (`pg_policies`) và định nghĩa hàm (`pg_get_functiondef`) khớp tuyệt
+đối trước khi apply. Đây thuần tuý là lỗi **sổ sách** (lịch sử migration
+không ghi nhận), không phải lệch schema thật.
+
+Xử lý: áp đúng nội dung gốc của 3 file `0033`/`0034`/`0035` lên production
+theo thứ tự (không viết SQL mới, không apply tay ngoài quy trình — dùng công
+cụ Supabase MCP `apply_migration`, cùng cơ chế project này vẫn dùng cho mọi
+migration production từ trước tới nay), để lịch sử migration production khớp
+1-1 với repo. `0034` và `0035` tự triệt tiêu hiệu lực RLS lẫn nhau (035 đảo
+ngược 034) nên áp nối tiếp không gián đoạn. Verify sau khi áp: `pg_policies`
+khớp y hệt trước-sau (không có thay đổi hành vi thật), `get_advisors` không
+phát sinh lỗi mới ngoài các warning đã biết từ trước (`search_path` mutable,
+`security_definer` lộ qua RPC — nợ kỹ thuật cũ, không thuộc phạm vi việc này).
+
+**Migration:** `0033_fix_stt_solop_va_rls_phong_buoi_hoc.sql`,
+`0034_fix_ro_ri_deleted_at_qua_policy_all.sql`,
+`0035_revert_split_ve_for_all_va_giai_thich.sql` (đã có từ trước, chỉ mới ghi
+nhận vào lịch sử production).
+**Staging:** ✅ (đã có từ trước) | **Production:** ✅ (ghi nhận 2026-07-27,
+schema không đổi vì đã khớp sẵn)
+**Commit:** (theo sau, cùng đợt cập nhật `docs/roadmap.md`/`CLAUDE.md`)
+
 ## 2026-07-27 — Đồng bộ production lên ngang staging: DB (bảng vận hành + chuyển lớp + fix RLS/tao_hoc_sinh) và code (merge develop → main)
 
 **Tóm tắt:** Phát hiện qua kiểm tra trực tiếp Supabase MCP: DB production đã
