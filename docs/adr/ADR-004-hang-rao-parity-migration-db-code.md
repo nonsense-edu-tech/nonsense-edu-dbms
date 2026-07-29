@@ -171,9 +171,14 @@ của một migration Expand, việc mà máy không tự đánh giá được).
     (áp dụng từ trước khi project dùng cơ chế `schema_migrations` để track);
     `docs/roadmap.md` tự cảnh báo không tin file `0003` khớp production thật
     — không đủ cơ sở để backfill an toàn, để nguyên.
-  - **Hệ quả:** Action `db-parity-check` sẽ **FAIL cho tới khi thêm allowlist**
-    cho đúng 13 tên này vào workflow (chưa làm — xem Mục 7). Không phải bug,
-    là nợ kỹ thuật lịch sử đã biết rõ nguồn gốc.
+  - ✅ **Đã xử lý (29/07/2026):** thêm allowlist đúng 13 tên này vào
+    `.github/workflows/db-parity-check.yml` (bước lọc bằng `grep -v -x -F`
+    trước khi quyết định FAIL) — migration nằm trong allowlist vẫn được in ra
+    làm thông tin (không ẩn), chỉ không chặn merge. Verify bằng dữ liệu thật
+    (post-repair): 20 migration khớp + 13 gap đã biết → Action PASS; thêm 1
+    migration giả lập ngoài allowlist (`0036`) → Action vẫn FAIL đúng như kỳ
+    vọng. Không thêm số mới vào allowlist chỉ để Action pass — chỉ dành cho
+    nợ kỹ thuật lịch sử đã điều tra kỹ ở trên.
 - ⚠️ 5 migration mồ côi trên staging (Mục 1, `0021_uuidv7_pin_search_path`
   và 4 file khác) chưa được ghi lại thành file chính thức trong repo — nợ kỹ
   thuật lịch sử, không chặn Lớp 3 (vì đã áp cả hai môi trường theo cách khác
@@ -188,8 +193,5 @@ của một migration Expand, việc mà máy không tự đánh giá được).
   trong CI hay không (hiện tại Lớp 3 chỉ **kiểm tra**, chưa **thi hành**).
   Để ngỏ vì tự động apply DDL lên production không giám sát mang rủi ro
   riêng — cần bàn riêng nếu muốn đi tiếp bước này.
-- **Chưa làm:** thêm allowlist 13 migration đã biết (Mục 6) vào
-  `.github/workflows/db-parity-check.yml` để Action có thể thật sự PASS —
-  hiện tại nó sẽ FAIL cho 13 tên này ở lần chạy đầu tiên, đúng dự kiến, không
-  phải bug. Cần quyết định cách thể hiện allowlist trong workflow (mảng tên
-  cứng kèm comment giải thích từng dòng, ưu tiên đơn giản — xem Mục 4).
+- ~~Chưa làm: thêm allowlist 13 migration đã biết vào workflow~~ — **đã xong
+  (29/07/2026)**, xem Mục 6.

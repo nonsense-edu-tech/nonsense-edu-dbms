@@ -57,15 +57,44 @@ jobs:
             }
           ' migration_list.txt > unapplied.txt || true
 
-          if [ -s unapplied.txt ]; then
+          # 13 migration đã biết là nợ kỹ thuật LỊCH SỬ, chấp nhận được — KHÔNG
+          # phải lệch cần chặn. Lý do từng nhóm: xem
+          # docs/adr/ADR-004-hang-rao-parity-migration-db-code.md Mục 6.
+          # KHÔNG thêm số mới vào đây chỉ để Action pass — allowlist này chỉ
+          # dành cho nợ cũ đã điều tra kỹ, mọi migration mới phải áp thật lên
+          # production, không phải bị lờ đi ở đây.
+          cat > known_gaps.txt << 'GAPS'
+          0003
+          0004
+          0005
+          0006
+          0007
+          0008
+          0009
+          0010
+          0017
+          0018
+          0030
+          0031
+          0032
+          GAPS
+
+          grep -v -x -F -f known_gaps.txt unapplied.txt > unapplied_new.txt || true
+
+          if [ -s unapplied_new.txt ]; then
             echo "::error::Các migration sau có trong supabase/migrations nhưng CHƯA áp dụng lên production:"
-            cat unapplied.txt
+            cat unapplied_new.txt
             echo ""
             echo "Xem docs/adr/ADR-004-hang-rao-parity-migration-db-code.md — luật (a): migration chỉ vào production qua pipeline ship code."
             exit 1
           fi
 
-          echo "OK: không có migration nào trong repo bị thiếu trên production."
+          if [ -s unapplied.txt ]; then
+            echo "Có $(wc -l < unapplied.txt) migration nằm trong allowlist nợ kỹ thuật đã biết (không chặn, xem ADR-004 Mục 6):"
+            cat unapplied.txt
+          fi
+
+          echo "OK: không có migration MỚI nào bị thiếu trên production."
 
   vercel-commit-check:
     name: "Best-effort: commit main vs Vercel production"
