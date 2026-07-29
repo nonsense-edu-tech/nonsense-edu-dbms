@@ -39,13 +39,20 @@ jobs:
           # Dòng nào có cột "Local" nhưng cột "Remote" trống -> migration có
           # trong repo nhưng chưa từng chạy trên production. Đây là đúng loại
           # lệch gây ra sự cố 2026-07-27.
+          #
+          # Format thật của bảng (xác nhận qua source apps/cli-go/internal/migration/list/list.go
+          # của supabase/cli, hàm makeTable(), bản v2.110.0): mỗi dòng có "|" ở
+          # CẢ ĐẦU LẪN CUỐI ("|Local|Remote|Time (UTC)|"), nên với `awk -F'|'`,
+          # $1 luôn RỖNG (phần trước dấu | đầu tiên) — cột Local thật là $2, cột
+          # Remote thật là $3. Giá trị được bọc backtick, ô trống là "` `"
+          # (backtick-khoảng trắng-backtick), không phải chuỗi rỗng.
           awk -F'|' '
-            $1 ~ /Local/ { next }
-            $1 ~ /^[- ]+$/ { next }
-            NF < 2 { next }
+            $2 ~ /Local/ { next }
+            $2 ~ /^-*$/ { next }
+            NF < 4 { next }
             {
-              local = $1; gsub(/^[ \t]+|[ \t]+$/, "", local)
-              remote = $2; gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              local = $2; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $3; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
               if (local != "" && remote == "") print local
             }
           ' migration_list.txt > unapplied.txt || true
