@@ -105,10 +105,10 @@ chạm bước Contract của luật (b).
 (qua Supabase Management API — tương đương `supabase migration list --linked`)
 với danh sách file trong `supabase/migrations/*.sql` ở repo. Bất kỳ migration
 nào có trong repo mà **không** có trong danh sách đã apply trên production →
-**FAIL**. (Chiều ngược lại — production có migration lạ không có trong repo —
-cũng được cảnh báo, vì đó chính là kiểu lệch gây ra sự cố này, nhưng không
-chặn cứng vì có thể là do đặt tên khác nhau giữa file `_production.sql` và
-tên migration ghi trong lịch sử DB — xem Mục 6 Nợ kỹ thuật.)
+**FAIL**. Dùng thẳng `supabase migration list --linked` (công cụ chính thức
+của vendor) rồi parse bảng kết quả — **không** tự viết logic so khớp theo tên
+(cân nhắc rồi bỏ, xem Mục 6: `migration list` so theo **giá trị số tuyệt đối**
+của cột `version`, không so theo tên).
 
 **Kiểm PHỤ (best-effort):** so commit `main` hiện tại với commit mà Vercel
 production đang chạy (qua Vercel API, đọc biến môi trường sẵn có nếu
@@ -140,27 +140,45 @@ của một migration Expand, việc mà máy không tự đánh giá được).
 
 ## 6. Nợ kỹ thuật đã ghi nhận (xem `docs/roadmap.md`)
 
-- ✅ **Đã xử lý (27/07/2026):** `0033`, `0034`, `0035` từng thiếu trong lịch
-  sử migration production (Mục 1) — kiểm tra qua Supabase MCP xác nhận schema/
-  RLS thật đã khớp sẵn (phiên trước gộp nội dung tương đương vào
-  `0030`/`0032`-production), chỉ là lỗi sổ sách. Đã áp đúng nội dung 3 file
-  gốc để lịch sử khớp lại, verify `pg_policies`/`get_advisors` không đổi hành
-  vi/không phát sinh lỗi mới. Xem CHANGELOG.md 27/07/2026. `0017`/`0018` vẫn
-  không có trong lịch sử production — **chấp nhận, không xử lý**, vì đã có
-  bản thay thế tương đương (`0030_create_van_hanh_tables_production` tạo lại
-  đúng các bảng đó từ đầu bằng UUID, không cần replay 2 file bigint cũ).
+- ✅ **Đã xử lý (27-29/07/2026), 2 đợt:**
+  1. (27/07) `0033`-`0035` thiếu trong lịch sử migration production — đã áp
+     đúng nội dung 3 file gốc qua Supabase MCP để có mặt trong lịch sử (khi đó
+     version vẫn là timestamp tự sinh, chưa đúng số file).
+  2. (29/07, khi verify Action thật lần đầu — xem Mục 4): phát hiện
+     `supabase migration list --linked` so Local/Remote bằng **so sánh số
+     nguyên tuyệt đối** của `version`. Remote lấy version từ
+     `supabase_migrations.schema_migrations.version` — nhưng vì production áp
+     migration qua Supabase MCP `apply_migration` (không qua `supabase db
+     push`), version bị tự sinh dạng timestamp 14 số, không liên quan gì tới
+     tên file → **0/33 migration khớp**, kể cả 3 cái vừa áp ở đợt 1. Đã dùng
+     đúng SQL của lệnh `supabase migration repair` (`DELETE` + `INSERT` trên
+     `schema_migrations`, lấy từ source `apps/cli-go/pkg/migration/history.go`)
+     để sửa version của **20 migration có tương ứng 1-1 rõ ràng**: `0011`-
+     `0016`, `0019`-`0029`, `0033`-`0035` → khớp đúng tên file. Chi tiết đầy
+     đủ: CHANGELOG.md 2026-07-29.
+- ⚠️ **13 migration còn lại KHÔNG xử lý, chấp nhận là gap vĩnh viễn** (không
+  phải lệch cần vá — mở rộng đúng tiền lệ đã có cho `0017`/`0018`):
+  - `0017`, `0018` — có bản thay thế tương đương
+    (`0030_create_van_hanh_tables_production` tạo lại đúng các bảng đó từ đầu
+    bằng UUID), không cần replay 2 file bigint cũ.
+  - `0030`, `0031`, `0032` — nội dung file local (top-level) và nội dung thật
+    đã chạy trên production (`production-followups/*_production.sql`) **khác
+    nhau thật sự** (đặc biệt `0030` là 2 migration hoàn toàn khác nhau) — ép
+    khớp version sẽ ghi sai lịch sử, nên giữ nguyên 3 dòng này với tên/version
+    gốc (`0030_create_van_hanh_tables_production` v.v., version vẫn là
+    timestamp tự sinh).
+  - `0003`-`0010` — chưa từng có dòng lịch sử migration nào trên production
+    (áp dụng từ trước khi project dùng cơ chế `schema_migrations` để track);
+    `docs/roadmap.md` tự cảnh báo không tin file `0003` khớp production thật
+    — không đủ cơ sở để backfill an toàn, để nguyên.
+  - **Hệ quả:** Action `db-parity-check` sẽ **FAIL cho tới khi thêm allowlist**
+    cho đúng 13 tên này vào workflow (chưa làm — xem Mục 7). Không phải bug,
+    là nợ kỹ thuật lịch sử đã biết rõ nguồn gốc.
 - ⚠️ 5 migration mồ côi trên staging (Mục 1, `0021_uuidv7_pin_search_path`
   và 4 file khác) chưa được ghi lại thành file chính thức trong repo — nợ kỹ
   thuật lịch sử, không chặn Lớp 3 (vì đã áp cả hai môi trường theo cách khác
   nhau, không lệch giữa staging/prod ở các bảng liên quan) nhưng nên dọn để
   lịch sử migration phản ánh đúng thực tế DB.
-- ⚠️ Tên file migration production (`_production.sql` suffix trong
-  `production-adr003/`, `production-followups/`) không khớp 1-1 với tên
-  migration ghi trong lịch sử DB (ví dụ file `0020_uuid_phase1_production.sql`
-  nhưng lịch sử DB ghi tên `0020_uuid_phase1`) — Lớp 3 so theo **số thứ tự
-  đầu file** (`NNNN`), không so theo tên đầy đủ, để tránh false positive từ
-  khác biệt naming này. Nếu sau này đổi quy ước đặt tên, phải cập nhật lại
-  logic so khớp trong workflow.
 
 ---
 
@@ -170,3 +188,8 @@ của một migration Expand, việc mà máy không tự đánh giá được).
   trong CI hay không (hiện tại Lớp 3 chỉ **kiểm tra**, chưa **thi hành**).
   Để ngỏ vì tự động apply DDL lên production không giám sát mang rủi ro
   riêng — cần bàn riêng nếu muốn đi tiếp bước này.
+- **Chưa làm:** thêm allowlist 13 migration đã biết (Mục 6) vào
+  `.github/workflows/db-parity-check.yml` để Action có thể thật sự PASS —
+  hiện tại nó sẽ FAIL cho 13 tên này ở lần chạy đầu tiên, đúng dự kiến, không
+  phải bug. Cần quyết định cách thể hiện allowlist trong workflow (mảng tên
+  cứng kèm comment giải thích từng dòng, ưu tiên đơn giản — xem Mục 4).
