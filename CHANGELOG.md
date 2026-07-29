@@ -20,6 +20,37 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-29 — ADR-004 hoàn tất triển khai: merge PR #1, verify Action chạy thật trên CI
+
+**Tóm tắt:** Thêm allowlist 13 migration nợ kỹ thuật lịch sử (`0003`-`0010`,
+`0017`/`0018`, `0030`-`0032` — lý do từng nhóm xem ADR-004 Mục 6) vào
+`.github/workflows/db-parity-check.yml`, để Action phân biệt được nợ cũ đã
+biết với lệch mới thật sự cần chặn. Verify thủ công bằng dữ liệu thật (20
+migration khớp + 13 gap) → PASS; thêm 1 migration giả lập ngoài allowlist →
+vẫn FAIL đúng như kỳ vọng.
+
+Sau đó merge PR #1 (`develop` → `main`, commit merge `3a90f0f`) — Action
+`db-parity-check` tự chạy lần đầu tiên thật trên GitHub Actions (trigger
+`on push: main`). Kết quả: **cả 2 job đều success**, bảng `Local`/`Remote`
+in ra khớp **từng dòng** với bảng đã tái dựng thủ công trước đó (không có
+bất ngờ từ môi trường CI — phiên bản `supabase/setup-cli@v1` khác vẫn cho
+kết quả giống hệt). Job phụ (Vercel) cũng xác nhận thật: đọc được commit
+`3a90f0f` từ Vercel API, khớp đúng commit `main` — không chỉ skip do thiếu
+secret.
+
+Với kết quả này, ADR-004 được coi là **Accepted, hoàn tất triển khai cả 3
+lớp phòng thủ** (guidance/discipline/enforcement). Việc còn lại (tự động hoá
+bước *apply* migration lên CI, dọn 5 migration mồ côi trên staging) là nợ kỹ
+thuật đã ghi nhận, cố ý để ngoài phạm vi ADR này — xem Mục 7 Open Questions.
+
+**Migration:** không có (chỉ sửa `.github/workflows/db-parity-check.yml` +
+docs; DB production đã sửa ở mục repair version 2026-07-29 phía dưới, không
+lặp lại ở đây).
+**Staging:** không áp dụng (Action `db-parity-check` chỉ target production
+theo thiết kế — xem ADR-004 Mục 4). **Production:** ✅ verify qua CI run
+thật (`https://github.com/nonsense-edu-tech/nonsense-edu-dbms/actions/runs/30424494224`).
+**Commit:** `0e991ae` (thêm allowlist) → merge `3a90f0f` trên `main`.
+
 ## 2026-07-29 — Repair version lịch sử migration production khớp tên file local (ADR-004 #3a)
 
 **Tóm tắt:** Phát hiện khi verify GitHub Action `db-parity-check` thật (chưa
