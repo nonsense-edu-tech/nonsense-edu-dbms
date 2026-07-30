@@ -20,6 +20,35 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-30 — Migration 0036: schema QA tầng nhẹ (đánh giá chất lượng đào tạo, E1.1)
+
+**Tóm tắt:** Dựng schema cho E1.1 (roadmap song song ERP/Vận hành) — 3 bảng
+mới: `tieu_chi_danh_gia` (bảng mã rubric, RỖNG — BGH/tổ chuyên môn điền nội
+dung sau, việc khác), `danh_gia_hoc_sinh` (bảng sự kiện "học bạ số", 3 trục
+điểm Kiến thức/Kỹ năng/Thái độ, dùng chung cho đánh giá theo bài và theo kỳ
+tổng hợp), `danh_gia_tieu_chi` (bảng nối M-N checklist). Chỉ dựng schema —
+KHÔNG mở UI nhập liệu thật (E1.4) và KHÔNG tạo nang_luc/cau_hoi_nang_luc/
+bai_lam (E1.2), cả hai đều là việc khác nằm ngoài phạm vi PR này.
+
+So với bản draft tham khảo ban đầu, đã sửa theo đúng thực tế production (đối
+chiếu qua Supabase MCP, không đoán): PK dùng `uuid`/`public.uuidv7()` cho cả
+3 bảng (ADR-003 không còn ngoại lệ bigint identity cho bảng mã mới); `de_id`
+tham chiếu `uuid` (không phải `bigint` — `de.id` đã qua ADR-003); RLS dùng
+đúng hàm `auth_role()` thật (không có `user_pham_vi`/`user_bai_hoc` trong RLS
+predicate nào hiện tại, dù bảng `user_pham_vi` có tồn tại); `nguoi_danh_gia`
+tham chiếu `public.users` (không phải `auth.users`, khớp quy ước `lop.nguoi_tao`);
+`tieu_chi_danh_gia` dùng cột `deleted_at` thay vì cờ `dang_hoat_dong` riêng,
+khớp quy ước bảng mã thật (`cap_hoc`/`mon_hoc`/`dang_cau`/`hinh_thuc`); thêm
+`deleted_at` cho `danh_gia_hoc_sinh` (khớp các bảng sự kiện khác), không thêm
+cho `danh_gia_tieu_chi` (bảng nối thuần, khớp `user_chi_nhanh`). Tái sử dụng
+`set_updated_at()` đã có sẵn, không tạo lại.
+
+**Migration:** `0036_danh_gia_chat_luong_dao_tao.sql`.
+**Staging:** ✅ đã áp dụng và test (insert + FK qua 3 bảng trong transaction,
+rollback — 3 bảng xác nhận rỗng sau test). **Production:** 🔲 chưa — chờ merge
+PR qua CI theo đúng luật (a) ADR-004.
+**Commit:** (điền sau khi commit).
+
 ## 2026-07-29 — ADR-004 hoàn tất triển khai: merge PR #1, verify Action chạy thật trên CI
 
 **Tóm tắt:** Thêm allowlist 13 migration nợ kỹ thuật lịch sử (`0003`-`0010`,
