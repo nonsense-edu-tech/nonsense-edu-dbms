@@ -1,3 +1,4 @@
+-- adr004-type: expand
 -- =============================================================================
 -- NONSENSE EDU — QA TẦNG NHẸ: ĐÁNH GIÁ CHẤT LƯỢNG ĐÀO TẠO (Học bạ số)
 -- Roadmap song song ERP/Vận hành, mã E1.1-1 đến E1.1-4.

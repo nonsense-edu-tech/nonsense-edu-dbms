@@ -20,6 +20,55 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-30 — ADR-005: CI tự động áp migration Expand lên production
+
+**Tóm tắt:** Sau khi merge migration `0036` vào `main` (PR #3), phát hiện gap
+thật trong quy trình: `db-parity-check` báo migration thiếu trên production
+đúng như thiết kế, nhưng **không có con đường nào hợp luật (a) ADR-004** để
+đưa nó lên production — CI mới kiểm tra, chưa thi hành; mọi cách áp tay đều
+bị luật (a) cấm rõ ràng (SQL Editor, CLI cá nhân, MCP `apply_migration`).
+Đây chính là Open Question để ngỏ ở ADR-004 Mục 7.
+
+Xử lý: viết ADR-005, đóng Open Question này. Thêm 3 job mới vào
+`.github/workflows/db-parity-check.yml`:
+- `classify-pending-migrations` — tìm migration đang chờ áp, phân loại theo
+  tag chuẩn `-- adr004-type: expand` trong 15 dòng đầu file (không có tag →
+  mặc định coi là contract, an toàn hơn).
+- `apply-migration-expand` — tự động chạy `supabase db push --linked` khi
+  TẤT CẢ migration đang chờ đều tag `expand`, gate qua GitHub Environment
+  `production-db` (cần 1 người duyệt).
+- `apply-migration-contract-manual` — chỉ chạy qua `workflow_dispatch` thủ
+  công với 2 input bắt buộc (tên migration + chuỗi xác nhận cố định
+  `code-da-live-tren-production`), giữ đúng luật (b) ADR-004 (xác nhận code
+  phụ thuộc đã live là phán đoán con người, không tự động hoá được).
+
+Job `migration-parity` (đã có, logic giữ nguyên) chạy sau 2 job apply
+(`needs`, `if: always()`), trở thành bước xác nhận cuối thay vì bước duy
+nhất. Đã sửa 1 lỗi script-injection khi viết: input `workflow_dispatch`
+không được nội suy thẳng vào `run:` (`${{ inputs.x }}` chèn trực tiếp vào
+shell) — chuyển qua truyền bằng biến môi trường (`env:`) trước khi dùng
+trong `if`. Đã test logic phân loại expand/contract bằng fixture giả lập
+(4 case: thuần expand, trộn expand+contract, không tag, file không tồn tại)
+— cả 4 đúng kỳ vọng.
+
+Gắn tag `-- adr004-type: expand` cho `0036` (Expand thuần, đã test kỹ trên
+staging) — dùng làm ca thử nghiệm đầu tiên của pipeline mới.
+
+**Việc còn lại, cần người thao tác tay trên GitHub UI (không có công cụ MCP/CLI
+làm được):** tạo GitHub Environment `production-db` trong Settings →
+Environments, thêm required reviewers — thiếu bước này thì `environment:
+production-db` trong job sẽ tự tạo environment KHÔNG có bảo vệ, mất hết ý
+nghĩa gate.
+
+**Migration:** không có (chỉ sửa `.github/workflows/db-parity-check.yml`,
+thêm `docs/adr/ADR-005-ci-tu-dong-apply-migration-expand.md`, thêm 1 dòng
+tag vào `0036` — không đổi schema).
+**Staging:** không áp dụng (workflow chỉ target production theo thiết kế,
+giống ADR-004 Mục 4). **Production:** 🔲 chưa chạy lần nào (pipeline mới,
+chờ merge + chờ tạo Environment `production-db` trước khi job đầu tiên có
+thể chạy thật).
+**Commit:** (điền sau khi commit).
+
 ## 2026-07-30 — Migration 0036: schema QA tầng nhẹ (đánh giá chất lượng đào tạo, E1.1)
 
 **Tóm tắt:** Dựng schema cho E1.1 (roadmap song song ERP/Vận hành) — 3 bảng
@@ -45,9 +94,10 @@ cho `danh_gia_tieu_chi` (bảng nối thuần, khớp `user_chi_nhanh`). Tái s�
 
 **Migration:** `0036_danh_gia_chat_luong_dao_tao.sql`.
 **Staging:** ✅ đã áp dụng và test (insert + FK qua 3 bảng trong transaction,
-rollback — 3 bảng xác nhận rỗng sau test). **Production:** 🔲 chưa — chờ merge
-PR qua CI theo đúng luật (a) ADR-004.
-**Commit:** (điền sau khi commit).
+rollback — 3 bảng xác nhận rỗng sau test). **Production:** 🔲 chưa — merge
+xong (PR #3) nhưng phát hiện chưa có con đường CI hợp luật để apply, xem
+mục ADR-005 ngay phía trên.
+**Commit:** `deb4d03` (migration) → merge `9b13448` trên `main` (PR #3).
 
 ## 2026-07-29 — ADR-004 hoàn tất triển khai: merge PR #1, verify Action chạy thật trên CI
 

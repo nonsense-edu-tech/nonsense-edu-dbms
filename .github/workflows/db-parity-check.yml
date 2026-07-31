@@ -2,18 +2,196 @@ name: DB parity check (ADR-004)
 
 # Bắt migration có trong repo nhưng CHƯA lên production — chính là lỗi gây
 # outage 2026-07-27 (DB đi trước/lệch code mà không có gì chặn).
-# Xem docs/adr/ADR-004-hang-rao-parity-migration-db-code.md để biết đầy đủ bối cảnh.
+#
+# Từ ADR-005 (30/07/2026): thêm job classify-pending-migrations +
+# apply-migration-expand / apply-migration-contract-manual — đóng Open
+# Question ở ADR-004 Mục 7 (CI giờ THI HÀNH apply, không chỉ kiểm tra).
+# Migration Expand (tag "-- adr004-type: expand" trong 15 dòng đầu file) tự
+# động áp qua GitHub Environment "production-db" (cần 1 người duyệt). Migration
+# Contract (hoặc không có tag) KHÔNG tự động — chỉ chạy qua workflow_dispatch
+# thủ công kèm xác nhận rõ ràng, đúng luật (b) ADR-004 (cần phán đoán con
+# người, máy không tự xác nhận "code phụ thuộc đã live" được).
+#
+# Xem docs/adr/ADR-004-hang-rao-parity-migration-db-code.md và
+# docs/adr/ADR-005-ci-tu-dong-apply-migration-expand.md để biết đầy đủ bối cảnh.
 
 on:
   push:
     branches: [main]
   schedule:
     - cron: "0 2 * * *" # 02:00 UTC = 09:00 giờ Việt Nam, chạy mỗi ngày kể cả khi không ai push gì
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      apply_migration:
+        description: "Số migration Contract muốn áp thủ công lên production (vd 0037) — chỉ dùng khi migration KHÔNG tự động qua (tag contract hoặc không tag)"
+        required: false
+        type: string
+      confirm_code_live:
+        description: "Bắt buộc nếu điền apply_migration ở trên: gõ đúng chuỗi 'code-da-live-tren-production' để xác nhận code phụ thuộc migration này đã chạy thật ổn định trên production (luật (b) ADR-004)"
+        required: false
+        type: string
 
 jobs:
+  classify-pending-migrations:
+    name: "Phân loại migration đang chờ áp lên production"
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    outputs:
+      has_pending: ${{ steps.classify.outputs.has_pending }}
+      all_expand: ${{ steps.classify.outputs.all_expand }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link tới project production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase link --project-ref pdyerenojwrtejyhlcbs
+
+      - name: Tìm migration mới đang chờ áp, phân loại expand/contract
+        id: classify
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: |
+          set -e
+          supabase migration list --linked | tee migration_list.txt
+
+          # Cùng logic parse với job migration-parity phía dưới — xem giải
+          # thích chi tiết định dạng bảng ở đó, không lặp lại comment.
+          awk -F'|' '
+            $2 ~ /Local/ { next }
+            $2 ~ /^-*$/ { next }
+            NF < 4 { next }
+            {
+              local = $2; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $3; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              if (local != "" && remote == "") print local
+            }
+          ' migration_list.txt > unapplied.txt || true
+
+          # Allowlist nợ kỹ thuật lịch sử — giữ khớp với job migration-parity
+          # phía dưới (xem ADR-004 Mục 6). KHÔNG thêm số mới vào đây.
+          cat > known_gaps.txt << 'GAPS'
+          0003
+          0004
+          0005
+          0006
+          0007
+          0008
+          0009
+          0010
+          0017
+          0018
+          0030
+          0031
+          0032
+          GAPS
+
+          grep -v -x -F -f known_gaps.txt unapplied.txt > unapplied_new.txt || true
+
+          if [ ! -s unapplied_new.txt ]; then
+            echo "has_pending=false" >> "$GITHUB_OUTPUT"
+            echo "all_expand=false" >> "$GITHUB_OUTPUT"
+            echo "Không có migration mới nào đang chờ áp lên production."
+            exit 0
+          fi
+
+          echo "has_pending=true" >> "$GITHUB_OUTPUT"
+          echo "Migration đang chờ áp lên production:"
+          cat unapplied_new.txt
+
+          # Với MỖI migration đang chờ, tìm đúng file trong repo (khớp tiền
+          # tố số), đọc 15 dòng đầu tìm tag "-- adr004-type: expand". KHÔNG
+          # có tag, hoặc tag khác "expand" (kể cả "contract") -> coi là
+          # contract, mặc định an toàn (bắt buộc duyệt tay qua workflow_dispatch,
+          # xem ADR-005).
+          all_expand=true
+          while read -r version; do
+            file=$(ls supabase/migrations/${version}_*.sql 2>/dev/null | head -n1)
+            if [ -z "$file" ]; then
+              echo "CẢNH BÁO: không tìm thấy file cho migration $version trong repo — coi là contract."
+              all_expand=false
+              continue
+            fi
+            if head -n 15 "$file" | grep -q -- "-- adr004-type: expand"; then
+              echo "$version ($file): expand"
+            else
+              echo "$version ($file): KHÔNG có tag expand -> coi là contract"
+              all_expand=false
+            fi
+          done < unapplied_new.txt
+
+          echo "all_expand=$all_expand" >> "$GITHUB_OUTPUT"
+
+  apply-migration-expand:
+    name: "Tự động áp migration Expand lên production (cần duyệt qua Environment)"
+    needs: classify-pending-migrations
+    if: needs.classify-pending-migrations.outputs.has_pending == 'true' && needs.classify-pending-migrations.outputs.all_expand == 'true'
+    runs-on: ubuntu-latest
+    environment: production-db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link tới project production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase link --project-ref pdyerenojwrtejyhlcbs
+
+      - name: Áp migration đang chờ (chỉ chạy khi TẤT CẢ đều tag expand)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase db push --linked
+
+  apply-migration-contract-manual:
+    name: "Áp migration Contract lên production (chỉ chạy tay, có xác nhận)"
+    if: github.event_name == 'workflow_dispatch' && inputs.apply_migration != ''
+    runs-on: ubuntu-latest
+    environment: production-db
+    steps:
+      - name: Kiểm tra đã xác nhận code phụ thuộc đã live (luật (b) ADR-004)
+        env:
+          CONFIRM_CODE_LIVE: ${{ inputs.confirm_code_live }}
+          APPLY_MIGRATION: ${{ inputs.apply_migration }}
+        run: |
+          if [ "$CONFIRM_CODE_LIVE" != "code-da-live-tren-production" ]; then
+            echo "::error::Chưa xác nhận đúng chuỗi 'code-da-live-tren-production' ở input confirm_code_live. Dừng lại — luật (b) ADR-004 yêu cầu xác nhận code phụ thuộc migration $APPLY_MIGRATION đã chạy thật ổn định trên production TRƯỚC khi áp."
+            exit 1
+          fi
+          echo "Đã xác nhận — tiếp tục áp migration $APPLY_MIGRATION (và mọi migration đang chờ trước nó theo thứ tự, nếu có)."
+
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link tới project production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase link --project-ref pdyerenojwrtejyhlcbs
+
+      - name: Áp migration
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: supabase db push --linked
+
   migration-parity:
     name: "Migration parity: repo vs production DB"
+    needs: [classify-pending-migrations, apply-migration-expand, apply-migration-contract-manual]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
