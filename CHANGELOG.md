@@ -20,6 +20,50 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-31 (đợt 2) — Đánh dấu 13 migration nợ kỹ thuật là "đã áp" trong sổ sách thật
+
+**Tóm tắt:** Sau khi dọn 3 dòng mồ côi (mục ngay dưới), duyệt lại job
+`apply-migration-expand` — vẫn FAIL, lần này vì lý do khác:
+`supabase db push --linked` báo `"Found local migration files to be inserted
+before the last migration on remote database"`, liệt kê đúng 13 file nằm
+trong allowlist nợ kỹ thuật của `db-parity-check.yml` (`0003`-`0010`,
+`0017`, `0018`, `0030`-`0032` — xem ADR-004 Mục 6). Nguyên nhân: version của
+13 file này thấp hơn version mới nhất đã áp thật (`0035`), nhưng bản thân
+chưa từng có dòng trong `schema_migrations` — `db push` coi đây là tình
+huống bất thường (phải chèn migration cũ vào giữa lịch sử đã áp), từ chối
+chạy trừ khi thêm `--include-all`.
+
+Đã cân nhắc 2 hướng: (a) `--include-all` — chạy thật SQL của 13 file cũ, rủi
+ro cao vì ADR-004 Mục 6 đã ghi rõ nội dung thật trên production (đặc biệt
+`0030`-`0032`) khác hẳn nội dung 3 file local cùng số — có thể lỗi "đã tồn
+tại" hoặc gây lệch dữ liệu mới; (b) đánh dấu 13 file này là "đã áp" trong sổ
+sách (không chạy SQL thật). Theo xác nhận của người dùng, chọn hướng (b) —
+đúng bản chất quyết định "nợ chấp nhận vĩnh viễn" đã chốt sẵn ở ADR-004 Mục
+6, giờ khai báo luôn cho *Supabase CLI* biết (trước đây chỉ giấu trong
+allowlist riêng của `db-parity-check.yml`, chính CLI không hề biết).
+
+Xác nhận trước khi sửa: `select ... where version in (13 số)` trên
+`schema_migrations` — rỗng, không đụng gì có sẵn. Chạy `INSERT` 13 dòng
+(version + name khớp đúng tên file local, ví dụ `0003` →
+`ngan_hang_cau_hoi`) qua Supabase MCP — tương đương `supabase migration
+repair --status applied`, **không chạy SQL của 13 file này**. Verify sau khi
+thêm: `list_migrations` cho dãy liền mạch `0003`→`0035` (chỉ còn `0036` là
+mới), `get_advisors` không phát sinh cảnh báo mới so với trước.
+
+Đã cập nhật ADR-004 Mục 6 (đợt 2), ghi rõ đây là hệ quả tiếp theo của
+`supabase db push` colliding với 13 dòng nợ kỹ thuật lịch sử.
+
+**Việc còn lại:** re-run job `apply-migration-expand` lần nữa — lần này sổ
+sách đã liền mạch tới `0035`, `db push` sẽ không còn lý do để chặn, sẽ áp
+được `0036` lên production thật.
+
+**Migration:** không có (chỉ sửa bookkeeping `supabase_migrations
+.schema_migrations`, không chạy SQL nghiệp vụ nào).
+**Staging:** không áp dụng (staging không có 13 dòng thiếu này — cùng lịch
+sử với local từ đầu). **Production:** ✅ đã thêm 13 dòng bookkeeping
+(31/07/2026) — không chạy SQL, không đổi schema/dữ liệu.
+**Commit:** `5eda18b`.
+
 ## 2026-07-31 — Dọn 3 dòng bookkeeping mồ côi chặn `supabase db push` trên production
 
 **Tóm tắt:** Sau khi merge fix `db-parity-check` (PR #5), duyệt job
