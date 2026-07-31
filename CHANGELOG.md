@@ -60,7 +60,7 @@ chặn bởi orphan-check nữa, sẽ áp được `0036` lên production thật
 **Staging:** không áp dụng (staging không có 3 dòng mồ côi này).
 **Production:** ✅ đã dọn 3 dòng bookkeeping (31/07/2026) — schema/dữ liệu
 không đổi, chỉ sổ sách.
-**Commit:** (điền sau khi commit).
+**Commit:** `af8c406`.
 
 ## 2026-07-31 — Vá lỗi nghiêm trọng: `db-parity-check` luôn báo "OK" giả, vô hiệu hoá Lớp 3 ADR-004
 
