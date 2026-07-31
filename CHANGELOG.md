@@ -20,6 +20,45 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-31 — Vá lỗi nghiêm trọng: `db-parity-check` luôn báo "OK" giả, vô hiệu hoá Lớp 3 ADR-004
+
+**Tóm tắt:** Ngay sau khi merge ADR-005 (PR #4), verify lại bằng cách xem log
+CI thật — phát hiện job `apply-migration-expand` bị **skip** dù `0036` chưa
+hề áp lên production, và job `migration-parity` báo "OK: không có migration
+MỚI nào bị thiếu" dù `0036` thật sự đang thiếu. Đối chiếu trực tiếp bảng
+`supabase_migrations.schema_migrations` trên production qua Supabase MCP xác
+nhận: DB thật hoàn toàn sạch, `0036` không hề có ở đó — bug nằm ở chính CI
+script, không phải dữ liệu.
+
+Lấy raw log thật của bước "So sánh migration local (repo) với production đã
+áp dụng" (không phải ảnh chụp màn hình, để tránh lệch cột do OCR) — xác nhận
+nguyên nhân: giả định cũ về format bảng `supabase migration list --linked`
+("mỗi dòng có `|` ở cả đầu lẫn cuối", ghi trong ADR-004 Mục 4 dựa trên đọc
+source code CLI bản v2.110.0) **không còn đúng với bản CLI `latest` hiện
+tại** — bảng thật KHÔNG có `|` ở đầu/cuối, mỗi dòng chỉ có đúng 3 field
+(Local|Remote|Time), không phải 5 field như giả định. Hệ quả: filter `NF < 4`
+cũ loại bỏ **toàn bộ mọi dòng** (kể cả dòng dữ liệu thật), khiến
+`unapplied.txt` luôn rỗng và check luôn in "OK" — **vô hiệu hoá hoàn toàn Lớp
+3 ADR-004 một cách âm thầm**, không rõ từ khi nào (nghi từ sau đợt verify
+29/07/2026, khi CLI `latest` có thể đã đổi format). Đây là lỗi tồn tại từ
+trước ADR-005 (copy nguyên vào job `classify-pending-migrations` mới), không
+phải lỗi mới phát sinh do ADR-005.
+
+Xử lý: sửa `Local=$1`/`Remote=$2`/`NF < 3` ở cả 2 chỗ dùng logic này
+(`classify-pending-migrations` và `migration-parity`). Test lại bằng chính
+dữ liệu log thật (37 dòng, gồm cả `0036`) trước khi merge — xác nhận đúng 14
+gap (13 nợ cũ đã biết + `0036`), lọc allowlist đúng còn lại `0036`, phân loại
+đúng `expand`. Không chạy được test thật trên GitHub Actions từ đây (không
+có công cụ trigger workflow) — verify hoàn toàn bằng cách tái tạo chính xác
+input log thật cục bộ.
+
+**Migration:** không có (chỉ sửa `.github/workflows/db-parity-check.yml`).
+**Staging:** không áp dụng (workflow chỉ target production). **Production:**
+không đổi gì (bug chỉ ở bước kiểm tra, không phải bước ghi — DB không bị ảnh
+hưởng, `0036` vẫn đang đúng trạng thái "chưa áp", chờ merge PR này để lần
+chạy CI kế tiếp phát hiện và xử lý đúng qua `apply-migration-expand`).
+**Commit:** (điền sau khi commit).
+
 ## 2026-07-30 — ADR-005: CI tự động áp migration Expand lên production
 
 **Tóm tắt:** Sau khi merge migration `0036` vào `main` (PR #3), phát hiện gap
