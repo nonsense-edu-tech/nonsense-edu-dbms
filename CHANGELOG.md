@@ -62,7 +62,7 @@ sách đã liền mạch tới `0035`, `db push` sẽ không còn lý do để c
 **Staging:** không áp dụng (staging không có 13 dòng thiếu này — cùng lịch
 sử với local từ đầu). **Production:** ✅ đã thêm 13 dòng bookkeeping
 (31/07/2026) — không chạy SQL, không đổi schema/dữ liệu.
-**Commit:** (điền sau khi commit).
+**Commit:** `5eda18b`.
 
 ## 2026-07-31 — Dọn 3 dòng bookkeeping mồ côi chặn `supabase db push` trên production
 
