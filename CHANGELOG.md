@@ -20,6 +20,48 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-07-31 — Dọn 3 dòng bookkeeping mồ côi chặn `supabase db push` trên production
+
+**Tóm tắt:** Sau khi merge fix `db-parity-check` (PR #5), duyệt job
+`apply-migration-expand` lần đầu qua GitHub Environment — job FAIL vì
+`supabase db push --linked` tự chối chạy: `"Remote migration versions not
+found in local migrations directory"`, chỉ đích danh 3 version
+`20260726165828`/`20260726165848`/`20260726165914`. Đây là cơ chế kiểm tra
+riêng của chính `supabase db push` (khác Lớp 3 ADR-004) — phát hiện version
+nào trên production không khớp tên file local là từ chối chạy, **chặn cứng
+mọi lần apply tiếp theo**, không riêng `0036`. 3 version đó là 3 dòng nợ kỹ
+thuật đã biết từ ADR-004 Mục 6 (`0030`/`0031`/`0032`-production, nội dung
+thật khác file local cùng số, cố ý không ép khớp version lúc đó).
+
+Xác nhận qua Supabase MCP trước khi sửa: đúng 3 dòng đó, không đổi gì so với
+lúc phát hiện ban đầu. Xử lý: xoá 3 dòng này khỏi
+`supabase_migrations.schema_migrations` trên production (tương đương
+`supabase migration repair --status reverted 20260726165828 20260726165848
+20260726165914` mà CLI tự gợi ý) — chạy trực tiếp qua Supabase MCP theo yêu
+cầu tường minh của người dùng (không qua CI, vì đây là sửa sổ sách bookkeeping
+về migration, không phải áp migration mới — cùng loại hành động với đợt
+repair 29/07/2026 đã làm qua MCP trực tiếp trên `schema_migrations`). Verify
+ngay sau khi xoá: đúng 3 dòng biến mất, 20 dòng còn lại không đổi; `list_tables`
+xác nhận các bảng thật do `0030`-`0032` tạo (`chi_nhanh`, `loai_phong`,
+`phong_hoc`, `chuong_trinh_mon_hoc`, `buoi_hoc`, `user_chi_nhanh`) vẫn còn
+nguyên, RLS vẫn bật, số dòng không đổi — chỉ sổ sách bị sửa, schema/dữ liệu
+không hề bị đụng.
+
+Đã cập nhật ADR-004 Mục 6, đánh dấu rõ quyết định "giữ nguyên 3 dòng này" ban
+đầu **đã bị thay thế** bởi phát hiện mới này.
+
+**Việc còn lại:** vào tab Actions, re-run job `apply-migration-expand` đã
+fail (hoặc chờ lần push/schedule kế tiếp) — giờ `db push` sẽ không còn bị
+chặn bởi orphan-check nữa, sẽ áp được `0036` lên production thật.
+
+**Migration:** không có (chỉ sửa bookkeeping `supabase_migrations
+.schema_migrations`, không phải migration SQL nghiệp vụ — giống loại thay
+đổi ở mục 2026-07-29 "Repair version lịch sử migration production").
+**Staging:** không áp dụng (staging không có 3 dòng mồ côi này).
+**Production:** ✅ đã dọn 3 dòng bookkeeping (31/07/2026) — schema/dữ liệu
+không đổi, chỉ sổ sách.
+**Commit:** (điền sau khi commit).
+
 ## 2026-07-31 — Vá lỗi nghiêm trọng: `db-parity-check` luôn báo "OK" giả, vô hiệu hoá Lớp 3 ADR-004
 
 **Tóm tắt:** Ngay sau khi merge ADR-005 (PR #4), verify lại bằng cách xem log
