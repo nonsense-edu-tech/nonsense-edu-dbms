@@ -57,7 +57,7 @@ input log thật cục bộ.
 không đổi gì (bug chỉ ở bước kiểm tra, không phải bước ghi — DB không bị ảnh
 hưởng, `0036` vẫn đang đúng trạng thái "chưa áp", chờ merge PR này để lần
 chạy CI kế tiếp phát hiện và xử lý đúng qua `apply-migration-expand`).
-**Commit:** (điền sau khi commit).
+**Commit:** `8173c4d`.
 
 ## 2026-07-30 — ADR-005: CI tự động áp migration Expand lên production
 
