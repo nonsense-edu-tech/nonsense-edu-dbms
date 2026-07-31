@@ -64,12 +64,12 @@ jobs:
           # Cùng logic parse với job migration-parity phía dưới — xem giải
           # thích chi tiết định dạng bảng ở đó, không lặp lại comment.
           awk -F'|' '
-            $2 ~ /Local/ { next }
-            $2 ~ /^-*$/ { next }
-            NF < 4 { next }
+            $1 ~ /Local/ { next }
+            $1 ~ /^[ \t]*-+[ \t]*$/ { next }
+            NF < 3 { next }
             {
-              local = $2; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
-              remote = $3; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              local = $1; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
               if (local != "" && remote == "") print local
             }
           ' migration_list.txt > unapplied.txt || true
@@ -218,19 +218,30 @@ jobs:
           # trong repo nhưng chưa từng chạy trên production. Đây là đúng loại
           # lệch gây ra sự cố 2026-07-27.
           #
-          # Format thật của bảng (xác nhận qua source apps/cli-go/internal/migration/list/list.go
-          # của supabase/cli, hàm makeTable(), bản v2.110.0): mỗi dòng có "|" ở
-          # CẢ ĐẦU LẪN CUỐI ("|Local|Remote|Time (UTC)|"), nên với `awk -F'|'`,
-          # $1 luôn RỖNG (phần trước dấu | đầu tiên) — cột Local thật là $2, cột
-          # Remote thật là $3. Giá trị được bọc backtick, ô trống là "` `"
+          # SỬA 31/07/2026: giả định cũ ("mỗi dòng có | ở CẢ ĐẦU LẪN CUỐI",
+          # dựa trên đọc source supabase/cli bản v2.110.0) SAI với output thật
+          # của `supabase migration list --linked` khi verify bằng dữ liệu
+          # thật lúc merge migration 0036 — bảng KHÔNG có | ở đầu/cuối, mỗi
+          # dòng chỉ có đúng 3 field khi tách bằng `awk -F'|'`
+          # (Local|Remote|Time), không phải 5 field rỗng-đầu-cuối như giả định
+          # cũ. Hệ quả: filter `NF < 4` cũ loại bỏ TOÀN BỘ mọi dòng (kể cả
+          # dòng dữ liệu thật), khiến check này LUÔN báo "OK" bất kể có lệch
+          # thật hay không — vô hiệu hoá toàn bộ Lớp 3 ADR-004 một cách âm
+          # thầm, không rõ từ bao giờ (có thể do bản CLI `latest` đổi format
+          # bảng sau đợt verify 29/07/2026). Phát hiện khi 0036 được merge
+          # thật nhưng check vẫn báo "OK" — đối chiếu trực tiếp bằng
+          # `supabase_migrations.schema_migrations` qua Supabase MCP xác nhận
+          # 0036 THẬT SỰ chưa áp dụng. Đã test lại bằng dữ liệu log thật (37
+          # dòng, gồm cả 0036) trước khi sửa. Local giờ là $1, Remote là $2,
+          # ngưỡng NF < 3. Giá trị vẫn bọc backtick, ô trống là "` `"
           # (backtick-khoảng trắng-backtick), không phải chuỗi rỗng.
           awk -F'|' '
-            $2 ~ /Local/ { next }
-            $2 ~ /^-*$/ { next }
-            NF < 4 { next }
+            $1 ~ /Local/ { next }
+            $1 ~ /^[ \t]*-+[ \t]*$/ { next }
+            NF < 3 { next }
             {
-              local = $2; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
-              remote = $3; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
+              local = $1; gsub(/`/, "", local); gsub(/^[ \t]+|[ \t]+$/, "", local)
+              remote = $2; gsub(/`/, "", remote); gsub(/^[ \t]+|[ \t]+$/, "", remote)
               if (local != "" && remote == "") print local
             }
           ' migration_list.txt > unapplied.txt || true
