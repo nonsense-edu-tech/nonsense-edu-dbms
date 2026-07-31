@@ -184,6 +184,22 @@ của một migration Expand, việc mà máy không tự đánh giá được).
   thuật lịch sử, không chặn Lớp 3 (vì đã áp cả hai môi trường theo cách khác
   nhau, không lệch giữa staging/prod ở các bảng liên quan) nhưng nên dọn để
   lịch sử migration phản ánh đúng thực tế DB.
+- ✅ **Cập nhật 31/07/2026 — thay đổi quyết định về `0030`/`0031`/`0032`:**
+  dòng "giữ nguyên 3 dòng này với tên/version gốc" ở trên **không còn đúng**.
+  Khi dựng ADR-005 (CI tự động apply), phát hiện `supabase db push --linked`
+  có cơ chế kiểm tra RIÊNG (khác Lớp 3 ở đây) — tự chối chạy nếu thấy bất kỳ
+  version nào trên production không khớp file local nào, bất kể migration
+  đang muốn áp là gì. 3 dòng version dạng timestamp
+  (`20260726165828`/`48`/`914`) chặn CỨNG mọi lần `db push` sau này, không
+  chỉ ảnh hưởng riêng `0030`-`0032`. Xử lý: xoá 3 dòng này khỏi
+  `supabase_migrations.schema_migrations` trên production qua Supabase MCP
+  (tương đương `supabase migration repair --status reverted`) — **chỉ sửa sổ
+  sách, không đụng bảng/dữ liệu thật** (đã verify: `chi_nhanh`, `loai_phong`,
+  `phong_hoc`, `chuong_trinh_mon_hoc`, `buoi_hoc`, `user_chi_nhanh` vẫn còn
+  nguyên, RLS vẫn bật, số dòng không đổi). File local `0030`-`0032` (đặt tên
+  gốc, nội dung khác `production-followups/*_production.sql`) vẫn hiện là
+  "chưa áp" trong parity check như cũ — không đổi gì ở đó, vẫn nằm trong
+  allowlist Mục 6. Xem CHANGELOG.md 2026-07-31.
 
 ---
 
