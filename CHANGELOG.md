@@ -219,9 +219,11 @@ cho `danh_gia_tieu_chi` (bảng nối thuần, khớp `user_chi_nhanh`). Tái s�
 
 **Migration:** `0036_danh_gia_chat_luong_dao_tao.sql`.
 **Staging:** ✅ đã áp dụng và test (insert + FK qua 3 bảng trong transaction,
-rollback — 3 bảng xác nhận rỗng sau test). **Production:** 🔲 chưa — merge
-xong (PR #3) nhưng phát hiện chưa có con đường CI hợp luật để apply, xem
-mục ADR-005 ngay phía trên.
+rollback — 3 bảng xác nhận rỗng sau test). **Production:** ✅ đã áp dụng qua
+CI (31/07/2026, job `apply-migration-expand` sau khi dọn xong 2 lớp blocker
+bookkeeping — xem các mục "2026-07-31" phía trên). Verify qua Supabase MCP
+sau khi áp: `0036` có trong `list_migrations`, cả 3 bảng tồn tại đúng RLS (6
+policy khớp thiết kế), `tieu_chi_danh_gia` đúng rỗng như dự định.
 **Commit:** `deb4d03` (migration) → merge `9b13448` trên `main` (PR #3).
 
 ## 2026-07-29 — ADR-004 hoàn tất triển khai: merge PR #1, verify Action chạy thật trên CI
