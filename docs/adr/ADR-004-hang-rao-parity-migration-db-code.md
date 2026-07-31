@@ -200,6 +200,23 @@ của một migration Expand, việc mà máy không tự đánh giá được).
   gốc, nội dung khác `production-followups/*_production.sql`) vẫn hiện là
   "chưa áp" trong parity check như cũ — không đổi gì ở đó, vẫn nằm trong
   allowlist Mục 6. Xem CHANGELOG.md 2026-07-31.
+- ✅ **Cập nhật 31/07/2026 (đợt 2) — 13 dòng nợ kỹ thuật giờ được đánh dấu
+  "đã áp" trong sổ sách thật, không chỉ nằm trong allowlist riêng:** sau khi
+  dọn 3 dòng mồ côi ở trên, `supabase db push --linked` vẫn từ chối chạy —
+  lần này báo `"Found local migration files to be inserted before the last
+  migration on remote database"`, chỉ đích danh đúng 13 file trong allowlist
+  (`0003`-`0010`, `0017`, `0018`, `0030`-`0032`): version của chúng thấp hơn
+  version mới nhất đã áp thật (`0035`) nhưng bản thân chưa từng có dòng trong
+  `schema_migrations`, nên `db push` coi là "phải chèn trước 0035, chưa rõ có
+  an toàn không" và chặn lại. Xử lý: `INSERT` 13 dòng (version + name khớp
+  đúng tên file local) vào `supabase_migrations.schema_migrations` qua
+  Supabase MCP (tương đương `supabase migration repair --status applied`) —
+  **không chạy SQL của 13 file này**, chỉ khai báo bookkeeping. Đúng bản chất
+  quyết định "nợ chấp nhận vĩnh viễn" đã chốt ở trên, giờ khai báo luôn cho
+  chính Supabase CLI biết thay vì chỉ giấu trong allowlist của
+  `db-parity-check.yml`. Verify sau khi thêm: `list_migrations` cho dãy liền
+  mạch `0003`→`0035`, `get_advisors` không phát sinh cảnh báo mới. Xem
+  CHANGELOG.md 2026-07-31 (đợt 2).
 
 ---
 
