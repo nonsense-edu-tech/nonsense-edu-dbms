@@ -20,6 +20,34 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-08-01 — Vá lỗ hổng tự duyệt hợp đồng học phí (0037)
+
+**Tóm tắt:** Audit 01/08/2026 phát hiện trigger `trg_hop_dong_forbid_soft_delete`
+(0011/0012) chỉ kiểm soát cột `deleted_at`, KHÔNG kiểm soát chuyển
+`trang_thai` — `admin_ts` (policy `p_write_hop_dong`) và `quan_ly_chi_nhanh`
+(policy `p_write_hop_dong_quan_ly_chi_nhanh`) đều ghi ALL trên
+`hop_dong_hoc_phi`, không gì chặn họ tự chuyển hợp đồng sang `dang_hoat_dong`
+(tự duyệt hợp đồng của chính mình).
+
+Thêm trigger `trg_hop_dong_chan_tu_duyet`: chỉ chặn bước **duyệt** (chuyển
+SANG `dang_hoat_dong`) — bước nộp (`nhap→cho_duyet`) của `admin_ts`/
+`quan_ly_chi_nhanh` không bị ảnh hưởng. Chỉ `master_admin`/`ke_toan` được
+duyệt. Cùng khuôn `language plpgsql set search_path = public` với
+`forbid_hop_dong_soft_delete_by_non_master` (0012), không `security definer`
+(không cần — chỉ gọi `auth_role()`, tự nó đã `SECURITY DEFINER`).
+
+Test staging 5/5 case đúng kỳ vọng trước khi merge (PR #10): admin_ts nộp
+nhap→cho_duyet (qua), admin_ts tự duyệt (chặn), quan_ly_chi_nhanh tự duyệt
+(chặn), ke_toan duyệt (qua), master_admin duyệt (qua). Sau khi merge, người
+dùng test thực tế trên production — xác nhận hoạt động đúng logic.
+
+**Migration:** `0037_chan_tu_duyet_hop_dong_hoc_phi.sql` (Expand — trigger
+mới, không đổi cột/bảng nào).
+**Staging:** ✅ đã áp dụng (01/08/2026, test 5/5 case).
+**Production:** ✅ đã áp dụng (01/08/2026, qua CI `apply-migration-expand`
+theo ADR-005) — người dùng đã test thực tế, xác nhận đúng.
+**Commit:** `1ddf6b9` (merge `a662f11`, PR #10).
+
 ## 2026-07-31 (đợt 2) — Đánh dấu 13 migration nợ kỹ thuật là "đã áp" trong sổ sách thật
 
 **Tóm tắt:** Sau khi dọn 3 dòng mồ côi (mục ngay dưới), duyệt lại job
