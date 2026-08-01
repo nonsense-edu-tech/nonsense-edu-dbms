@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { taoPhieuThu } from "@/app/dashboard/hoc-phi/thu-tien/actions";
 import { HINH_THUC_THU_LABEL } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { nenAnhBienLai, dungLuongHienThi } from "@/lib/resizeImage";
 import { useToast } from "./ToastProvider";
+import SearchableSelect from "./SearchableSelect";
 import styles from "./Form.module.css";
 
 export type HopDongDangHoatDong = {
@@ -38,6 +39,14 @@ export default function PhieuThuForm({
   const [dangNen, setDangNen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const hopDongOptions = useMemo(
+    () =>
+      hopDongList.map((h) => ({
+        value: h.id,
+        label: `${h.ho_ten} (${h.ma_hoc_sinh}) — ${h.chuong_trinh_ten} — còn phải thu ${tienHienThi(h.con_phai_thu)}`,
+      })),
+    [hopDongList]
+  );
   const hopDongChon = hopDongList.find((h) => String(h.id) === hopDongId);
 
   async function handleChonFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -89,6 +98,10 @@ export default function PhieuThuForm({
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    if (!hopDongId) {
+      setError("Vui lòng chọn hợp đồng.");
+      return;
+    }
     const form = e.currentTarget;
     const formData = new FormData(form);
     for (const bienLai of bienLaiList) {
@@ -136,18 +149,17 @@ export default function PhieuThuForm({
 
       <div className={styles.field}>
         <label htmlFor="hop_dong_id" className={styles.label}>Hợp đồng</label>
-        <select
-          id="hop_dong_id" name="hop_dong_id" required className={styles.select} disabled={isPending}
+        <SearchableSelect
+          id="hop_dong_id"
+          name="hop_dong_id"
+          options={hopDongOptions}
           value={hopDongId}
-          onChange={(e) => setHopDongId(e.target.value)}
-        >
-          <option value="" disabled>— Chọn hợp đồng —</option>
-          {hopDongList.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.ho_ten} ({h.ma_hoc_sinh}) — {h.chuong_trinh_ten} — còn phải thu {tienHienThi(h.con_phai_thu)}
-            </option>
-          ))}
-        </select>
+          disabled={isPending}
+          required
+          placeholder="— Tìm và chọn hợp đồng —"
+          emptyText="Không tìm thấy hợp đồng nào."
+          onChange={(v) => setHopDongId(v)}
+        />
       </div>
 
       <div className={styles.row}>
