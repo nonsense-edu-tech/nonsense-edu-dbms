@@ -5,6 +5,7 @@ import { taoHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
 import { LOAI_GIAM_GIA_LABEL, tinhDoanhThuThuan } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { useToast } from "./ToastProvider";
+import SearchableSelect from "./SearchableSelect";
 import styles from "./Form.module.css";
 
 export type GhiDanhOption = {
@@ -40,6 +41,14 @@ export default function HopDongForm({
   const [loaiGiamGia, setLoaiGiamGia] = useState("khong");
   const [giaTriGiamGia, setGiaTriGiamGia] = useState("0");
 
+  const ghiDanhOptions = useMemo(
+    () =>
+      ghiDanhList.map((g) => ({
+        value: g.id,
+        label: `${g.ho_ten} (${g.ma_hoc_sinh}) — ${g.ten_lop ?? "?"} — ${g.chuong_trinh_ten}`,
+      })),
+    [ghiDanhList]
+  );
   const ghiDanhChon = ghiDanhList.find((g) => String(g.id) === ghiDanhId);
   const goiKhaDung = useMemo(
     () => (ghiDanhChon ? goiList.filter((g) => g.chuong_trinh_ma === ghiDanhChon.chuong_trinh_ma) : []),
@@ -55,6 +64,10 @@ export default function HopDongForm({
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    if (!ghiDanhId) {
+      setError("Vui lòng chọn học sinh.");
+      return;
+    }
     const form = e.currentTarget;
     const formData = new FormData(form);
 
@@ -88,21 +101,20 @@ export default function HopDongForm({
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
       <div className={styles.field}>
         <label htmlFor="ghi_danh_id" className={styles.label}>Học sinh — lượt ghi danh</label>
-        <select
-          id="ghi_danh_id" name="ghi_danh_id" required className={styles.select} disabled={isPending}
+        <SearchableSelect
+          id="ghi_danh_id"
+          name="ghi_danh_id"
+          options={ghiDanhOptions}
           value={ghiDanhId}
-          onChange={(e) => {
-            setGhiDanhId(e.target.value);
+          disabled={isPending}
+          required
+          placeholder="— Tìm và chọn học sinh —"
+          emptyText="Không tìm thấy học sinh nào."
+          onChange={(v) => {
+            setGhiDanhId(v);
             setGoiId("");
           }}
-        >
-          <option value="" disabled>— Chọn học sinh —</option>
-          {ghiDanhList.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.ho_ten} ({g.ma_hoc_sinh}) — {g.ten_lop ?? "?"} — {g.chuong_trinh_ten}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className={styles.field}>

@@ -1,0 +1,70 @@
+.wrap {
+  position: relative;
+}
+
+.input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  font-size: 14px;
+  color: var(--text-hi);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  width: 100%;
+  cursor: text;
+}
+
+.input::placeholder {
+  color: var(--text-lo);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.12);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 4px;
+}
+
+.option {
+  padding: 9px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-hi);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.option:hover,
+.optionActive {
+  background: rgba(245, 166, 35, 0.12);
+}
+
+.optionSelected {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--text-mid);
+}

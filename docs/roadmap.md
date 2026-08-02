@@ -6,6 +6,14 @@ vì hệ thống đã được xác định là ERP đa khối, không chỉ là
 giai đoạn tuyến tính ban đầu. Cập nhật trạng thái ở đây khi hoàn thành để
 Claude Code nắm được đang ở đâu.
 
+**Lưu ý:** có một roadmap RIÊNG, song song — "roadmap song song ERP/Vận
+hành" (file Excel `roadmap_song_song_ERP_va_van_hanh`, sheet "Roadmap chi
+tiết", mã việc dạng `E<số>.<số>-<số>`) — không nằm trong repo này, chỉ được
+người dùng nhắc tới qua chat. File `roadmap.md` này KHÔNG theo dõi các mã
+`E*` đó; khi 1 việc từ roadmap song song đó có ảnh hưởng tới schema/code
+trong repo (ví dụ `E1.1` → migration `0036`), chỉ ghi tắt 1 dòng tham chiếu
+ở đúng khối liên quan, không tái tạo toàn bộ roadmap Excel ở đây.
+
 ## Bản đồ: giai đoạn cũ (GĐ0-GĐ4) ↔ 5 khối (để tra cứu lịch sử)
 
 | Giai đoạn cũ | Nội dung | Khối tương ứng |
@@ -40,13 +48,17 @@ Claude Code nắm được đang ở đâu.
   Editor** (`information_schema.columns`, `pg_policies`, `pg_constraint`)
   thay vì tin vào `docs/dac-ta-he-thong.md` hay các file migration cũ — cả
   hai đều từng lệch so với thực tế (xem "Ghi chú migration" cuối file).
-- ✅ **Migration `0001`-`0035` đã viết và áp dụng** (xem `docs/CHANGELOG.md` để
-  biết chi tiết từng migration + trạng thái staging/production). `0001`-`0016`
-  (bảng mã gốc, users/RBAC, học sinh/lớp/ghi danh, học phí GĐ1, chi nhánh,
-  `quan_ly_chi_nhanh`) đã chạy trên CẢ staging lẫn production. `0017` trở đi
-  (vận hành lớp học/loại phòng/phòng học/buổi học, **ADR-003 chuyển UUID
-  8 phase**, các bản vá RLS/STT sau đó) — xem CHANGELOG để biết chính xác
-  migration nào đã lên production, migration nào MỚI CÓ Ở STAGING.
+- ✅ **CẬP NHẬT 31/07/2026 (xác nhận trực tiếp qua Supabase MCP, không suy
+  đoán từ tài liệu cũ):** migration `0001`-`0036` **đã áp dụng đầy đủ trên
+  CẢ staging lẫn production**, không còn khối nào "chỉ ở staging" như các
+  bản ghi cũ hơn của file này từng nói. Bao gồm cả `0017`-`0032` (vận hành
+  lớp học/loại phòng/phòng học/buổi học/**ADR-003 chuyển UUID 8 phase**) —
+  các đoạn dưới đây của file này (Khối 2, Khối 4) từng ghi "chỉ có trên
+  staging" cho các mục này, nay **không còn đúng**, xem ghi chú cập nhật tại
+  từng mục. `0036` (schema QA tầng nhẹ — đánh giá chất lượng đào tạo, việc
+  khác ngoài 5 khối ERP gốc, xem `CLAUDE.md` phần "roadmap song song
+  ERP/Vận hành") cũng đã lên production, xem Khối 2. Xem `docs/CHANGELOG.md`
+  để biết chi tiết từng migration + lịch sử các lần vá lệch sổ sách.
 - 📄 Kiến trúc chính thức: `docs/adr/ADR-002-mo-rong-tren-nen-production-that.md`
   (luật PK đã bị `docs/adr/ADR-003-chuyen-doi-uuid-toan-bo.md` thay — xem
   CLAUDE_new_22.07.26.md).
@@ -76,17 +88,21 @@ Claude Code nắm được đang ở đâu.
   `0016_vai_tro_quan_ly_chi_nhanh.sql`, **đã áp dụng thật trên cả staging lẫn
   production**. RLS thêm dạng policy MỚI (không sửa policy
   `admin_ts`/`master_admin` đang chạy).
-- 🔲 Điền các **bảng mã gốc** (Cấp học, Chương trình, Môn học, Hình thức, Dạng
-  câu) — có cấu trúc, **chưa có dữ liệu thật**.
+- ✅ **CẬP NHẬT 31/07/2026:** bảng mã gốc đã có dữ liệu thật trên production
+  (xác nhận qua Supabase MCP) — `cap_hoc` (2 dòng), `chuong_trinh` (4 dòng),
+  `mon_hoc` (18 dòng), `hinh_thuc` (5 dòng), `dang_cau` (8 dòng). Mục "🔲 chưa
+  có dữ liệu thật" trước đây không còn đúng.
 - 🔲 Cấu hình đăng nhập (giới hạn theo domain trung tâm nếu cần).
 - 🔲 Kiểm thử phân quyền qua **giao diện web thật** (đã kiểm qua SQL Editor,
   chưa test UI — cần chạy migration `0004` trước, xem Khối 2).
 
 ## Khối 2 — Học sinh & Enrollment
 
-**Trạng thái tổng quan (24/07/2026): phần lõi (CRUD + vòng đời ghi danh) đã
-hoàn thiện trên STAGING, CHƯA đưa lên production.** Đây là khối tiến bộ nhiều
-nhất tính đến nay.
+**Trạng thái tổng quan (CẬP NHẬT 31/07/2026): phần lõi (CRUD + vòng đời ghi
+danh) đã hoàn thiện và đã lên CẢ staging lẫn production** — xác nhận qua
+Supabase MCP: `lop` (6 dòng), `hoc_sinh` (69 dòng), `ghi_danh` (69 dòng) đều
+có dữ liệu thật trên production, không còn "chỉ ở staging" như bản ghi
+24/07/2026 trước đây. Đây là khối tiến bộ nhiều nhất tính đến nay.
 
 - ✅ Bảng `lop`/`hoc_sinh`/`ghi_danh` — khóa chính đã là `uuid` (ADR-003,
   xem Khối 5). Mã nghiệp vụ (`ma_lop` 9 số, `ma_hoc_sinh` 12 số, cột
@@ -119,9 +135,22 @@ nhất tính đến nay.
   (`FOR ALL`) có `deleted_at IS NULL` trong `USING` từng làm Postgres từ chối
   toàn bộ thao tác xoá mềm (vì USING của `FOR ALL` cũng chi phối SELECT) —
   chi tiết kỹ thuật xem `docs/CHANGELOG.md`.
-- ⚠️ Toàn bộ các mục ✅ ở trên **chỉ mới trên staging** — cần lặp lại đúng quy
-  trình đối chiếu số liệu (như ADR-003) trước khi đưa migration `0031`-`0035`
-  + code frontend liên quan lên production.
+- ✅ **CẬP NHẬT 31/07/2026:** migration `0031`-`0035` + code frontend liên
+  quan **đã lên production**, đối chiếu số liệu qua Supabase MCP khớp với
+  staging. Cảnh báo "chỉ mới trên staging" trước đây không còn đúng.
+- ✅ **Học bạ số / QA tầng nhẹ (migration `0036`, 31/07/2026)** — 3 bảng mới
+  `tieu_chi_danh_gia` (bảng mã rubric, **RỖNG** — chờ BGH/tổ chuyên môn điền
+  nội dung), `danh_gia_hoc_sinh` (sự kiện đánh giá 3 trục Kiến thức/Kỹ
+  năng/Thái độ), `danh_gia_tieu_chi` (nối M-N checklist) — đã lên CẢ staging
+  lẫn production, RLS đã bật đúng thiết kế (6 policy). Đây là mục E1.1 của
+  **roadmap song song ERP/Vận hành** (file Excel riêng, ngoài phạm vi 5 khối
+  ERP gốc trong file này) — chưa mở UI nhập liệu thật (E1.4, chờ rubric
+  chính thức) và chưa có `nang_luc`/`cau_hoi_nang_luc`/`bai_lam` (E1.2, phụ
+  thuộc khung năng lực chưa ban hành). Xem `CHANGELOG.md` 2026-07-30/31 và
+  `docs/adr/ADR-004-hang-rao-parity-migration-db-code.md` (Mục 6, đợt cập
+  nhật 31/07) / `docs/adr/ADR-005-ci-tu-dong-apply-migration-expand.md` để
+  biết quá trình vá 3 lớp blocker khi đưa lên production (bug parity-check +
+  2 lớp bookkeeping).
 - 🔲 Tra cứu ID; xuất file (ID, tên, ảnh) đúng định dạng Hikvision.
 - 🔲 Import vào Hikvision, test nhận diện khuôn mặt, nghiệm thu.
 - 🔲 Kéo/nhập dữ liệu chấm công (API HikCentral), bảng log điểm danh.
@@ -135,9 +164,10 @@ nhất tính đến nay.
 
 ## Khối 3 — Tài liệu & học thuật
 
-- ✅ Bảng mã gốc `cap_hoc`, `chuong_trinh`, `mon_hoc`, `hinh_thuc`,
-  `dang_cau`, `hoc_phan`, `bai_hoc` — có cấu trúc sẵn trên production,
-  **chưa điền dữ liệu thật** (tên cấp học, mã chương trình V-ACT...).
+- ✅ Bảng mã gốc `cap_hoc`, `chuong_trinh`, `mon_hoc`, `hinh_thuc`, `dang_cau`
+  — có cấu trúc sẵn trên production, **đã có dữ liệu thật** (xem Khối 1,
+  cập nhật 31/07/2026). Riêng `hoc_phan`/`bai_hoc` — có cấu trúc, **vẫn
+  chưa có dữ liệu** (0 dòng, xác nhận qua Supabase MCP 31/07/2026).
 - ✅ Ngân hàng câu hỏi: `ngu_lieu`, `cau_hoi`, `lua_chon`, `de`, `de_cau_hoi`
   — schema đã tồn tại trên production (không hoàn toàn khớp file
   `0003_ngan_hang_cau_hoi.sql` trong repo, xem "Ghi chú migration").
@@ -145,8 +175,9 @@ nhất tính đến nay.
   không phải 16 số như `docs/dac-ta-he-thong.md` và file `0003` mô tả — vị
   trí ký tự nào hấp thụ thêm 1 số **chưa xác định**, cần đối chiếu thêm
   trước khi sửa tài liệu (xem hướng dẫn trong `docs/dac-ta-he-thong.md`).
-- 🔲 **Bảng nối `chuong_trinh_mon_hoc`** (Model C, ADR-001) — trục chính để
-  môn học dùng chung giữa nhiều chương trình — **chưa tồn tại**, cần tạo mới.
+- ✅ **CẬP NHẬT 31/07/2026:** bảng nối `chuong_trinh_mon_hoc` (Model C,
+  ADR-001) **đã tồn tại và có dữ liệu thật trên production** (4 dòng, xác
+  nhận qua Supabase MCP) — mục "🔲 chưa tồn tại" trước đây không còn đúng.
 - 🔲 Bảng `tai_lieu` (ID 14 số) + UNIQUE; chức năng tạo ID; lưu file + metadata.
 - 🔲 Tạo ID câu hỏi qua UI, tự đánh STT theo tổ hợp; form nhập đủ 8 dạng câu.
 - 🔲 Ghép đề qua UI: `de` + `de_cau_hoi`.
@@ -167,10 +198,11 @@ nhất tính đến nay.
   của `users` không cho đọc tên người khác, nên chốt tên tại thời điểm tạo.
 - ✅ **Vận hành lớp học** (`loai_phong`, `phong_hoc`, `buoi_hoc`,
   `buoi_hoc_chi_phi`) — đã build, RLS ẩn đơn giá/chi phí khỏi
-  `quan_ly_chi_nhanh`/`gv` đúng như ADR-002 Mục 4 yêu cầu. **Chỉ có trên
-  staging** (4 bảng này nằm ngoài phạm vi ADR-003 gốc, KHÔNG có trên
-  production — quyết định đã chốt, xem CHANGELOG). Đã vá lỗi kiểu ID
+  `quan_ly_chi_nhanh`/`gv` đúng như ADR-002 Mục 4 yêu cầu. Đã vá lỗi kiểu ID
   (`number`→`uuid`) và cùng lỗi RLS xoá mềm như `lop`/`hoc_sinh`.
+  **CẬP NHẬT 31/07/2026:** đã lên CẢ staging lẫn production (xác nhận qua
+  Supabase MCP) — cảnh báo "chỉ có trên staging, KHÔNG có trên production"
+  trước đây không còn đúng.
 - ✅ Toast thông báo thành công/thất bại cho `goi_hoc_phi`/`hop_dong_hoc_phi`/
   `phieu_thu`.
 - 🟡 Đang rà soát xem `hoc-phi/*` (gói/hợp đồng/thu tiền) có dính cùng lỗi
@@ -266,7 +298,9 @@ nhất tính đến nay.
 - `0011`-`0014`: module tài chính giai đoạn 1 — xem Khối 4.
 - `0015`-`0016`: chi nhánh + vai trò `quan_ly_chi_nhanh` — viết dựa trên đối
   chiếu SQL trực tiếp với production (`DBMS Project (Jul2026)`) ngày
-  22/07/2026, **chưa áp dụng lên bất kỳ môi trường nào**.
+  22/07/2026. **CẬP NHẬT:** đã áp dụng trên cả staging lẫn production từ lâu
+  (xem Khối 1) — ghi chú "chưa áp dụng lên bất kỳ môi trường nào" ở đây là
+  từ thời điểm viết file gốc, không còn đúng.
 
 **Việc nên làm sau này (chưa làm, không nằm trong phạm vi tính năng gấp hôm
 nay):** dùng `supabase db pull` (khi có Supabase CLI) hoặc

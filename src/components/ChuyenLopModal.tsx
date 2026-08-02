@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { chuyenLop } from "@/app/dashboard/hoc-sinh/actions";
 import { useToast } from "./ToastProvider";
 import type { HocSinhRow } from "./HocSinhTable";
+import SearchableSelect from "./SearchableSelect";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
 
@@ -19,15 +20,22 @@ export default function ChuyenLopModal({
   onClose: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [lopMoiId, setLopMoiId] = useState("");
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
   const lopDich = lopList.filter((l) => l.id !== hocSinh.lop_hien_tai_id);
+  const lopDichOptions = useMemo(
+    () =>
+      lopDich.map((lop) => ({
+        value: lop.id,
+        label: lop.ten_lop ? `${lop.ma_lop} — ${lop.ten_lop}` : lop.ma_lop,
+      })),
+    [lopDich]
+  );
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const formData = new FormData(e.currentTarget);
-    const lopMoiId = String(formData.get("lop_moi_id") ?? "").trim();
     if (!lopMoiId) {
       setError("Vui lòng chọn lớp đích.");
       return;
@@ -63,15 +71,17 @@ export default function ChuyenLopModal({
 
           <div className={formStyles.field}>
             <label htmlFor="lop_moi_id" className={formStyles.label}>Lớp đích</label>
-            <select id="lop_moi_id" name="lop_moi_id" required className={formStyles.select} disabled={isPending} defaultValue="">
-              <option value="" disabled>— Chọn lớp đích —</option>
-              {lopDich.map((lop) => (
-                <option key={lop.id} value={lop.id}>
-                  {lop.ma_lop}
-                  {lop.ten_lop ? ` — ${lop.ten_lop}` : ""}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              id="lop_moi_id"
+              name="lop_moi_id"
+              options={lopDichOptions}
+              value={lopMoiId}
+              disabled={isPending}
+              required
+              placeholder="— Tìm và chọn lớp đích —"
+              emptyText="Không tìm thấy lớp nào."
+              onChange={setLopMoiId}
+            />
           </div>
 
           {error && <div className={formStyles.errorBox} role="alert">{error}</div>}
