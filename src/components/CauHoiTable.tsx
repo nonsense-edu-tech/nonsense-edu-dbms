@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { xoaCauHoi, nopDuyetCauHoi, duyetCauHoi, tuChoiDuyetCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
+import type { NangLucOption } from "@/app/dashboard/hoc-lieu/cau-hoi/nangLucActions";
 import { useToast } from "./ToastProvider";
 import CauHoiEditModal from "./CauHoiEditModal";
+import CauHoiNangLucModal, { type TienTrinhOption } from "./CauHoiNangLucModal";
 import { TRANG_THAI_LABEL, TRANG_THAI_BADGE } from "./trangThaiCauHoi";
 import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
@@ -30,13 +32,18 @@ export default function CauHoiTable({
   canWrite,
   canDuyet,
   currentUserId,
+  nangLucOptions,
+  tienTrinhOptions,
 }: {
   list: CauHoiRow[];
   canWrite: boolean;
   canDuyet: boolean;
   currentUserId: string;
+  nangLucOptions: NangLucOption[];
+  tienTrinhOptions: TienTrinhOption[];
 }) {
   const [editingRow, setEditingRow] = useState<CauHoiRow | null>(null);
+  const [nangLucRow, setNangLucRow] = useState<CauHoiRow | null>(null);
   const showActionsCol = canWrite || canDuyet;
 
   return (
@@ -65,12 +72,22 @@ export default function CauHoiTable({
               canDuyet={canDuyet}
               currentUserId={currentUserId}
               onEdit={() => setEditingRow(ch)}
+              onNangLuc={() => setNangLucRow(ch)}
             />
           ))}
         </tbody>
       </table>
 
       {editingRow && <CauHoiEditModal cauHoi={editingRow} onClose={() => setEditingRow(null)} />}
+      {nangLucRow && (
+        <CauHoiNangLucModal
+          cauHoiId={nangLucRow.id}
+          maCauHoi={nangLucRow.ma_cau_hoi}
+          nangLucOptions={nangLucOptions}
+          tienTrinhOptions={tienTrinhOptions}
+          onClose={() => setNangLucRow(null)}
+        />
+      )}
     </div>
   );
 }
@@ -81,12 +98,14 @@ function CauHoiRowItem({
   canDuyet,
   currentUserId,
   onEdit,
+  onNangLuc,
 }: {
   cauHoi: CauHoiRow;
   canWrite: boolean;
   canDuyet: boolean;
   currentUserId: string;
   onEdit: () => void;
+  onNangLuc: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -191,6 +210,9 @@ function CauHoiRowItem({
             )}
             {canWrite && (
               <button type="button" className={styles.btnEdit} onClick={onEdit} disabled={isPending}>Sửa</button>
+            )}
+            {canWrite && (
+              <button type="button" className={styles.btnEdit} onClick={onNangLuc} disabled={isPending}>Năng lực</button>
             )}
             {canWrite && (
               <button type="button" className={styles.btnDelete} onClick={handleDelete} disabled={isPending}>

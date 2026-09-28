@@ -27,6 +27,8 @@ export default async function CauHoiPage() {
     { data: chuDeList },
     { data: dangCauList },
     { data: cauHoiList },
+    { data: nangLucList },
+    { data: tienTrinhList },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
@@ -44,6 +46,10 @@ export default async function CauHoiPage() {
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
+    // Chỉ mã năng lực còn hiệu lực (hieu_luc_den null) — mã đã đóng không cho
+    // gắn mới, xem quy ước ở areas/khung-nang-luc.md.
+    supabase.from("nang_luc").select("id, ma_nang_luc, ten, mien").is("hieu_luc_den", null).order("mien").order("ma_nang_luc"),
+    supabase.from("tien_trinh").select("ma, ten").order("ma"),
   ]);
 
   const isActive = profile?.trang_thai === "active";
@@ -128,7 +134,14 @@ export default async function CauHoiPage() {
           chính mình). Giáo viên chỉ thấy câu hỏi thuộc môn/cấp học được phân quyền.
         </p>
         {cauHoiRows.length > 0 ? (
-          <CauHoiTable list={cauHoiRows} canWrite={canWrite} canDuyet={canDuyet} currentUserId={user.id} />
+          <CauHoiTable
+            list={cauHoiRows}
+            canWrite={canWrite}
+            canDuyet={canDuyet}
+            currentUserId={user.id}
+            nangLucOptions={nangLucList ?? []}
+            tienTrinhOptions={tienTrinhList ?? []}
+          />
         ) : (
           <p className={styles.empty}>Chưa có câu hỏi nào.</p>
         )}
