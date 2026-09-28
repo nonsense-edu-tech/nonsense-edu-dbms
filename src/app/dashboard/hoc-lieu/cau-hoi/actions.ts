@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "@/components/dangCauOptions";
+import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau, type LoaiDangCau } from "@/components/dangCauOptions";
 
 type CauHoi = {
   id: string;
@@ -10,7 +10,10 @@ type CauHoi = {
 };
 
 export type TaoCauHoiResult = { error: string } | { data: CauHoi };
+export type SuaCauHoiResult = { error: string } | { ok: true };
 export type XoaCauHoiResult = { error: string } | { ok: true };
+export type LuaChonRow = { id: string; thu_tu: number; noi_dung: string; la_dap_an: boolean };
+export type LayLuaChonResult = { error: string } | { data: LuaChonRow[] };
 
 function docSoNguyen(formData: FormData, key: string, ten: string, min: number, max: number): number | { error: string } {
   const raw = formData.get(key);
@@ -20,6 +23,47 @@ function docSoNguyen(formData: FormData, key: string, ten: string, min: number, 
     return { error: `${ten} không hợp lệ.` };
   }
   return value;
+}
+
+type DapAnDaXuLy = { dapAnText: string | null; luaChonList: { noi_dung: string; la_dap_an: boolean }[] };
+
+// Đọc + validate phần đáp án theo đúng dạng câu — dùng chung cho tạo mới và
+// sửa câu hỏi (cấu trúc form giống hệt nhau, xem DapAnFields.tsx).
+function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | { error: string } {
+  if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
+    const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
+    const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
+    const luaChonList = luaChonNoiDung
+      .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)) }))
+      .filter((lc) => lc.noi_dung !== "");
+
+    if (loaiDangCau === "dung_sai") {
+      if (luaChonList.length < 1) return { error: "Vui lòng nhập ít nhất 1 mệnh đề." };
+    } else {
+      if (luaChonList.length < 2) return { error: "Trắc nghiệm cần ít nhất 2 lựa chọn." };
+      const soDapAnDung = luaChonList.filter((lc) => lc.la_dap_an).length;
+      if (loaiDangCau === "single" && soDapAnDung !== 1) {
+        return { error: "Trắc nghiệm 1 đáp án phải đánh dấu đúng 1 lựa chọn đúng." };
+      }
+      if (loaiDangCau === "multi" && soDapAnDung < 1) {
+        return { error: "Trắc nghiệm nhiều đáp án cần đánh dấu ít nhất 1 lựa chọn đúng." };
+      }
+    }
+    return { dapAnText: null, luaChonList };
+  }
+
+  if (loaiDangCau === "dien_khuyet") {
+    const dapAnList = formData
+      .getAll("dien_khuyet_dap_an")
+      .map((v) => String(v).trim())
+      .filter((v) => v !== "");
+    if (dapAnList.length < 1) return { error: "Vui lòng nhập ít nhất 1 đáp án cho chỗ trống." };
+    return { dapAnText: dapAnList.join(" | "), luaChonList: [] };
+  }
+
+  // "text" (trả lời ngắn/tự luận) — đáp án tuỳ chọn, tự luận có thể để trống.
+  const dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
+  return { dapAnText, luaChonList: [] };
 }
 
 export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
@@ -71,40 +115,9 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
 
   // Cấu trúc đáp án phụ thuộc dạng câu — xem dangCauOptions.ts (dùng chung UI/server).
   const loaiDangCau = layLoaiDangCau(dangCau);
-
-  let dapAnText: string | null = null;
-  let luaChonList: { noi_dung: string; la_dap_an: boolean }[] = [];
-
-  if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
-    const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
-    const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
-    luaChonList = luaChonNoiDung
-      .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)) }))
-      .filter((lc) => lc.noi_dung !== "");
-
-    if (loaiDangCau === "dung_sai") {
-      if (luaChonList.length < 1) return { error: "Vui lòng nhập ít nhất 1 mệnh đề." };
-    } else {
-      if (luaChonList.length < 2) return { error: "Trắc nghiệm cần ít nhất 2 lựa chọn." };
-      const soDapAnDung = luaChonList.filter((lc) => lc.la_dap_an).length;
-      if (loaiDangCau === "single" && soDapAnDung !== 1) {
-        return { error: "Trắc nghiệm 1 đáp án phải đánh dấu đúng 1 lựa chọn đúng." };
-      }
-      if (loaiDangCau === "multi" && soDapAnDung < 1) {
-        return { error: "Trắc nghiệm nhiều đáp án cần đánh dấu ít nhất 1 lựa chọn đúng." };
-      }
-    }
-  } else if (loaiDangCau === "dien_khuyet") {
-    const dapAnList = formData
-      .getAll("dien_khuyet_dap_an")
-      .map((v) => String(v).trim())
-      .filter((v) => v !== "");
-    if (dapAnList.length < 1) return { error: "Vui lòng nhập ít nhất 1 đáp án cho chỗ trống." };
-    dapAnText = dapAnList.join(" | ");
-  } else {
-    // "text" (trả lời ngắn/tự luận) — đáp án tuỳ chọn, tự luận có thể để trống.
-    dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
-  }
+  const dapAn = docDapAn(formData, loaiDangCau);
+  if ("error" in dapAn) return dapAn;
+  const { dapAnText, luaChonList } = dapAn;
 
   // Cấp mã câu hỏi qua RPC — hàm này cũng xác nhận học phần/bài học/chủ đề/dạng câu
   // thật sự thuộc đúng môn học/cấp học đã chọn (chặn dữ liệu rác ngay ở tầng DB).
@@ -164,6 +177,90 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
 
   revalidatePath("/dashboard/hoc-lieu/cau-hoi");
   return { data: cauHoi as CauHoi };
+}
+
+// Lấy lựa chọn/mệnh đề hiện có của 1 câu hỏi — gọi khi mở modal sửa để prefill
+// (không fetch kèm theo danh sách câu hỏi vì phần lớn sẽ không được mở sửa).
+export async function layLuaChonCauHoi(cauHoiId: string): Promise<LayLuaChonResult> {
+  const supabase = await createClient();
+
+  if (!cauHoiId) return { error: "Thiếu ID câu hỏi." };
+
+  const { data, error } = await supabase
+    .from("lua_chon")
+    .select("id, thu_tu, noi_dung, la_dap_an")
+    .eq("cau_hoi_id", cauHoiId)
+    .order("thu_tu");
+
+  if (error) return { error: mapDbError(error.message) };
+  return { data: (data ?? []) as LuaChonRow[] };
+}
+
+export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Chưa đăng nhập." };
+
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "Thiếu ID câu hỏi." };
+
+  const noiDung = String(formData.get("noi_dung") ?? "").trim();
+  if (!noiDung) return { error: "Nội dung câu hỏi không được để trống." };
+
+  const doKhoRaw = String(formData.get("do_kho") ?? "").trim();
+  const doKho = doKhoRaw ? Number(doKhoRaw) : null;
+  if (doKho !== null && (!Number.isInteger(doKho) || doKho < 1 || doKho > 5)) {
+    return { error: "Độ khó phải từ 1 đến 5." };
+  }
+
+  const loiGiai = String(formData.get("loi_giai") ?? "").trim() || null;
+
+  // Phân loại câu hỏi (cấp học/môn/học phần/bài học/chủ đề/dạng câu) KHÔNG
+  // cho sửa — mã câu hỏi gắn cố định theo phân loại lúc tạo, giống quy ước
+  // ma_hoc_sinh/ma_lop bất biến. Lấy dang_cau thật từ DB (không tin form) để
+  // biết đúng cấu trúc đáp án cần đọc.
+  const { data: cauHoiHienTai, error: layError } = await supabase
+    .from("cau_hoi")
+    .select("dang_cau")
+    .eq("id", id)
+    .single();
+  if (layError || !cauHoiHienTai) return { error: "Không tìm thấy câu hỏi." };
+
+  const loaiDangCau = layLoaiDangCau(cauHoiHienTai.dang_cau);
+  const dapAn = docDapAn(formData, loaiDangCau);
+  if ("error" in dapAn) return dapAn;
+  const { dapAnText, luaChonList } = dapAn;
+
+  const { error: updateError } = await supabase
+    .from("cau_hoi")
+    .update({ noi_dung: noiDung, do_kho: doKho, loi_giai: loiGiai, dap_an_text: dapAnText })
+    .eq("id", id);
+
+  if (updateError) return { error: mapDbError(updateError.message) };
+
+  if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
+    // Thay toàn bộ lựa chọn/mệnh đề cũ bằng danh sách mới — xoá rồi chèn lại
+    // (không có cách "diff" gọn qua PostgREST). Rủi ro nhỏ: nếu insert lỗi
+    // giữa chừng sau khi đã xoá, câu hỏi tạm thời rỗng lựa chọn — hiếm gặp,
+    // người dùng sẽ thấy lỗi và có thể thêm lại ngay.
+    const { error: xoaLuaChonError } = await supabase.from("lua_chon").delete().eq("cau_hoi_id", id);
+    if (xoaLuaChonError) return { error: mapDbError(xoaLuaChonError.message) };
+
+    const { error: themLuaChonError } = await supabase.from("lua_chon").insert(
+      luaChonList.map((lc, idx) => ({
+        cau_hoi_id: id,
+        thu_tu: idx + 1,
+        noi_dung: lc.noi_dung,
+        la_dap_an: lc.la_dap_an,
+      }))
+    );
+    if (themLuaChonError) return { error: mapDbError(themLuaChonError.message) };
+  }
+
+  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  return { ok: true };
 }
 
 export async function xoaCauHoi(id: string): Promise<XoaCauHoiResult> {

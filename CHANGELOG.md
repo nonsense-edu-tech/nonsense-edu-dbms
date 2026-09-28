@@ -20,6 +20,36 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.3: sửa câu hỏi (edit)
+
+**Tóm tắt:** Thêm chức năng sửa câu hỏi trong ngân hàng câu hỏi (nút "Sửa"
+trên mỗi dòng ở `/dashboard/hoc-lieu/cau-hoi`, mở modal). Phạm vi sửa: **nội
+dung, độ khó, lời giải, đáp án** — **KHÔNG** cho sửa phân loại (cấp học/
+chương trình/môn/học phần/bài học/chủ đề/dạng câu), vì `ma_cau_hoi` gắn cố
+định theo phân loại lúc tạo (giống quy ước `ma_hoc_sinh`/`ma_lop` bất biến).
+Server action `suaCauHoi` tự lấy `dang_cau` thật từ DB (không tin form) để
+biết đúng cấu trúc đáp án cần đọc/validate.
+
+- Đáp án dạng lựa chọn/mệnh đề (Trắc nghiệm 1 đáp án / nhiều đáp án / Đúng-Sai
+  từng ý): sửa bằng chiến lược xoá hết `lua_chon` cũ của câu hỏi rồi chèn lại
+  danh sách mới — xác nhận qua SQL thật là RLS bảng `lua_chon` đã có sẵn
+  policy `p_write_delete` (vai trò master_admin/admin_ht/truong_bm/gv), nên
+  **không cần migration/policy mới**.
+- Đáp án Điền khuyết: parse lại `dap_an_text` (join bằng ` | `) để prefill
+  từng ô, ghi đè bằng danh sách mới khi lưu.
+- Trích xuất `DapAnFields` (component dùng chung cho cả form tạo lẫn modal
+  sửa) từ code trước đó nằm rời rạc trong `CauHoiForm` — tránh lệch logic UI
+  giữa tạo/sửa, giống nguyên tắc đã áp dụng cho `dangCauOptions.ts`.
+- Modal sửa có toast (`useToast`) cho cả thành công/thất bại, đúng quy ước dự
+  án.
+
+**Migration:** không có (chỉ đổi code frontend + server action, RLS đã đủ).
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** 🔲 chưa — đang mở PR, chờ merge.
+**Commit:** `ea8aa21`.
+
+---
+
 ## 2026-09-28 — Đẩy bản vá 5.2 lên production (PR #19, vá lỗ hổng merge PR #18)
 
 **Tóm tắt:** PR #18 (trang tạo câu hỏi, commit `3a72546`) bị merge vào `main`
@@ -449,7 +479,7 @@ tag vào `0036` — không đổi schema).
 giống ADR-004 Mục 4). **Production:** 🔲 chưa chạy lần nào (pipeline mới,
 chờ merge + chờ tạo Environment `production-db` trước khi job đầu tiên có
 thể chạy thật).
-**Commit:** (điền sau khi commit).
+**Commit:** `ea8aa21`.
 
 ## 2026-07-30 — Migration 0036: schema QA tầng nhẹ (đánh giá chất lượng đào tạo, E1.1)
 

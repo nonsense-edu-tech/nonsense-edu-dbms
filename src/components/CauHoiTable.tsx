@@ -3,18 +3,23 @@
 import { useState, useTransition } from "react";
 import { xoaCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
 import { useToast } from "./ToastProvider";
+import CauHoiEditModal from "./CauHoiEditModal";
 import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
 export type CauHoiRow = {
   id: string;
   ma_cau_hoi: string;
   noi_dung: string;
+  do_kho: number | null;
+  loi_giai: string | null;
+  dap_an_text: string | null;
   trang_thai: string;
   cap_hoc_ten: string;
   mon_hoc_ten: string;
   hoc_phan_ten: string;
   bai_hoc_ten: string;
   chu_de_ten: string;
+  dang_cau_ma: number;
   dang_cau_ten: string;
 };
 
@@ -33,6 +38,8 @@ const TRANG_THAI_BADGE: Record<string, string> = {
 };
 
 export default function CauHoiTable({ list, canWrite }: { list: CauHoiRow[]; canWrite: boolean }) {
+  const [editingRow, setEditingRow] = useState<CauHoiRow | null>(null);
+
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -52,15 +59,25 @@ export default function CauHoiTable({ list, canWrite }: { list: CauHoiRow[]; can
         </thead>
         <tbody>
           {list.map((ch) => (
-            <CauHoiRowItem key={ch.id} cauHoi={ch} canWrite={canWrite} />
+            <CauHoiRowItem key={ch.id} cauHoi={ch} canWrite={canWrite} onEdit={() => setEditingRow(ch)} />
           ))}
         </tbody>
       </table>
+
+      {editingRow && <CauHoiEditModal cauHoi={editingRow} onClose={() => setEditingRow(null)} />}
     </div>
   );
 }
 
-function CauHoiRowItem({ cauHoi, canWrite }: { cauHoi: CauHoiRow; canWrite: boolean }) {
+function CauHoiRowItem({
+  cauHoi,
+  canWrite,
+  onEdit,
+}: {
+  cauHoi: CauHoiRow;
+  canWrite: boolean;
+  onEdit: () => void;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
@@ -98,6 +115,7 @@ function CauHoiRowItem({ cauHoi, canWrite }: { cauHoi: CauHoiRow; canWrite: bool
       {canWrite && (
         <td>
           <div className={styles.rowActions}>
+            <button type="button" className={styles.btnEdit} onClick={onEdit} disabled={isPending}>Sửa</button>
             <button type="button" className={styles.btnDelete} onClick={handleDelete} disabled={isPending}>
               {isPending ? "Đang xoá…" : "Xoá"}
             </button>
