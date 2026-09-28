@@ -29,7 +29,8 @@
 }
 
 .input,
-.select {
+.select,
+.textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -41,18 +42,26 @@
   width: 100%;
 }
 
-.input::placeholder {
+.textarea {
+  font-family: inherit;
+  resize: vertical;
+}
+
+.input::placeholder,
+.textarea::placeholder {
   color: var(--text-lo);
 }
 
 .input:focus,
-.select:focus {
+.select:focus,
+.textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.12);
 }
 
 .input:disabled,
-.select:disabled {
+.select:disabled,
+.textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

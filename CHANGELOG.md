@@ -20,6 +20,34 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.1: giao diện quản lý Chủ đề (`/dashboard/hoc-lieu/chu-de`)
+
+**Tóm tắt:** Bắt đầu Bước 5 (giao diện nhập liệu ngân hàng câu hỏi GĐ3) bằng
+module quản lý **Chủ đề** — bảng mã gốc `chu_de` (thêm ở migration `0038`,
+xem mục riêng khi PR đó merge) là điều kiện bắt buộc để RPC `cap_ma_cau_hoi()`
+cấp mã câu hỏi 17 số hoạt động, nên làm trước trang nhập câu hỏi.
+
+Module mới `src/app/dashboard/hoc-lieu/` (trang tổng quan + `chu-de/`), theo
+đúng pattern thật của repo (Server Actions trong `actions.ts`, CSS Modules,
+`useToast()` cho mọi action tạo/sửa/xoá) — không dùng react-hook-form/zod/
+shadcn như dự kiến ban đầu (giả định sai, đã sửa lại kế hoạch trước khi code).
+Form tạo chủ đề chọn môn học (gộp hiển thị cấp học), nhập mã 1-99 + tên + mô
+tả; bảng tra cứu có sửa/xoá mềm. Quyền ghi: `master_admin`/`admin_ht`/
+`truong_bm` (khớp policy `p_write_chu_de`); đọc mở cho mọi vai trò đã đăng
+nhập (khớp `p_read_chu_de`, không hạn chế theo phạm vi môn vì danh mục chủ đề
+không nhạy cảm). Thêm class `.textarea` dùng chung vào `Form.module.css`
+(module đầu tiên cần ô nhập nhiều dòng).
+
+`npm run build` qua, không lỗi TypeScript/ESLint trong các file mới.
+
+**Migration:** không có (chỉ code frontend, dùng bảng `chu_de` đã có từ `0038`).
+**Staging:** không áp dụng (không có migration).
+**Production:** không áp dụng (không có migration) — chờ deploy qua Vercel khi
+merge `main` như thường lệ.
+**Commit:** `d2aff69`.
+
+---
+
 ## 2026-09-28 — Ngân hàng câu hỏi GĐ3 Bước 2: vòng đời + khung năng lực + RLS theo phạm vi (0038-0040)
 
 **⚠️ VI PHẠM QUY TRÌNH ADR-004 (ghi nhận minh bạch):** cả 3 migration dưới đây
@@ -85,7 +113,7 @@ theo yêu cầu người dùng, để dành cho module quản lý người dùng
 coi đợt này là "xong" theo đúng ADR-004 — ghi nhận là nợ kỹ thuật mở).
 **Production:** ✅ đã áp dụng thật (28/09/2026) — nhưng qua đường TAY, vi phạm
 ADR-004 luật (a), khắc phục sổ sách như mô tả ở trên trong cùng ngày.
-**Commit:** (điền sau khi commit).
+**Commit:** `954d425` (merge `96b9617` trên `main`, PR #15).
 
 ---
 
