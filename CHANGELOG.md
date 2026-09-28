@@ -20,6 +20,34 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.1: giao diện quản lý Chủ đề (`/dashboard/hoc-lieu/chu-de`)
+
+**Tóm tắt:** Bắt đầu Bước 5 (giao diện nhập liệu ngân hàng câu hỏi GĐ3) bằng
+module quản lý **Chủ đề** — bảng mã gốc `chu_de` (thêm ở migration `0038`,
+xem mục riêng khi PR đó merge) là điều kiện bắt buộc để RPC `cap_ma_cau_hoi()`
+cấp mã câu hỏi 17 số hoạt động, nên làm trước trang nhập câu hỏi.
+
+Module mới `src/app/dashboard/hoc-lieu/` (trang tổng quan + `chu-de/`), theo
+đúng pattern thật của repo (Server Actions trong `actions.ts`, CSS Modules,
+`useToast()` cho mọi action tạo/sửa/xoá) — không dùng react-hook-form/zod/
+shadcn như dự kiến ban đầu (giả định sai, đã sửa lại kế hoạch trước khi code).
+Form tạo chủ đề chọn môn học (gộp hiển thị cấp học), nhập mã 1-99 + tên + mô
+tả; bảng tra cứu có sửa/xoá mềm. Quyền ghi: `master_admin`/`admin_ht`/
+`truong_bm` (khớp policy `p_write_chu_de`); đọc mở cho mọi vai trò đã đăng
+nhập (khớp `p_read_chu_de`, không hạn chế theo phạm vi môn vì danh mục chủ đề
+không nhạy cảm). Thêm class `.textarea` dùng chung vào `Form.module.css`
+(module đầu tiên cần ô nhập nhiều dòng).
+
+`npm run build` qua, không lỗi TypeScript/ESLint trong các file mới.
+
+**Migration:** không có (chỉ code frontend, dùng bảng `chu_de` đã có từ `0038`).
+**Staging:** không áp dụng (không có migration).
+**Production:** không áp dụng (không có migration) — chờ deploy qua Vercel khi
+merge `main` như thường lệ.
+**Commit:** (điền sau khi commit).
+
+---
+
 ## 2026-08-01 — Vá lỗ hổng tự duyệt hợp đồng học phí (0037)
 
 **Tóm tắt:** Audit 01/08/2026 phát hiện trigger `trg_hop_dong_forbid_soft_delete`
