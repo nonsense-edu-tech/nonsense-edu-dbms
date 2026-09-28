@@ -20,6 +20,29 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Đẩy bản vá 5.2 lên production (PR #19, vá lỗ hổng merge PR #18)
+
+**Tóm tắt:** PR #18 (trang tạo câu hỏi, commit `3a72546`) bị merge vào `main`
+**trước khi** commit bản vá `d26cde3` (sửa UI đáp án theo dạng câu, xem mục
+bên dưới) kịp đẩy lên cùng nhánh — tức production đã chạy bản có lỗ hổng
+"Trắc nghiệm 1 đáp án cho tick nhiều đáp án" trong một khoảng thời gian ngắn.
+Mở PR #19 từ cùng nhánh `feat/hoc-lieu-cau-hoi-tao` (lúc này đã có thêm commit
+`d26cde3` phía trên `3a72546`) để đưa nốt bản vá vào `main`, merge qua đúng
+pipeline (không áp tay) — khớp ADR-004. Xác nhận Vercel build production
+thành công sau merge (`fdd58b7`).
+
+Không phải lỗi quy trình ADR-004 (migration/schema) — chỉ là thứ tự merge PR
+code frontend bị lệch với thứ tự push commit trong cùng 1 phiên làm việc.
+Ghi lại để nhắc: **luôn xác nhận PR đã có đủ commit muốn merge trước khi bấm
+merge**, tránh lặp lại tình huống merge nhánh cũ hơn commit mới nhất đã push.
+
+**Migration:** không có.
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** ✅ đã build & deploy thành công (`fdd58b7`).
+**Commit:** `fdd58b7` (merge PR #19 trên `main`).
+
+---
+
 ## 2026-09-28 — Bước 5.2 (bản vá): UI đáp án theo đúng từng dạng câu
 
 **Tóm tắt:** Phát hiện qua kiểm thử thủ công (trên PR #18 chưa merge): đổi
