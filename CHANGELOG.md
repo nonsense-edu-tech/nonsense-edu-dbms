@@ -20,6 +20,40 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.4: luồng nộp duyệt/duyệt câu hỏi
+
+**Tóm tắt:** Thêm luồng trạng thái `nhap → cho_duyet → da_duyet` cho câu hỏi
+trong ngân hàng câu hỏi, với 3 hành động mới trên `/dashboard/hoc-lieu/cau-hoi`:
+
+- **Nộp duyệt** (Nháp → Chờ duyệt): bất kỳ vai trò ghi nào (master_admin/
+  admin_ht/truong_bm/gv), khớp quy ước sửa/xoá hiện có (không giới hạn theo
+  người tạo).
+- **Duyệt** (Chờ duyệt → Đã duyệt): chỉ Admin học thuật/Trưởng bộ môn/Master
+  Admin — nút "Duyệt" ẩn/disable với gv và với chính người tạo câu hỏi đó
+  (không tự duyệt được).
+- **Từ chối** (Chờ duyệt → Nháp): trả về để người tạo sửa lại; chưa lưu lý do
+  từ chối (không có cột phù hợp — `cau_hoi.tien_trinh` là khoá ngoại của
+  khung năng lực, không phải ghi chú duyệt) — ghi nợ kỹ thuật nếu cần sau.
+
+**Migration `0041_chan_gv_tu_duyet_cau_hoi.sql`:** thêm trigger
+`trg_cau_hoi_chan_gv_tu_duyet` chặn chuyển `trang_thai` sang `da_duyet` nếu
+vai trò người thực hiện không phải master_admin/admin_ht/truong_bm — vá lỗ
+hổng: policy `p_write_update` (0040) hiện cho cả gv UPDATE mọi cột kể cả
+`trang_thai`, và trigger tự duyệt cũ (`trg_chan_tu_duyet_cau_hoi`, 0038) chỉ
+chặn tự duyệt chứ không chặn gv duyệt câu hỏi người khác. Cùng khuôn với
+`chan_tu_duyet_hop_dong_hoc_phi` (0037). Expand thuần — không đổi cột/policy
+nào, code cũ không bị ảnh hưởng. Server action (`nopDuyetCauHoi`/`duyetCauHoi`/
+`tuChoiDuyetCauHoi`) tự kiểm tra `trang_thai` hiện tại + kiểm tra tự duyệt
+trước khi gọi DB (thông báo tiếng Việt rõ ràng) — trigger DB vẫn là lớp chặn
+thật, đề phòng gọi thẳng qua API.
+
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** 🔲 chưa — migration chỉ vào qua pipeline khi merge (ADR-004),
+chờ PR merge.
+**Commit:** `e17d27a`.
+
+---
+
 ## 2026-09-28 — Bước 5.3: sửa câu hỏi (edit)
 
 **Tóm tắt:** Thêm chức năng sửa câu hỏi trong ngân hàng câu hỏi (nút "Sửa"
