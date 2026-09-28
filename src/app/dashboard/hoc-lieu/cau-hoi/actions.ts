@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "@/components/dangCauOptions";
 
 type CauHoi = {
   id: string;
@@ -53,6 +54,10 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   const dangCau = docSoNguyen(formData, "dang_cau_ma", "dạng câu", 1, 9);
   if (typeof dangCau !== "number") return dangCau;
 
+  if (DANG_CAU_CHUA_HO_TRO.includes(dangCau)) {
+    return { error: "Dạng câu này chưa được hỗ trợ soạn thảo — vui lòng chọn dạng khác." };
+  }
+
   const noiDung = String(formData.get("noi_dung") ?? "").trim();
   if (!noiDung) return { error: "Nội dung câu hỏi không được để trống." };
 
@@ -63,13 +68,43 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   }
 
   const loiGiai = String(formData.get("loi_giai") ?? "").trim() || null;
-  const dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
 
-  const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
-  const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
-  const luaChonList = luaChonNoiDung
-    .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)) }))
-    .filter((lc) => lc.noi_dung !== "");
+  // Cấu trúc đáp án phụ thuộc dạng câu — xem dangCauOptions.ts (dùng chung UI/server).
+  const loaiDangCau = layLoaiDangCau(dangCau);
+
+  let dapAnText: string | null = null;
+  let luaChonList: { noi_dung: string; la_dap_an: boolean }[] = [];
+
+  if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
+    const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
+    const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
+    luaChonList = luaChonNoiDung
+      .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)) }))
+      .filter((lc) => lc.noi_dung !== "");
+
+    if (loaiDangCau === "dung_sai") {
+      if (luaChonList.length < 1) return { error: "Vui lòng nhập ít nhất 1 mệnh đề." };
+    } else {
+      if (luaChonList.length < 2) return { error: "Trắc nghiệm cần ít nhất 2 lựa chọn." };
+      const soDapAnDung = luaChonList.filter((lc) => lc.la_dap_an).length;
+      if (loaiDangCau === "single" && soDapAnDung !== 1) {
+        return { error: "Trắc nghiệm 1 đáp án phải đánh dấu đúng 1 lựa chọn đúng." };
+      }
+      if (loaiDangCau === "multi" && soDapAnDung < 1) {
+        return { error: "Trắc nghiệm nhiều đáp án cần đánh dấu ít nhất 1 lựa chọn đúng." };
+      }
+    }
+  } else if (loaiDangCau === "dien_khuyet") {
+    const dapAnList = formData
+      .getAll("dien_khuyet_dap_an")
+      .map((v) => String(v).trim())
+      .filter((v) => v !== "");
+    if (dapAnList.length < 1) return { error: "Vui lòng nhập ít nhất 1 đáp án cho chỗ trống." };
+    dapAnText = dapAnList.join(" | ");
+  } else {
+    // "text" (trả lời ngắn/tự luận) — đáp án tuỳ chọn, tự luận có thể để trống.
+    dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
+  }
 
   // Cấp mã câu hỏi qua RPC — hàm này cũng xác nhận học phần/bài học/chủ đề/dạng câu
   // thật sự thuộc đúng môn học/cấp học đã chọn (chặn dữ liệu rác ngay ở tầng DB).
