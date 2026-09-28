@@ -21,13 +21,16 @@ export default async function HocLieuPage() {
       <nav className={styles.subNav}>
         <Link href="/dashboard/hoc-lieu" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Tổng quan</Link>
         <Link href="/dashboard/hoc-lieu/chu-de" className={styles.subNavLink}>Chủ đề</Link>
+        <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
+        <Link href="/dashboard/hoc-lieu/bai-hoc" className={styles.subNavLink}>Bài học</Link>
       </nav>
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Ngân hàng câu hỏi (GĐ3)</h2>
         <p className={styles.noticeBox}>
-          Đang triển khai theo lộ trình Bước 5: quản lý <strong>chủ đề</strong> (bảng mã gốc phục vụ cấp mã câu
-          hỏi) đã có ở mục bên. Trang tạo/duyệt/tra cứu câu hỏi sẽ được thêm ở bước kế tiếp.
+          Đang triển khai theo lộ trình Bước 5: các bảng mã gốc phục vụ cấp mã câu hỏi —{" "}
+          <strong>chủ đề</strong>, <strong>học phần</strong>, <strong>bài học</strong> — đã có ở các mục bên.
+          Trang tạo/duyệt/tra cứu câu hỏi sẽ được thêm ở bước kế tiếp.
         </p>
       </section>
     </main>

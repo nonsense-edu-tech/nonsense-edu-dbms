@@ -20,6 +20,36 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.1b: giao diện quản lý Học phần & Bài học (`/dashboard/hoc-lieu/hoc-phan`, `/bai-hoc`)
+
+**Tóm tắt:** Tiếp nối Bước 5.1 (Chủ đề). Trong lúc chuẩn bị trang tạo câu hỏi
+(5.2), phát hiện `hoc_phan` và `bai_hoc` đang **rỗng hoàn toàn trên production**
+(0 dòng mỗi bảng) — hai bảng này là điều kiện bắt buộc cho cascading select
+của form tạo câu hỏi và cho RPC `cap_ma_cau_hoi()` (cần học phần + bài học tồn
+tại thật để sinh mã 17 số hợp lệ). Vì vậy làm thêm 2 module CRUD trước khi
+làm trang câu hỏi, đúng tinh thần đã làm với Chủ đề ở 5.1.
+
+Module `hoc-lieu/hoc-phan/` (theo đúng pattern `chu_de`: `actions.ts` +
+`HocPhanForm`/`HocPhanTable`/`HocPhanEditModal`) — form chọn môn học (gộp cấp
+học), nhập mã 1-99 + tên + mô tả; gửi kèm `cap_hoc_ma`/`mon_hoc_ma` (hidden
+input, suy ra từ môn học đã chọn) vì `hoc_phan` có khoá ngoại tổ hợp
+`fk_hocphan_mon(cap_hoc_ma, mon_hoc_ma)` bên cạnh `mon_hoc_id`. Module
+`hoc-lieu/bai-hoc/` tương tự, scope theo `hoc_phan_id` (dropdown hiển thị cấp
+học — môn học — tên học phần để dễ phân biệt). Cả hai xoá mềm (`deleted_at`),
+chặn xoá khi còn dữ liệu con tham chiếu (báo lỗi tiếng Việt qua
+`mapDbError()`), quyền ghi `master_admin`/`admin_ht`/`truong_bm` khớp RLS hiện
+có, mọi action gắn `useToast()`. Cập nhật `subNav` ở `hoc-lieu/` và `chu-de/`
+để có đủ 4 mục: Tổng quan | Chủ đề | Học phần | Bài học.
+
+Không có migration mới — chỉ dùng bảng/RLS đã có sẵn từ trước (`0038`/ADR-002).
+
+**Migration:** không có (chỉ code frontend, bảng/RLS `hoc_phan`/`bai_hoc` đã có sẵn).
+**Staging:** — (staging đang được chủ động để inactive, không thử ở đây).
+**Production:** ✅ chỉ là code — không đụng schema/RLS, không cần migration riêng.
+**Commit:** `b98ea00`.
+
+---
+
 ## 2026-09-28 — Bước 5.1: giao diện quản lý Chủ đề (`/dashboard/hoc-lieu/chu-de`)
 
 **Tóm tắt:** Bắt đầu Bước 5 (giao diện nhập liệu ngân hàng câu hỏi GĐ3) bằng
