@@ -78,11 +78,25 @@ trong repo (ví dụ `E1.1` → migration `0036`), chỉ ghi tắt 1 dòng tham 
   (không có "chờ duyệt"). Mọi bảng dùng **xoá mềm** (`deleted_at`).
 - ✅ Bảng `users`, `user_pham_vi`, `user_bai_hoc` + RLS theo vai trò — có sẵn
   trên production.
-- ✅ **UI quản trị users** — `/dashboard/users` (gate `master_admin`): danh
-  sách tài khoản, sửa `vai_tro`/`trang_thai` tại chỗ. Tài khoản `master_admin`
-  bị **khoá cứng** khỏi sửa qua UI. **Chưa có:** tạo tài khoản mới qua UI (vẫn
-  mời qua Supabase Dashboard), quản lý `user_pham_vi`/`user_bai_hoc` (vẫn qua
-  SQL Editor).
+- ✅ **CẬP NHẬT 29/09/2026 — Module "Quản lý người dùng" hoàn chỉnh, đã lên
+  production** (migration `0042`, xem `CHANGELOG.md`): thay hẳn mô tả cũ bên
+  dưới.
+  - `/dashboard/users` (gate `master_admin`): danh sách + sửa nhanh
+    `vai_tro`/`trang_thai`, trang chi tiết từng tài khoản (gán/gỡ
+    `user_pham_vi` + `user_chi_nhanh` qua UI — **không còn phải qua SQL
+    Editor**), lịch sử thao tác (bảng `nhat_ky` mới, dùng chung toàn hệ
+    thống).
+  - **Tạo tài khoản qua UI** (không còn mời qua Supabase Dashboard): 2 luồng
+    — master_admin tạo mọi vai trò (xác thực mật khẩu 2 lần khi tạo thêm
+    master_admin mới); admin_ht tự cấp GV/Trợ giảng cho đúng chi nhánh mình
+    quản lý qua RPC `admin_ht_tao_nhan_su` (SECURITY DEFINER, tự kiểm tra
+    quyền, không tin tầng ứng dụng). Mật khẩu mặc định cố định
+    `NonsenseEdu@123`, bắt đổi ở lần đăng nhập đầu (`phai_doi_mat_khau`).
+  - **Đã bỏ hẳn "khoá cứng qua UI"** — thay bằng trigger CSDL
+    `trg_chan_mat_master_admin_cuoi` (chặn tự hạ vai trò/khoá/xoá mềm
+    master_admin cuối cùng, ở tầng CSDL, không phải quy ước UI) + **không
+    còn policy DELETE nào trên `users`** (quyết định 28/09/2026: không ai
+    xoá cứng tài khoản, kể cả master_admin — dùng xoá mềm/khôi phục).
 - ✅ **Vai trò `quan_ly_chi_nhanh` + bảng `user_chi_nhanh`** (phụ trách tuyển
   sinh/giáo vụ/phòng học cho 1 chi nhánh) — code xong ở migration
   `0016_vai_tro_quan_ly_chi_nhanh.sql`, **đã áp dụng thật trên cả staging lẫn

@@ -20,6 +20,56 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Module "Quản lý người dùng" (CRUD, phạm vi, chi nhánh, mật khẩu)
+
+**Tóm tắt:** Xây mới hoàn chỉnh Khối 1 — module quản lý tài khoản nội bộ,
+theo 5 quyết định người dùng chốt trong ngày (phân quyền master_admin/
+admin_ht, mật khẩu mặc định `NonsenseEdu@123`, bảng nhật ký chung, không
+giới hạn đuôi email, cho phép tạo thêm master_admin có xác nhận mật khẩu
+2 lần) và quyết định bổ sung: **bỏ hẳn quyền xoá cứng tài khoản** — không
+ai, kể cả master_admin, xoá cứng qua REST.
+
+- **`users`**: thêm cột `phai_doi_mat_khau` (bắt đổi mật khẩu lần đăng nhập
+  đầu, mặc định `true` cho tài khoản mới, backfill `false` cho tài khoản cũ
+  đang dùng thật); tách `p_write` (đang `FOR ALL`, âm thầm áp cả SELECT —
+  đúng bài học Khối 5) thành `p_insert_users`/`p_update_users` riêng, **bỏ
+  hẳn** mọi policy DELETE.
+- **Trigger CSDL** `trg_chan_mat_master_admin_cuoi`: chặn tự đổi vai trò của
+  chính mình khỏi master_admin, và chặn hạ vai trò/khoá/xoá mềm master_admin
+  **cuối cùng** còn hoạt động — bảo vệ ở tầng CSDL, không dựa quy ước UI.
+- **Bảng `nhat_ky`** (append-only, RLS: đọc = master_admin, ghi =
+  master_admin/admin_ht) — nhật ký chung cho toàn hệ thống, bắt đầu từ
+  module này.
+- **RPC `admin_ht_tao_nhan_su`**: admin_ht cấp tài khoản GV/Trợ giảng, tự
+  kiểm tra chi nhánh đích nằm trong `user_chi_nhanh` của chính người gọi
+  (SECURITY DEFINER, không tin tầng ứng dụng).
+- **RPC `danh_dau_da_doi_mat_khau`**: mọi người dùng tự tắt cờ bắt đổi mật
+  khẩu của chính mình sau khi đổi thật qua Supabase Auth.
+- UI: danh sách + sửa nhanh + trang chi tiết (phạm vi/chi nhánh/lịch sử) cho
+  master_admin; trang tạo tài khoản 2 luồng (master_admin toàn quyền có xác
+  thực mật khẩu 2 lần khi tạo master_admin mới; admin_ht giới hạn GV/Trợ
+  giảng trong chi nhánh mình); trang bắt buộc đổi mật khẩu lần đầu qua
+  `proxy.ts`; xoá mềm/khôi phục thay cho xoá cứng.
+- Tiện thể sửa 4 bug có sẵn: thiếu `tro_giang` trong danh sách vai trò UI,
+  card "Người dùng" hiện sai cho vai trò không có quyền, danh sách "quản lý
+  chi nhánh" lẫn cả gv/tro_giang do dùng chung `user_chi_nhanh`, và loại bỏ
+  một sửa đổi migration sai dự định ban đầu (`user_chi_nhanh.id_old` thật ra
+  là `GENERATED ALWAYS AS IDENTITY`, không phải cột lỗi).
+- Đã dry-run toàn bộ migration + 9 kịch bản test trong transaction
+  `ROLLBACK` trên production trước khi merge, và re-verify 6 kịch bản bảo vệ
+  master_admin/DELETE ngay sau khi áp thật — tất cả đúng thiết kế.
+
+**Migration:** `supabase/migrations/0042_module_quan_ly_nguoi_dung.sql`
+(tag `expand`, tự áp qua CI theo ADR-005, đã duyệt qua GitHub Environment
+`production-db`).
+**Staging:** — (bỏ qua theo quyết định người dùng, thử thẳng qua pipeline
+CI vào production).
+**Production:** ✅ đã áp dụng (28/09/2026) — xác nhận qua
+`information_schema`/`pg_policies`/`pg_trigger`/`pg_proc` thật.
+**Commit:** `faf562f` (PR #28, merge `6aca1b3d`).
+
+---
+
 ## 2026-09-28 — Quy tắc "ẩn hẳn, không hiện dạng khoá" cho UI theo vai trò
 
 **Tóm tắt:** Người dùng phản hồi không muốn GV/Trưởng bộ môn/Trợ giảng nhìn
