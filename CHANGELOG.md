@@ -20,6 +20,32 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.6: trang riêng cho trợ giảng (RPC-only)
+
+**Tóm tắt:** Thêm trang mới `/dashboard/tro-giang` — tra cứu câu hỏi cho vai
+trò `tro_giang` (và gv/truong_bm/admin_ht/master_admin trong phạm vi môn
+được phân công): chọn môn học → xem danh mục câu hỏi → xem chi tiết 1 câu.
+
+- Đọc dữ liệu **chỉ qua 2 RPC `SECURITY DEFINER` đã có sẵn trên production**
+  (`danh_muc_cau_hoi_tro_giang(p_mon_hoc)`, `xem_mot_cau_hoi(p_id)`) — xác
+  nhận qua SQL trực tiếp 28/09/2026, không phải migration của repo này.
+  **Không đọc trực tiếp bảng `cau_hoi`/`lua_chon`** — RLS `p_read` trên 2
+  bảng này cố tình KHÔNG cấp quyền cho vai trò `tro_giang`, đúng như tên
+  bước ("RPC-only"): trợ giảng chỉ nhìn qua "cửa sổ" do RPC kiểm soát.
+- Với vai trò `tro_giang`, RPC `xem_mot_cau_hoi` tự trả `dap_an_text`/
+  `loi_giai` = null (ẩn đáp án/lời giải) — trang hiển thị đúng theo đó, ghi
+  chú rõ "ẩn theo thiết kế, không phải lỗi" thay vì để trống gây hiểu nhầm.
+- Danh sách môn học khả dụng lấy từ `user_pham_vi` của chính người dùng
+  (đọc trực tiếp — đây là bảng phân quyền, không phải nội dung câu hỏi, nên
+  không vi phạm nguyên tắc RPC-only ở trên).
+- Không cần migration — cả 2 RPC và RLS liên quan đã tồn tại sẵn.
+
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** 🔲 chưa — đang mở PR, chờ merge (không có migration).
+**Commit:** `721b977`.
+
+---
+
 ## 2026-09-28 — Bước 5.5: gắn năng lực cho câu hỏi (cau_hoi_nang_luc)
 
 **Tóm tắt:** Thêm modal "Năng lực" trên mỗi dòng câu hỏi ở

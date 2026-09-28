@@ -35,6 +35,7 @@ export default async function DashboardPage() {
           <Link href="/dashboard/chi-nhanh" className={styles.navLink}>Chi nhánh</Link>
           <Link href="/dashboard/van-hanh" className={styles.navLink}>Vận hành</Link>
           <Link href="/dashboard/hoc-lieu" className={styles.navLink}>Học liệu</Link>
+          <Link href="/dashboard/tro-giang" className={styles.navLink}>Trợ giảng</Link>
           <Link href="/dashboard/users" className={styles.navLink}>Người dùng</Link>
         </nav>
         <form action={signOut}>
