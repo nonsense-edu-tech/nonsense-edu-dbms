@@ -20,6 +20,46 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Thiết kế lại trang dashboard theo vai trò
+
+**Tóm tắt:** Viết lại hoàn toàn `/dashboard` (trang ngay sau đăng nhập) —
+dùng logo chính thức + theme màu indigo lấy từ logo (chỉ áp dụng riêng trang
+này), và chia làm 3 giao diện khác nhau theo vai trò thay vì 1 giao diện
+chung chung như trước.
+
+- **Admin** (`master_admin`/`admin_ts`/`admin_ht`/`ke_toan`/`thu_ngan`/
+  `quan_ly_chi_nhanh`): nhiều số liệu nhất (tài chính, học phí, vận hành,
+  ngân hàng câu hỏi) — nhưng **mỗi nhóm chỉ hiện nếu vai trò đó thật sự có
+  RLS policy SELECT trên bảng liên quan** (đối chiếu `pg_policies` production
+  trực tiếp, không suy đoán theo tên vai trò) — vd `admin_ht` không có policy
+  đọc `hop_dong_hoc_phi`/`phieu_thu`/`ky_dong_hoc_phi` nên không thấy 2 nhóm
+  Tài chính/Học phí; `quan_ly_chi_nhanh` không đọc được `phieu_thu`/
+  `ky_dong_hoc_phi` nên riêng thẻ "kỳ đóng quá hạn" bị khoá dù vẫn thấy hợp
+  đồng học phí (được RLS tự giới hạn theo chi nhánh của họ).
+- **Trưởng bộ môn / GV** (`truong_bm`/`gv`): chỉ số liệu "học sinh đang phụ
+  trách" (qua buổi học có `gv_id` = chính họ) + "học liệu của mình đang quản
+  lý" (câu hỏi lọc theo `nguoi_tao` = chính họ) — không có số liệu tài
+  chính/học phí, lưới khối nghiệp vụ thu gọn còn 4 mục liên quan.
+- **Trợ giảng** (`tro_giang`): không có thẻ số liệu nào, chỉ khối nghiệp vụ
+  (lối vào trang tra cứu câu hỏi RPC-only của Bước 5.6, các khối khác hiện
+  khoá/mờ).
+- Vai trò chưa được ánh xạ (tương lai) → fallback về giao diện giống Trợ
+  giảng (an toàn, không lộ số liệu) thay vì lỗi trắng trang.
+- 2 khung biểu đồ (đường/cột) vẫn ở dạng chờ — chưa nối số liệu thật, đúng
+  yêu cầu ban đầu "chừa chỗ hiển thị biểu đồ sau này".
+- Logo chính thức lưu tại `public/brand/` (không đổi `--accent` cam-vàng
+  dùng chung các trang khác — theme indigo chỉ định nghĩa cục bộ trong
+  `dashboard.module.css`).
+- Mô tả thiết kế đầy đủ đã lưu vào project docs
+  (`thiet-ke-dashboard-theo-vai-tro.md`) để tham khảo sau này.
+
+**Migration:** không có (chỉ đổi code frontend, không đổi schema/RLS).
+**Staging:** — (không dùng, theo quyết định của người dùng).
+**Production:** 🔲 chưa — cần PR merge vào `main` qua CI theo ADR-004.
+**Commit:** (điền sau khi commit)
+
+---
+
 ## 2026-09-28 — Bước 5.6: trang riêng cho trợ giảng (RPC-only)
 
 **Tóm tắt:** Thêm trang mới `/dashboard/tro-giang` — tra cứu câu hỏi cho vai

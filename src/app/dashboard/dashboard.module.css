@@ -1,89 +1,543 @@
+/* Dashboard nội bộ — theme riêng cho trang này, lấy màu từ logo chính thức
+   (indigo/navy), không đụng --accent cam-vàng dùng chung cho các trang khác. */
 .page {
+  --db-accent: #5468D4;
+  --db-accent-dim: #2E3592;
+  --db-accent-wash: rgba(84, 104, 212, 0.12);
   min-height: 100dvh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  flex-direction: column;
 }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 40px;
-  text-align: center;
-  max-width: 440px;
-  width: 100%;
+/* ── Header ─────────────────────────────────────────────────────────── */
+.header {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 16px 32px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.badge {
+.logoImg {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.roleBadge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--db-accent);
+  background: var(--db-accent-wash);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2, #1E2330);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--db-accent);
+  flex-shrink: 0;
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.userName {
   font-size: 12px;
   font-weight: 600;
-  color: var(--success);
-  background: rgba(60, 200, 138, 0.1);
-  border: 1px solid rgba(60, 200, 138, 0.25);
-  padding: 4px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.03em;
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 700;
   color: var(--text-hi);
-  margin-top: 4px;
 }
 
-.email {
-  font-size: 14px;
-  color: var(--accent);
-  font-weight: 500;
-}
-
-.note {
-  font-size: 13px;
+.userRole {
+  font-size: 10px;
   color: var(--text-mid);
-  line-height: 1.7;
-  margin: 8px 0 4px;
 }
 
-.nav {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.navLink {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0F1117;
-  background: var(--accent);
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
-}
-
-.navLink:hover {
-  background: var(--accent-dim);
+.divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
 }
 
 .btnSignOut {
-  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-mid);
   background: transparent;
   border: 1px solid var(--border);
-  color: var(--text-mid);
-  font-size: 13px;
-  padding: 8px 20px;
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
+  padding: 7px 14px;
   transition: border-color 0.15s, color 0.15s;
 }
 
 .btnSignOut:hover {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+/* ── Content ────────────────────────────────────────────────────────── */
+.content {
+  flex-grow: 1;
+  box-sizing: border-box;
+  padding: 24px 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.greeting {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.greetingTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text-hi);
+  margin: 0 0 3px;
+}
+
+.greetingSub {
+  font-size: 12px;
+  color: var(--text-mid);
+}
+
+.updatedTag {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+/* ── Stat groups ────────────────────────────────────────────────────── */
+.groupsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.groupIcon {
+  width: 15px;
+  height: 15px;
+  color: var(--db-accent);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mid);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.groupHint {
+  font-size: 9px;
+  color: var(--text-lo);
+  background: var(--surface-2, #1E2330);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.statGrid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+
+.statCard:hover {
+  border-color: var(--db-accent-dim);
+}
+
+.statCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: var(--text-mid);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.tag {
+  font-size: 10px;
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.tagWarn {
+  color: var(--db-accent);
+  background: var(--db-accent-wash);
+}
+
+.tagDanger {
+  color: var(--danger);
+  background: rgba(224, 87, 87, 0.1);
+}
+
+.tagOk {
+  color: var(--success);
+  background: rgba(60, 200, 138, 0.1);
+}
+
+.lockedCard {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+}
+
+.lockedLabel {
+  font-size: 11px;
+  color: var(--text-lo);
+}
+
+.lockedNote {
+  font-size: 10.5px;
+  color: var(--text-lo);
+  line-height: 1.5;
+}
+
+/* ── Chart placeholders ─────────────────────────────────────────────── */
+.chartsRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.chartCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chartCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chartCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.chartCardKind {
+  font-size: 10px;
+  color: var(--text-lo);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.chartPlaceholder {
+  min-height: 140px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-lo);
+}
+
+.chartPlaceholderText {
+  font-size: 11px;
+  color: var(--text-lo);
+}
+
+/* ── Module grid ────────────────────────────────────────────────────── */
+.moduleSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moduleGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.moduleGrid8 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.moduleCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.moduleCard:hover {
+  border-color: var(--db-accent);
+  background: var(--surface-2, #1E2330);
+}
+
+.moduleIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--surface-2, #1E2330);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.moduleIcon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-mid);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.moduleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.moduleTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.moduleDesc {
+  font-size: 11px;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+
+.noteSmall {
+  font-size: 11px;
+  color: var(--text-lo);
+}
+
+/* ── Trợ giảng — không có bảng biểu, chỉ khối nghiệp vụ ────────────── */
+.welcomeWrap {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 48px 16px 16px;
+}
+
+.welcomeHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.welcomeTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--text-hi);
+  margin: 0;
+}
+
+.welcomeSub {
+  font-size: 13px;
+  color: var(--text-mid);
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.welcomeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  width: 100%;
+  max-width: 760px;
+}
+
+.welcomeCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.welcomeCard:hover {
+  border-color: var(--db-accent);
+  background: var(--surface-2, #1E2330);
+  transform: translateY(-1px);
+}
+
+.welcomeCardLocked {
+  opacity: 0.55;
+}
+
+.welcomeIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--db-accent-wash);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcomeCardLocked .welcomeIconWrap {
+  background: var(--surface-2, #1E2330);
+}
+
+.welcomeIcon {
+  width: 22px;
+  height: 22px;
+  color: var(--db-accent);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.welcomeCardLocked .welcomeIcon {
+  color: var(--text-lo);
+}
+
+.welcomeCardTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.welcomeCardDesc {
+  font-size: 12.5px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+
+.welcomeFootnote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-lo);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 16px;
 }
