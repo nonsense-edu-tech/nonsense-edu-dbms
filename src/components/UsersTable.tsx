@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { capNhatUser } from "@/app/dashboard/users/actions";
+import { useToast } from "./ToastProvider";
 import styles from "@/app/dashboard/users/users.module.css";
 
 export type UserRow = {
@@ -12,12 +14,13 @@ export type UserRow = {
   trang_thai: string;
 };
 
-const VAI_TRO_LABEL: Record<string, string> = {
+export const VAI_TRO_LABEL: Record<string, string> = {
   master_admin: "Master Admin",
   admin_ts: "Admin Tuyển sinh",
   admin_ht: "Admin Hiệu trưởng",
   truong_bm: "Trưởng bộ môn",
   gv: "Giáo viên",
+  tro_giang: "Trợ giảng",
   ke_toan: "Kế toán",
   thu_ngan: "Thu ngân",
   quan_ly_chi_nhanh: "Quản lý chi nhánh",
@@ -49,12 +52,12 @@ export default function UsersTable({ list, currentUserId }: { list: UserRow[]; c
 }
 
 function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
-  const isLocked = user.vai_tro === "master_admin";
   const [editing, setEditing] = useState(false);
   const [vaiTro, setVaiTro] = useState(user.vai_tro);
   const [trangThai, setTrangThai] = useState(user.trang_thai);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
 
   function handleCancel() {
     setEditing(false);
@@ -82,8 +85,10 @@ function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
       const result = await capNhatUser(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Cập nhật thất bại: ${result.error}` });
       } else {
         setEditing(false);
+        showToast({ type: "success", message: `Đã cập nhật "${user.email}".` });
       }
     });
   }
@@ -135,11 +140,7 @@ function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
       </td>
       <td>
         <div className={styles.rowActions}>
-          {isLocked ? (
-            <span className={styles.lockBadge} title="Master Admin bị khoá cứng — không thể sửa qua giao diện">
-              🔒 Khoá cứng
-            </span>
-          ) : editing ? (
+          {editing ? (
             <>
               <button type="button" className={styles.btnSave} onClick={handleSave} disabled={isPending}>
                 {isPending ? "Đang lưu…" : "Lưu"}
@@ -149,9 +150,14 @@ function UserRowItem({ user, isSelf }: { user: UserRow; isSelf: boolean }) {
               </button>
             </>
           ) : (
-            <button type="button" className={styles.btnEdit} onClick={() => setEditing(true)}>
-              Sửa
-            </button>
+            <>
+              <button type="button" className={styles.btnEdit} onClick={() => setEditing(true)}>
+                Sửa nhanh
+              </button>
+              <Link href={`/dashboard/users/${user.id}`} className={styles.btnEdit}>
+                Chi tiết
+              </Link>
+            </>
           )}
         </div>
       </td>
