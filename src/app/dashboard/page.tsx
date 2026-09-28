@@ -359,7 +359,7 @@ async function AdminDashboard({
           ]}
         />
 
-        <ModuleClustersAdmin />
+        <ModuleClustersAdmin vaiTro={vaiTro} />
       </div>
     </main>
   );
@@ -622,7 +622,14 @@ function ModuleCluster({ title, items }: { title: string; items: ModuleItem[] })
 // 3 cụm khối nghiệp vụ dùng chung cho mọi dashboard — Vận hành / Học thuật /
 // Tài chính — cùng 1 cấu trúc tên cụm cho mọi vai trò, nhưng mỗi cụm chỉ liệt
 // kê đúng những mục thuộc phạm vi vai trò đó (xem quy tắc ở ModuleCard).
-function ModuleClustersAdmin() {
+function ModuleClustersAdmin({ vaiTro }: { vaiTro: string }) {
+  // "Người dùng" chỉ liên quan tới master_admin (quản lý toàn bộ) và
+  // admin_ht (cấp tài khoản gv/trợ giảng cho chi nhánh mình) — RLS thật trên
+  // users/nhat_ky/RPC admin_ht_tao_nhan_su chỉ 2 vai trò này có quyền, các
+  // vai trò admin-tier khác (ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh)
+  // ẩn hẳn theo đúng quy tắc 28/09/2026, không hiện dạng khoá.
+  const coQuyenNguoiDung = ["master_admin", "admin_ht"].includes(vaiTro);
+
   return (
     <div className={styles.moduleSection}>
       <span className={styles.groupLabel}>Khối nghiệp vụ</span>
@@ -634,7 +641,9 @@ function ModuleClustersAdmin() {
             { href: "/dashboard/lop", icon: <IconLop />, title: "Lớp học", desc: "Tạo & quản lý lớp" },
             { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, title: "Học sinh", desc: "Hồ sơ & ghi danh" },
             { href: "/dashboard/van-hanh", icon: <IconVanHanh />, title: "Vận hành", desc: "Phòng học & buổi học" },
-            { href: "/dashboard/users", icon: <IconNguoiDung />, title: "Người dùng", desc: "Vai trò & phân quyền" },
+            ...(coQuyenNguoiDung
+              ? [{ href: "/dashboard/users", icon: <IconNguoiDung />, title: "Người dùng", desc: "Vai trò & phân quyền" }]
+              : []),
           ]}
         />
         <ModuleCluster

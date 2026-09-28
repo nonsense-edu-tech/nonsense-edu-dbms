@@ -39,7 +39,11 @@ export default async function ChiNhanhPage() {
     ten: cn.ten,
     dia_chi: cn.dia_chi,
     quan_ly: (userChiNhanhList ?? [])
-      .filter((uc) => uc.chi_nhanh_id === cn.id)
+      // Từ module Quản lý người dùng (28/09/2026): user_chi_nhanh giờ cũng
+      // dùng để gán chi nhánh cho gv/trợ giảng do admin_ht cấp — CHỈ hiện ở
+      // đây (bảng "quản lý") đúng những dòng thật sự là quan_ly_chi_nhanh,
+      // không phải mọi dòng trong bảng nối.
+      .filter((uc) => uc.chi_nhanh_id === cn.id && userTenMap.has(uc.user_id))
       .map((uc) => ({
         assignment_id: uc.id,
         user_id: uc.user_id,
