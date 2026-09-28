@@ -20,6 +20,41 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.5: gắn năng lực cho câu hỏi (cau_hoi_nang_luc)
+
+**Tóm tắt:** Thêm modal "Năng lực" trên mỗi dòng câu hỏi ở
+`/dashboard/hoc-lieu/cau-hoi`, cho phép:
+
+- Sửa `cau_hoi.tien_trinh` (P1/P2/P3, cột đơn trên `cau_hoi`, chưa từng có UI
+  trước đây dù đã tồn tại từ migration `0038`).
+- Gắn/gỡ nhiều năng lực cho 1 câu hỏi qua bảng `cau_hoi_nang_luc`, đánh dấu
+  đúng 1 năng lực "Chính" (`la_chinh`) — DB chưa có ràng buộc chỉ-1-la_chinh
+  nên tự đảm bảo ở tầng server action (bỏ đánh dấu các dòng khác trước khi
+  gắn dòng mới là chính); chặn gắn trùng 1 năng lực 2 lần cho cùng câu hỏi.
+
+**Không cần migration** — bảng `nang_luc`/`tien_trinh`/`cau_hoi_nang_luc` và
+RLS (cùng 4 vai trò ghi như `cau_hoi`) đã có sẵn từ `0038`, đúng như thiết kế
+"lớp gắn thẻ năng lực hấp thụ thay đổi khung qua cập nhật dữ liệu, không qua
+migration" (xem `areas/khung-nang-luc.md` trong bộ nhớ dự án).
+
+**⚠️ PHÁT HIỆN QUAN TRỌNG (xác nhận qua SQL trực tiếp trên production,
+28/09/2026):** bảng `nang_luc` đang **RỖNG (0 dòng)** — bộ 20 mã năng lực
+v0.13 (TV/TA/TOAN/TD) nêu trong brief `KHUNG_NANG_LUC_ERP_BRIEF.md` **chưa
+được nhập vào CSDL**. `tien_trinh` đã có seed (P1/P2/P3, đúng như tài liệu).
+Tính năng gắn năng lực hoạt động đúng nhưng dropdown chọn năng lực sẽ trống
+cho tới khi có người nhập seed data thật — **không tự bịa tên/mô tả hành vi
+năng lực** (ERP không được tự sáng tác ngoài xác nhận từ dự án khung năng
+lực). Cần: lấy nội dung đầy đủ 20 mã (ma_nang_luc, mien, ten, mo_ta_hanh_vi,
+nguon_tham_chieu, phien_ban_khung="v0.13") từ brief thật rồi viết migration
+seed riêng.
+
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** 🔲 chưa — đang mở PR, chờ merge (không có migration, chỉ code
+frontend/server action).
+**Commit:** `159fc86`.
+
+---
+
 ## 2026-09-28 — Bước 5.4: luồng nộp duyệt/duyệt câu hỏi
 
 **Tóm tắt:** Thêm luồng trạng thái `nhap → cho_duyet → da_duyet` cho câu hỏi
