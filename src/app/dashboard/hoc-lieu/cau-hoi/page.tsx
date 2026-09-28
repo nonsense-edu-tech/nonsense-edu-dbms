@@ -38,7 +38,9 @@ export default async function CauHoiPage() {
     supabase.from("dang_cau").select("ma, ten").is("deleted_at", null).order("ma"),
     supabase
       .from("cau_hoi")
-      .select("id, ma_cau_hoi, noi_dung, trang_thai, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at")
+      .select(
+        "id, ma_cau_hoi, noi_dung, do_kho, loi_giai, dap_an_text, trang_thai, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at"
+      )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
   ]);
@@ -64,12 +66,16 @@ export default async function CauHoiPage() {
       id: ch.id,
       ma_cau_hoi: ch.ma_cau_hoi,
       noi_dung: ch.noi_dung,
+      do_kho: ch.do_kho,
+      loi_giai: ch.loi_giai,
+      dap_an_text: ch.dap_an_text,
       trang_thai: ch.trang_thai,
       cap_hoc_ten: ch.cap_hoc != null ? capHocMap.get(ch.cap_hoc) ?? String(ch.cap_hoc) : "—",
       mon_hoc_ten: monHoc?.ten ?? "—",
       hoc_phan_ten: hocPhan?.ten ?? "—",
       bai_hoc_ten: baiHoc?.ten ?? "—",
       chu_de_ten: chuDe?.ten ?? "—",
+      dang_cau_ma: ch.dang_cau ?? 0,
       dang_cau_ten: ch.dang_cau != null ? dangCauMap.get(ch.dang_cau) ?? String(ch.dang_cau) : "—",
     };
   });

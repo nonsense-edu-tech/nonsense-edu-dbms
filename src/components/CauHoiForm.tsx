@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { taoCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "./dangCauOptions";
+import DapAnFields from "./DapAnFields";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
@@ -51,12 +52,6 @@ export default function CauHoiForm({
   const dangCauKhaDung = useMemo(() => dangCauList.filter((dc) => !DANG_CAU_CHUA_HO_TRO.includes(dc.ma)), [dangCauList]);
   const loaiDangCau = layLoaiDangCau(dangCauMa ? Number(dangCauMa) : null);
 
-  const rowKeyRef = useRef(2);
-  const [luaChonRows, setLuaChonRows] = useState<number[]>([0, 1]);
-
-  const dienKhuyetKeyRef = useRef(1);
-  const [dienKhuyetRows, setDienKhuyetRows] = useState<number[]>([0]);
-
   const monHocOptions = useMemo(
     () =>
       monHocList.filter(
@@ -78,33 +73,6 @@ export default function CauHoiForm({
   const baiHocChon = baiHocList.find((bh) => bh.id === baiHocId) ?? null;
   const chuDeChon = chuDeList.find((cd) => cd.id === chuDeId) ?? null;
 
-  function themLuaChon() {
-    setLuaChonRows((rows) => [...rows, rowKeyRef.current++]);
-  }
-
-  function xoaLuaChon(key: number) {
-    setLuaChonRows((rows) => rows.filter((r) => r !== key));
-  }
-
-  function themDienKhuyet() {
-    setDienKhuyetRows((rows) => [...rows, dienKhuyetKeyRef.current++]);
-  }
-
-  function xoaDienKhuyet(key: number) {
-    setDienKhuyetRows((rows) => rows.filter((r) => r !== key));
-  }
-
-  function handleDangCauChange(value: string) {
-    setDangCauMa(value);
-    // Đổi dạng câu là đổi hẳn cấu trúc đáp án — reset về rỗng để tránh lẫn
-    // trạng thái tick/nội dung giữa các dạng khác nhau (vd đang tick "đúng" ở
-    // trắc nghiệm nhiều đáp án rồi chuyển sang 1 đáp án).
-    setLuaChonRows([0, 1]);
-    rowKeyRef.current = 2;
-    setDienKhuyetRows([0]);
-    dienKhuyetKeyRef.current = 1;
-  }
-
   function resetTat() {
     setCapHocMa("");
     setChuongTrinhMa("");
@@ -113,10 +81,6 @@ export default function CauHoiForm({
     setBaiHocId("");
     setChuDeId("");
     setDangCauMa("");
-    setLuaChonRows([0, 1]);
-    rowKeyRef.current = 2;
-    setDienKhuyetRows([0]);
-    dienKhuyetKeyRef.current = 1;
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -304,7 +268,7 @@ export default function CauHoiForm({
             className={formStyles.select}
             disabled={isPending}
             value={dangCauMa}
-            onChange={(e) => handleDangCauChange(e.target.value)}
+            onChange={(e) => setDangCauMa(e.target.value)}
           >
             <option value="" disabled>— Chọn dạng câu —</option>
             {dangCauKhaDung.map((dc) => (
@@ -340,83 +304,7 @@ export default function CauHoiForm({
         </div>
       </div>
 
-      {(loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") && (
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.fieldsetTitle}>
-            {loaiDangCau === "dung_sai"
-              ? "Các mệnh đề (đánh dấu mệnh đề đúng)"
-              : loaiDangCau === "single"
-                ? "Lựa chọn (đánh dấu đúng 1 đáp án đúng)"
-                : "Lựa chọn (đánh dấu ít nhất 1 đáp án đúng)"}
-          </legend>
-          {luaChonRows.map((key, idx) => (
-            <div key={key} className={styles.luaChonRow}>
-              <input
-                type="text"
-                name="lua_chon_noi_dung"
-                className={formStyles.input}
-                placeholder={loaiDangCau === "dung_sai" ? `Mệnh đề ${idx + 1}` : `Lựa chọn ${idx + 1}`}
-                disabled={isPending}
-              />
-              <label className={styles.luaChonCheck}>
-                <input
-                  type={loaiDangCau === "single" ? "radio" : "checkbox"}
-                  name="lua_chon_dung"
-                  value={idx}
-                  disabled={isPending}
-                />
-                {loaiDangCau === "dung_sai" ? "Đúng" : "Đáp án đúng"}
-              </label>
-              {luaChonRows.length > 1 && (
-                <button type="button" className={styles.btnEdit} onClick={() => xoaLuaChon(key)} disabled={isPending}>✕</button>
-              )}
-            </div>
-          ))}
-          <button type="button" className={styles.btnAdd} onClick={themLuaChon} disabled={isPending}>
-            + Thêm {loaiDangCau === "dung_sai" ? "mệnh đề" : "lựa chọn"}
-          </button>
-        </fieldset>
-      )}
-
-      {loaiDangCau === "dien_khuyet" && (
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.fieldsetTitle}>Đáp án cho từng chỗ trống</legend>
-          <p className={formStyles.hint}>
-            Đánh dấu chỗ trống trong nội dung câu hỏi bằng <code>___</code>; nhập đáp án theo đúng thứ tự chỗ trống
-            xuất hiện trong nội dung.
-          </p>
-          {dienKhuyetRows.map((key, idx) => (
-            <div key={key} className={styles.luaChonRow}>
-              <input
-                type="text"
-                name="dien_khuyet_dap_an"
-                className={formStyles.input}
-                placeholder={`Đáp án chỗ trống ${idx + 1}`}
-                disabled={isPending}
-              />
-              {dienKhuyetRows.length > 1 && (
-                <button type="button" className={styles.btnEdit} onClick={() => xoaDienKhuyet(key)} disabled={isPending}>✕</button>
-              )}
-            </div>
-          ))}
-          <button type="button" className={styles.btnAdd} onClick={themDienKhuyet} disabled={isPending}>
-            + Thêm chỗ trống
-          </button>
-        </fieldset>
-      )}
-
-      {loaiDangCau === "text" && (
-        <div className={formStyles.field}>
-          <label htmlFor="dap_an_text" className={formStyles.label}>
-            Đáp án (tuỳ chọn — tự luận có thể để trống, chấm tay)
-          </label>
-          <input id="dap_an_text" name="dap_an_text" type="text" className={formStyles.input} disabled={isPending} />
-        </div>
-      )}
-
-      {loaiDangCau === "khong_xac_dinh" && (
-        <p className={formStyles.hint}>Chọn dạng câu ở trên để hiển thị phần nhập đáp án phù hợp.</p>
-      )}
+      <DapAnFields key={dangCauMa} loaiDangCau={loaiDangCau} disabled={isPending} />
 
       <div className={formStyles.field}>
         <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
