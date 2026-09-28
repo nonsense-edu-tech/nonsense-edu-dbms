@@ -20,6 +20,48 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.2 (bản vá): UI đáp án theo đúng từng dạng câu
+
+**Tóm tắt:** Phát hiện qua kiểm thử thủ công (trên PR #18 chưa merge): đổi
+"Dạng câu" không đổi UI phần đáp án — lỗ hổng rõ nhất là **Trắc nghiệm 1 đáp
+án** vẫn cho tick nhiều đáp án đúng (sai ngữ nghĩa). Vá lại theo yêu cầu:
+
+- **Trắc nghiệm 1 đáp án** (`dang_cau.ma=1`): lựa chọn đổi sang radio (chỉ
+  chọn được 1), server validate đúng 1 đáp án đúng, ≥2 lựa chọn.
+- **Trắc nghiệm nhiều đáp án** (`ma=2`): giữ checkbox, server validate ≥1 đáp
+  án đúng, ≥2 lựa chọn (trước đó không validate).
+- **Đúng/Sai (từng ý)** (`ma=3`): UI mới — danh sách mệnh đề, mỗi mệnh đề tick
+  Đúng/Sai riêng. Tái dùng nguyên cấu trúc bảng `lua_chon` (chỉ đổi nhãn/diễn
+  giải phía UI), không cần migration.
+- **Điền khuyết** (`ma=4`): UI mới — danh sách "đáp án cho từng chỗ trống"
+  (thêm/bớt động, không có checkbox), nối bằng ` | ` rồi lưu vào `dap_an_text`
+  (không có bảng riêng cho từng chỗ trống — chấp nhận encoding đơn giản này ở
+  MVP, ghi nợ kỹ thuật nếu sau cần tách rời từng đáp án).
+- **Trả lời ngắn/Tự luận** (`ma=7,8`): giữ nguyên 1 ô `dap_an_text` tự do.
+- **Nối/ghép cặp** (`ma=5`), **Sắp xếp thứ tự/kéo thả** (`ma=6`): **ẩn khỏi
+  dropdown** theo yêu cầu — cấu trúc dữ liệu 2 dạng này khác hẳn (cần mô hình
+  "cặp nối" / "thứ tự đúng", có thể cần bảng mới) nên chưa làm vội. Ghi chú
+  nợ kỹ thuật ở `src/components/dangCauOptions.ts` (hằng số
+  `DANG_CAU_CHUA_HO_TRO`) — server cũng chặn nếu cố gửi thẳng (phòng thủ, dù
+  UI đã ẩn). **Việc cần làm sau:** thiết kế cấu trúc lưu (bảng
+  `cap_noi`?/`thu_tu_dung`? hay JSON trên `cau_hoi`), rồi bật lại 2 dạng này
+  trong `DANG_CAU_CHUA_HO_TRO`.
+
+Logic phân loại dạng câu → kiểu UI/validate gom vào 1 file dùng chung
+`src/components/dangCauOptions.ts` (import cả ở `CauHoiForm.tsx` client và
+`cau-hoi/actions.ts` server) để 2 bên luôn khớp nhau, tránh lệch UI/validate
+như module cũ.
+
+Không có migration mới — chỉ code frontend, vẫn dùng `lua_chon`/`dap_an_text`
+đã có sẵn.
+
+**Migration:** không có.
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** ✅ chỉ là code — không đụng schema/RLS.
+**Commit:** `2c94b5f`.
+
+---
+
 ## 2026-09-28 — Bước 5.2: trang tạo câu hỏi (`/dashboard/hoc-lieu/cau-hoi`)
 
 **Tóm tắt:** Trang chính của ngân hàng câu hỏi GĐ3 — tạo câu hỏi mới với
