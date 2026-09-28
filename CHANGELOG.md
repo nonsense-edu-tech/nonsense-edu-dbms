@@ -20,6 +20,43 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Bước 5.2: trang tạo câu hỏi (`/dashboard/hoc-lieu/cau-hoi`)
+
+**Tóm tắt:** Trang chính của ngân hàng câu hỏi GĐ3 — tạo câu hỏi mới với
+cascading select đầy đủ 7 tầng (cấp học → chương trình → môn học, scope theo
+`chuong_trinh_mon_hoc` → học phần → bài học → chủ đề → dạng câu), gọi RPC
+`cap_ma_cau_hoi()` để cấp mã 17 số (RPC tự xác nhận học phần/bài học/chủ đề
+thật sự thuộc đúng môn/cấp học đã chọn, chặn dữ liệu rác ngay ở tầng DB).
+`stt_cau` lưu lại từ 4 số cuối mã trả về để tiện truy vấn sau này.
+
+Hỗ trợ 2 kiểu đáp án song song (DB không ràng buộc bắt buộc 1 trong 2):
+**lựa chọn** (`lua_chon`, thêm/bớt động, đánh dấu 1 hoặc nhiều đáp án đúng —
+dùng cho trắc nghiệm) và **đáp án dạng văn bản** (`dap_an_text` — dùng cho
+điền khuyết/trả lời ngắn/tự luận); giáo viên tự chọn theo dạng câu, không ép
+logic cứng theo `dang_cau` để tránh làm phức tạp hoá form giai đoạn đầu.
+Ghi `lua_chon` là bước insert riêng sau khi tạo `cau_hoi` (không có transaction
+qua PostgREST) — nếu insert `lua_chon` lỗi thì xoá lại `cau_hoi` vừa tạo
+(best-effort rollback), tránh để lại câu hỏi rỗng lựa chọn.
+
+Quyền tạo: `master_admin`/`admin_ht`/`truong_bm`/`gv` (khớp `p_write_insert`
+trên `cau_hoi`, rộng hơn các module chủ đề/học phần/bài học vì RLS cho phép
+giáo viên tạo câu hỏi trực tiếp). Danh sách câu hỏi hiển thị đã ghép tên
+cấp học/môn/học phần/bài học/chủ đề/dạng câu (bảng `cau_hoi` lưu mã số
+denormalized, không phải UUID FK, nên phải tự dựng map để join phía
+frontend) + badge trạng thái (Nháp/Chờ duyệt/Đã duyệt/Lưu trữ). Chỉ có tạo +
+xoá mềm ở bước này — sửa câu hỏi và luồng nộp duyệt/duyệt để ở Bước 5.3-5.4
+(có trigger DB `chan_tu_duyet_cau_hoi`/`chan_sua_cau_hoi_da_phat_hanh` cần xử
+lý UI phù hợp, không làm vội).
+
+Không có migration mới — chỉ dùng bảng/RLS/RPC đã có sẵn (`0038`/ADR-002).
+
+**Migration:** không có (chỉ code frontend).
+**Staging:** — (staging đang được chủ động để inactive).
+**Production:** ✅ chỉ là code — không đụng schema/RLS.
+**Commit:** `d14c5fb`.
+
+---
+
 ## 2026-09-28 — Bước 5.1b: giao diện quản lý Học phần & Bài học (`/dashboard/hoc-lieu/hoc-phan`, `/bai-hoc`)
 
 **Tóm tắt:** Tiếp nối Bước 5.1 (Chủ đề). Trong lúc chuẩn bị trang tạo câu hỏi

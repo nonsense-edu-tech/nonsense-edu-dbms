@@ -189,6 +189,72 @@
 .badgeDaDay { background: rgba(60, 200, 138, 0.15); color: var(--success); }
 .badgeHuy { background: rgba(224, 87, 87, 0.15); color: #F08080; }
 
+.badgeNhap { background: rgba(139, 146, 169, 0.15); color: var(--text-mid); }
+.badgeChoDuyet { background: rgba(245, 166, 35, 0.15); color: var(--accent); }
+.badgeDaDuyet { background: rgba(60, 200, 138, 0.15); color: var(--success); }
+.badgeLuuTru { background: rgba(224, 87, 87, 0.12); color: #F08080; }
+
+.fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fieldsetTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.luaChonRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.luaChonRow > input[type="text"] {
+  flex: 1;
+}
+
+.luaChonCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-mid);
+  white-space: nowrap;
+}
+
+.btnAdd {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-mid);
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnAdd:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.previewCode {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--text-lo);
+}
+
+.noiDungCell {
+  white-space: normal;
+  max-width: 360px;
+}
+
 .modalOverlay {
   position: fixed;
   inset: 0;
