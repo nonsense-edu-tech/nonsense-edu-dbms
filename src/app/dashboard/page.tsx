@@ -313,16 +313,11 @@ async function AdminDashboard({
                     <IconHopDong />
                     <span className={styles.groupLabel}>Học phí</span>
                   </div>
-                  <div className={styles.statGrid}>
+                  <div className={quyen.taiChinh ? styles.statGrid : styles.statGrid2}>
                     <StatCard label="Hợp đồng đang hoạt động" value={formatSo(hopDongHoatDong)} />
                     <StatCard label="Chờ duyệt" value={formatSo(hopDongChoDuyet)} tag={hopDongChoDuyet && hopDongChoDuyet > 0 ? { text: "cần xử lý", kind: "warn" } : undefined} />
-                    {quyen.taiChinh ? (
+                    {quyen.taiChinh && (
                       <StatCard label="Kỳ đóng quá hạn" value={formatSo(kyDongQuaHan)} tag={kyDongQuaHan && kyDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
-                    ) : (
-                      <div className={styles.lockedCard}>
-                        <span className={styles.lockedLabel}>Kỳ đóng quá hạn</span>
-                        <span className={styles.lockedNote}>Chỉ Kế toán / Thu ngân / Admin Tuyển sinh / Master Admin xem được.</span>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -342,7 +337,7 @@ async function AdminDashboard({
             </div>
           </div>
 
-          {quyen.nganHangCauHoi ? (
+          {quyen.nganHangCauHoi && (
             <div className={styles.group}>
               <div className={styles.groupHead}>
                 <IconHocLieu />
@@ -352,18 +347,6 @@ async function AdminDashboard({
                 <StatCard label="Tổng câu hỏi" value={formatSo(tongCauHoi)} />
                 <StatCard label="Chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần duyệt", kind: "warn" } : undefined} />
                 <StatCard label="Đã duyệt tháng này" value={formatSo(cauHoiDaDuyetThang)} />
-              </div>
-            </div>
-          ) : (
-            <div className={styles.group}>
-              <div className={styles.groupHead}>
-                <IconHocLieu />
-                <span className={styles.groupLabel}>Ngân hàng câu hỏi</span>
-              </div>
-              <div className={styles.lockedCard}>
-                <span className={styles.lockedNote}>
-                  Vai trò {tenVaiTro(vaiTro)} không có quyền đọc bảng câu hỏi (chỉ Master Admin / Admin Hiệu trưởng / Trưởng bộ môn / GV trong phạm vi môn).
-                </span>
               </div>
             </div>
           )}
@@ -376,7 +359,7 @@ async function AdminDashboard({
           ]}
         />
 
-        <ModuleGridFull />
+        <ModuleClustersAdmin />
       </div>
     </main>
   );
@@ -474,14 +457,25 @@ async function GvDashboard({
 
         <div className={styles.moduleSection}>
           <span className={styles.groupLabel}>Khối nghiệp vụ dành cho bạn</span>
-          <div className={styles.moduleGrid}>
-            <ModuleCard href="/dashboard/lop" icon={<IconLop />} title="Lớp học" desc="Danh sách lớp đang dạy" />
-            <ModuleCard href="/dashboard/hoc-sinh" icon={<IconHocSinh />} title="Học sinh" desc="Hồ sơ học sinh phụ trách" />
-            <ModuleCard href="/dashboard/hoc-lieu" icon={<IconHocLieu />} title="Học liệu" desc="Ngân hàng câu hỏi" />
-            <ModuleCard href="/dashboard/van-hanh" icon={<IconVanHanh />} title="Vận hành" desc="Lịch buổi học" />
+          <div className={styles.clusterList}>
+            <ModuleCluster
+              title="Vận hành"
+              items={[
+                { href: "/dashboard/lop", icon: <IconLop />, title: "Lớp học", desc: "Danh sách lớp đang dạy" },
+                { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, title: "Học sinh", desc: "Hồ sơ học sinh phụ trách" },
+                { href: "/dashboard/van-hanh", icon: <IconVanHanh />, title: "Vận hành", desc: "Lịch buổi học" },
+              ]}
+            />
+            <ModuleCluster
+              title="Học thuật"
+              items={[
+                { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, title: "Học liệu", desc: "Ngân hàng câu hỏi" },
+                { href: "/dashboard/tro-giang", icon: <IconTroGiang />, title: "Trợ giảng", desc: "Tra cứu câu hỏi (chỉ xem)" },
+              ]}
+            />
           </div>
           <span className={styles.noteSmall}>
-            * Không hiển thị số liệu tài chính/học phí — theo đúng phân quyền của vai trò {tenVaiTro(vaiTro)}.
+            * Không hiển thị cụm Tài chính — ngoài phạm vi vai trò {tenVaiTro(vaiTro)}.
           </span>
         </div>
       </div>
@@ -507,24 +501,17 @@ function TroGiangDashboard({ header, tenHienThi }: { header: ReactNode; tenHienT
         </div>
 
         <div className={styles.welcomeGrid}>
-          <Link href="/dashboard/tro-giang" className={styles.welcomeCard}>
-            <div className={styles.welcomeIconWrap}>
-              <IconTroGiang className={styles.welcomeIcon} />
-            </div>
-            <div>
-              <div className={styles.welcomeCardTitle}>Trợ giảng — Tra cứu câu hỏi</div>
-              <div className={styles.welcomeCardDesc}>Xem danh mục & chi tiết câu hỏi theo môn học trong phạm vi được phân quyền.</div>
-            </div>
-          </Link>
-
-          <div className={`${styles.welcomeCard} ${styles.welcomeCardLocked}`}>
-            <div className={styles.welcomeIconWrap}>
-              <IconLop className={styles.welcomeIcon} />
-            </div>
-            <div>
-              <div className={styles.welcomeCardTitle}>Lớp học</div>
-              <div className={styles.welcomeCardDesc}>Chưa được cấp quyền truy cập trực tiếp.</div>
-            </div>
+          <div className={styles.welcomeCol}>
+            <span className={styles.clusterLabel}>Học thuật</span>
+            <Link href="/dashboard/tro-giang" className={styles.welcomeCard}>
+              <div className={styles.welcomeIconWrap}>
+                <IconTroGiang className={styles.welcomeIcon} />
+              </div>
+              <div>
+                <div className={styles.welcomeCardTitle}>Trợ giảng — Tra cứu câu hỏi</div>
+                <div className={styles.welcomeCardDesc}>Xem danh mục & chi tiết câu hỏi theo môn học trong phạm vi được phân quyền.</div>
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -594,7 +581,19 @@ function ChartsPlaceholder({ items }: { items: { title: string; kind: string }[]
   );
 }
 
-function ModuleCard({ href, icon, title, desc }: { href: string; icon: ReactNode; title: string; desc: string }) {
+type ModuleItem = {
+  href: string;
+  icon: ReactNode;
+  title: string;
+  desc: string;
+};
+
+// QUY TẮC CỐ ĐỊNH: role không liên quan đến một chức năng thì KHÔNG hiện
+// chức năng đó cho họ — kể cả dạng mờ/khoá (locked). Không dùng placeholder
+// "chưa được cấp quyền" nữa; ModuleCluster/ModuleCard chỉ render đúng những
+// mục thật sự thuộc phạm vi vai trò, danh sách items truyền vào đã được lọc
+// sẵn theo vai trò tại nơi gọi (AdminDashboard/GvDashboard/TroGiangDashboard).
+function ModuleCard({ href, icon, title, desc }: ModuleItem) {
   return (
     <Link href={href} className={styles.moduleCard}>
       <div className={styles.moduleIconWrap}>{icon}</div>
@@ -606,19 +605,49 @@ function ModuleCard({ href, icon, title, desc }: { href: string; icon: ReactNode
   );
 }
 
-function ModuleGridFull() {
+function ModuleCluster({ title, items }: { title: string; items: ModuleItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className={styles.cluster}>
+      <span className={styles.clusterLabel}>{title}</span>
+      <div className={styles.moduleGrid8}>
+        {items.map((it) => (
+          <ModuleCard key={it.title} {...it} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 3 cụm khối nghiệp vụ dùng chung cho mọi dashboard — Vận hành / Học thuật /
+// Tài chính — cùng 1 cấu trúc tên cụm cho mọi vai trò, nhưng mỗi cụm chỉ liệt
+// kê đúng những mục thuộc phạm vi vai trò đó (xem quy tắc ở ModuleCard).
+function ModuleClustersAdmin() {
   return (
     <div className={styles.moduleSection}>
       <span className={styles.groupLabel}>Khối nghiệp vụ</span>
-      <div className={styles.moduleGrid8}>
-        <ModuleCard href="/dashboard/lop" icon={<IconLop />} title="Lớp học" desc="Danh sách & quản lý lớp" />
-        <ModuleCard href="/dashboard/hoc-sinh" icon={<IconHocSinh />} title="Học sinh" desc="Hồ sơ & ghi danh" />
-        <ModuleCard href="/dashboard/hoc-phi" icon={<IconHopDong />} title="Học phí" desc="Hợp đồng & thu tiền" />
-        <ModuleCard href="/dashboard/chi-nhanh" icon={<IconChiNhanh />} title="Chi nhánh" desc="Cơ sở & phân quyền" />
-        <ModuleCard href="/dashboard/van-hanh" icon={<IconVanHanh />} title="Vận hành" desc="Phòng học & buổi học" />
-        <ModuleCard href="/dashboard/hoc-lieu" icon={<IconHocLieu />} title="Học liệu" desc="Ngân hàng câu hỏi" />
-        <ModuleCard href="/dashboard/tro-giang" icon={<IconTroGiang />} title="Trợ giảng" desc="Tra cứu câu hỏi" />
-        <ModuleCard href="/dashboard/users" icon={<IconNguoiDung />} title="Người dùng" desc="Vai trò & phân quyền" />
+      <div className={styles.clusterList}>
+        <ModuleCluster
+          title="Vận hành"
+          items={[
+            { href: "/dashboard/chi-nhanh", icon: <IconChiNhanh />, title: "Chi nhánh", desc: "Tạo & quản lý cơ sở" },
+            { href: "/dashboard/lop", icon: <IconLop />, title: "Lớp học", desc: "Tạo & quản lý lớp" },
+            { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, title: "Học sinh", desc: "Hồ sơ & ghi danh" },
+            { href: "/dashboard/van-hanh", icon: <IconVanHanh />, title: "Vận hành", desc: "Phòng học & buổi học" },
+            { href: "/dashboard/users", icon: <IconNguoiDung />, title: "Người dùng", desc: "Vai trò & phân quyền" },
+          ]}
+        />
+        <ModuleCluster
+          title="Học thuật"
+          items={[
+            { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, title: "Học liệu", desc: "Ngân hàng câu hỏi" },
+            { href: "/dashboard/tro-giang", icon: <IconTroGiang />, title: "Trợ giảng", desc: "Tra cứu câu hỏi" },
+          ]}
+        />
+        <ModuleCluster
+          title="Tài chính"
+          items={[{ href: "/dashboard/hoc-phi", icon: <IconHopDong />, title: "Học phí", desc: "Hợp đồng & thu tiền" }]}
+        />
       </div>
     </div>
   );
@@ -634,9 +663,9 @@ function IconTaiChinh() {
     </svg>
   );
 }
-function IconHopDong() {
+function IconHopDong({ className }: { className?: string }) {
   return (
-    <svg className={styles.groupIcon} viewBox="0 0 24 24">
+    <svg className={className ?? styles.groupIcon} viewBox="0 0 24 24">
       <rect x="2.5" y="6" width="19" height="13" rx="2.5" />
       <path d="M2.5 10h19" />
       <path d="M6 14h4" />

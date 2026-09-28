@@ -20,6 +20,62 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Quy tắc "ẩn hẳn, không hiện dạng khoá" cho UI theo vai trò
+
+**Tóm tắt:** Người dùng phản hồi không muốn GV/Trưởng bộ môn/Trợ giảng nhìn
+thấy các khối chức năng không liên quan đến họ trên dashboard — kể cả ở dạng
+mờ/khoá kèm ghi chú "chưa được cấp quyền" (PR #27 trước đó có làm vậy). Đã
+sửa lại: bỏ hẳn khỏi UI, không còn trạng thái "locked" nào nữa.
+
+- **Trưởng bộ môn/GV**: không còn hiện cụm "Tài chính" (trước đó hiện dạng
+  khoá); thẻ "Kỳ đóng quá hạn" trong nhóm Học phí của Admin cũng ẩn hẳn cho
+  `quan_ly_chi_nhanh` thay vì hiện khoá (nhóm chỉ còn 2 thẻ, lưới 2 cột).
+- **Trợ giảng**: khối nghiệp vụ chỉ còn đúng 1 cụm "Học thuật" (1 thẻ Trợ
+  giảng) — bỏ hẳn cụm Vận hành/Tài chính từng hiện dạng khoá.
+- **Admin**: nhóm "Ngân hàng câu hỏi" không còn hiện dạng khoá cho vai trò
+  không có quyền đọc `cau_hoi` (ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh)
+  — ẩn hẳn.
+- Xoá `locked`/`lockedNote` khỏi `ModuleCard`/`ModuleItem` và các class CSS
+  `.lockedCard`/`.moduleCardLocked`/`.welcomeCardLocked` không còn dùng.
+- **Đã lưu thành quy tắc cố định vào memory dự án**
+  (`principles-and-practices.md`): "role không liên quan đến chức năng thì
+  không được nhìn thấy chức năng đó" — áp dụng cho mọi màn hình sau này,
+  không riêng dashboard.
+
+**Migration:** không có (chỉ đổi code frontend, không đổi schema/RLS).
+**Staging:** — (không dùng, theo quyết định của người dùng).
+**Production:** 🔲 chưa — cần PR merge vào `main` qua CI theo ADR-004.
+**Commit:** (điền sau khi commit)
+
+---
+
+## 2026-09-28 — Khối nghiệp vụ dashboard chia 3 cụm (Vận hành/Học thuật/Tài chính)
+
+**Tóm tắt:** Theo yêu cầu người dùng, chia lại lưới "khối nghiệp vụ" trên
+`/dashboard` thành 3 cụm cố định — **Vận hành** (Chi nhánh, Lớp học, Học
+sinh, Vận hành, Người dùng), **Học thuật** (Học liệu, Trợ giảng), **Tài
+chính** (Học phí) — dùng đúng 1 cấu trúc cho cả 3 giao diện theo vai trò,
+thay vì mỗi vai trò một danh sách rời rạc như trước.
+
+- Thêm component dùng chung `ModuleCluster`/`ModuleCard` (hỗ trợ trạng thái
+  `locked` — mục ngoài phạm vi vai trò hiện mờ/khoá kèm ghi chú, thay vì ẩn
+  hẳn hoặc hiện nhầm như đang dùng được) trong `src/app/dashboard/page.tsx`.
+- **Admin**: cả 3 cụm active đầy đủ.
+- **Trưởng bộ môn/GV**: cụm Vận hành chỉ còn 3 mục liên quan (không có Chi
+  nhánh/Người dùng — lược hẳn, không phải locked); cụm Tài chính hiện
+  **locked** "Học phí" (trước đây không hiện gì) — để nhất quán cấu trúc
+  3 cụm với các dashboard khác, không phải mở thêm quyền truy cập thật.
+- **Trợ giảng**: 3 cụm đều hiện, chỉ cụm Học thuật active, 2 cụm còn lại
+  locked (trước đây chỉ có 2 thẻ phẳng không theo cụm).
+- Mô tả thiết kế đã cập nhật trong project docs.
+
+**Migration:** không có (chỉ đổi code frontend, không đổi schema/RLS).
+**Staging:** — (không dùng, theo quyết định của người dùng).
+**Production:** 🔲 chưa — cần PR merge vào `main` qua CI theo ADR-004.
+**Commit:** (điền sau khi commit)
+
+---
+
 ## 2026-09-28 — Thiết kế lại trang dashboard theo vai trò
 
 **Tóm tắt:** Viết lại hoàn toàn `/dashboard` (trang ngay sau đăng nhập) —
@@ -55,8 +111,10 @@ chung chung như trước.
 
 **Migration:** không có (chỉ đổi code frontend, không đổi schema/RLS).
 **Staging:** — (không dùng, theo quyết định của người dùng).
-**Production:** 🔲 chưa — cần PR merge vào `main` qua CI theo ADR-004.
-**Commit:** (điền sau khi commit)
+**Production:** ✅ đã merge vào `main` (PR #26) — lưu ý PR #25 ban đầu lỡ
+merge nhầm base (`feat/tro-giang-tra-cuu` thay vì `main`) nên chưa lên thật
+lần đầu; đã mở PR #26 sửa lại đúng base và merge bù.
+**Commit:** `c7561b0` (nội dung), merge commit `8f41bb9` trên `main`.
 
 ---
 
