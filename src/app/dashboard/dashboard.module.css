@@ -365,6 +365,26 @@
   gap: 12px;
 }
 
+.clusterList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clusterLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-lo);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .moduleCard {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -379,6 +399,17 @@
 .moduleCard:hover {
   border-color: var(--db-accent);
   background: var(--surface-2, #1E2330);
+}
+
+.moduleCardLocked {
+  opacity: 0.5;
+  border-style: dashed;
+  cursor: default;
+}
+
+.moduleCardLocked:hover {
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .moduleIconWrap {
@@ -462,10 +493,16 @@
 
 .welcomeGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
   width: 100%;
-  max-width: 760px;
+  max-width: 900px;
+}
+
+.welcomeCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .welcomeCard {
