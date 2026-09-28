@@ -44,7 +44,76 @@ không nhạy cảm). Thêm class `.textarea` dùng chung vào `Form.module.css`
 **Staging:** không áp dụng (không có migration).
 **Production:** không áp dụng (không có migration) — chờ deploy qua Vercel khi
 merge `main` như thường lệ.
-**Commit:** (điền sau khi commit).
+**Commit:** `d2aff69`.
+
+---
+
+## 2026-09-28 — Ngân hàng câu hỏi GĐ3 Bước 2: vòng đời + khung năng lực + RLS theo phạm vi (0038-0040)
+
+**⚠️ VI PHẠM QUY TRÌNH ADR-004 (ghi nhận minh bạch):** cả 3 migration dưới đây
+đã bị áp **TAY** lên production qua MCP `apply_migration` trong lúc làm việc,
+KHÔNG qua pipeline merge → CI như luật (a) của ADR-004 yêu cầu — đúng loại sự
+cố mà ADR-004 được viết ra để ngăn (2026-07-27). Nguyên nhân trực tiếp: phiên
+làm việc không tự có sẵn repo này, chỉ phát hiện ra CLAUDE.md/ADR-004 SAU KHI
+đã áp cả 3 migration. Người dùng đã xác nhận cho phép khắc phục và cấp quyền
+push để xử lý đồng bộ hoá ngay trong phiên.
+
+**Khắc phục (28/09/2026, cùng ngày phát hiện):**
+1. Đối chiếu lại TOÀN BỘ nội dung thật đã chạy trên production qua truy vấn
+   trực tiếp (`information_schema.columns`, `pg_policies`, `pg_constraint`,
+   `pg_get_functiondef`, `information_schema.triggers`,
+   `information_schema.role_routine_grants`) — không chép lại theo trí nhớ,
+   đúng nguyên tắc CLAUDE.md.
+2. Viết 3 file migration chính thức khớp đúng nội dung thật:
+   `0038_gd3_buoc2_vong_doi_khung_nang_luc_rls.sql`,
+   `0039_gd3_buoc2_va_loi_bao_mat_advisor.sql`,
+   `0040_gd3_buoc2_vaa_loi_p_write_for_all_de_ro_rls_doc.sql`.
+3. Sửa sổ sách `supabase_migrations.schema_migrations` trên production: xoá 3
+   dòng version dạng timestamp tự sinh (`20260928093020`/`093116`/`094347`),
+   thay bằng 3 dòng version đúng số file (`0038`/`0039`/`0040`) — **chỉ sửa
+   bookkeeping, KHÔNG chạy lại SQL nghiệp vụ** (đúng tiền lệ đã có ở ADR-004
+   Mục 6 cho 13 migration nợ kỹ thuật cũ). Verify: `list_migrations` cho dãy
+   liền mạch `0003`→`0040`.
+
+**Tóm tắt nội dung nghiệp vụ (0038):** thêm vai trò `tro_giang`; bảng `chu_de`
++ RLS; vòng đời câu hỏi (`trang_thai`/`nguoi_duyet`/`ngay_duyet`/`phien_ban`/
+`cau_hoi_goc_id`) + trigger chặn tự duyệt và chặn sửa câu hỏi đã phát hành;
+hàm `cap_ma_cau_hoi()` cấp mã 17 số tự động chống trùng qua bảng đếm
+`cau_hoi_bo_dem`; khung năng lực V-ACT (`tien_trinh`, `nang_luc`, `dang_bai`,
+`cau_hoi_nang_luc`) tách lớp khỏi câu hỏi lõi; hàm `co_quyen_mon()` + RLS đọc
+theo phạm vi môn (gv/trợ giảng chỉ đọc học liệu phụ trách, không có quyền
+download qua RPC); RPC `danh_muc_cau_hoi_tro_giang()`/`xem_mot_cau_hoi()` ẩn
+đáp án/lời giải cho trợ giảng, chỉ xem từng câu một lúc.
+
+**(0039):** vá 2 lỗ hổng phát hiện qua `Supabase:get_advisors` — thu hồi
+EXECUTE trên PUBLIC của 3 hàm SECURITY DEFINER mới (giữ nguyên EXECUTE PUBLIC
+của `co_quyen_mon` có chủ đích, vì hàm chỉ trả boolean và an toàn với `anon`).
+
+**(0040):** vá lỗi bảo mật THẬT phát hiện qua bộ test RLS 9 case theo vai trò
+— policy `p_write` cũ (`FOR ALL`) vô tình áp dụng cả cho `SELECT`, OR với
+`p_read` mới khiến gv đọc được mọi môn bất kể phạm vi. Tách thành 3 policy
+riêng theo lệnh cụ thể.
+
+**Ngoại lệ đã biết với luật "RLS chỉ thêm không sửa" (CLAUDE.md):** cả `0038`
+(DROP+CREATE `p_read` trên 5 bảng, thu hẹp theo phạm vi) và `0040` (DROP+CREATE
+`p_write`) đều sửa policy đang chạy thay vì chỉ thêm — có chủ đích, vì bản
+chất RLS permissive OR lại với nhau nên KHÔNG thể chỉ "thêm" để thu hẹp quyền.
+Cần cân nhắc bổ sung ngoại lệ này vào ADR-002 khi có dịp.
+
+**Test:** bộ test RLS 9 case theo vai trò (gv/trợ giảng/admin) — 9/9 PASS sau
+khi vá `0040`.
+
+**Việc còn lại (không thuộc phạm vi đợt này):** seed `user_pham_vi` — hoãn
+theo yêu cầu người dùng, để dành cho module quản lý người dùng làm sau.
+
+**Migration:** `0038_gd3_buoc2_vong_doi_khung_nang_luc_rls.sql`,
+`0039_gd3_buoc2_va_loi_bao_mat_advisor.sql`,
+`0040_gd3_buoc2_vaa_loi_p_write_for_all_de_ro_rls_doc.sql`.
+**Staging:** 🔲 chưa áp dụng (staging đang INACTIVE; cần resume + áp trước khi
+coi đợt này là "xong" theo đúng ADR-004 — ghi nhận là nợ kỹ thuật mở).
+**Production:** ✅ đã áp dụng thật (28/09/2026) — nhưng qua đường TAY, vi phạm
+ADR-004 luật (a), khắc phục sổ sách như mô tả ở trên trong cùng ngày.
+**Commit:** `954d425` (merge `96b9617` trên `main`, PR #15).
 
 ---
 
