@@ -270,28 +270,6 @@
   background: rgba(60, 200, 138, 0.1);
 }
 
-.lockedCard {
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  justify-content: center;
-}
-
-.lockedLabel {
-  font-size: 11px;
-  color: var(--text-lo);
-}
-
-.lockedNote {
-  font-size: 10.5px;
-  color: var(--text-lo);
-  line-height: 1.5;
-}
-
 /* ── Chart placeholders ─────────────────────────────────────────────── */
 .chartsRow {
   display: grid;
@@ -401,17 +379,6 @@
   background: var(--surface-2, #1E2330);
 }
 
-.moduleCardLocked {
-  opacity: 0.5;
-  border-style: dashed;
-  cursor: default;
-}
-
-.moduleCardLocked:hover {
-  border-color: var(--border);
-  background: var(--surface);
-}
-
 .moduleIconWrap {
   width: 34px;
   height: 34px;
@@ -496,7 +463,7 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
   width: 100%;
-  max-width: 900px;
+  max-width: 420px;
 }
 
 .welcomeCol {
@@ -522,10 +489,6 @@
   transform: translateY(-1px);
 }
 
-.welcomeCardLocked {
-  opacity: 0.55;
-}
-
 .welcomeIconWrap {
   width: 44px;
   height: 44px;
@@ -534,10 +497,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.welcomeCardLocked .welcomeIconWrap {
-  background: var(--surface-2, #1E2330);
 }
 
 .welcomeIcon {
@@ -549,10 +508,6 @@
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.welcomeCardLocked .welcomeIcon {
-  color: var(--text-lo);
 }
 
 .welcomeCardTitle {

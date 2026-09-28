@@ -313,16 +313,11 @@ async function AdminDashboard({
                     <IconHopDong />
                     <span className={styles.groupLabel}>Học phí</span>
                   </div>
-                  <div className={styles.statGrid}>
+                  <div className={quyen.taiChinh ? styles.statGrid : styles.statGrid2}>
                     <StatCard label="Hợp đồng đang hoạt động" value={formatSo(hopDongHoatDong)} />
                     <StatCard label="Chờ duyệt" value={formatSo(hopDongChoDuyet)} tag={hopDongChoDuyet && hopDongChoDuyet > 0 ? { text: "cần xử lý", kind: "warn" } : undefined} />
-                    {quyen.taiChinh ? (
+                    {quyen.taiChinh && (
                       <StatCard label="Kỳ đóng quá hạn" value={formatSo(kyDongQuaHan)} tag={kyDongQuaHan && kyDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
-                    ) : (
-                      <div className={styles.lockedCard}>
-                        <span className={styles.lockedLabel}>Kỳ đóng quá hạn</span>
-                        <span className={styles.lockedNote}>Chỉ Kế toán / Thu ngân / Admin Tuyển sinh / Master Admin xem được.</span>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -342,7 +337,7 @@ async function AdminDashboard({
             </div>
           </div>
 
-          {quyen.nganHangCauHoi ? (
+          {quyen.nganHangCauHoi && (
             <div className={styles.group}>
               <div className={styles.groupHead}>
                 <IconHocLieu />
@@ -352,18 +347,6 @@ async function AdminDashboard({
                 <StatCard label="Tổng câu hỏi" value={formatSo(tongCauHoi)} />
                 <StatCard label="Chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần duyệt", kind: "warn" } : undefined} />
                 <StatCard label="Đã duyệt tháng này" value={formatSo(cauHoiDaDuyetThang)} />
-              </div>
-            </div>
-          ) : (
-            <div className={styles.group}>
-              <div className={styles.groupHead}>
-                <IconHocLieu />
-                <span className={styles.groupLabel}>Ngân hàng câu hỏi</span>
-              </div>
-              <div className={styles.lockedCard}>
-                <span className={styles.lockedNote}>
-                  Vai trò {tenVaiTro(vaiTro)} không có quyền đọc bảng câu hỏi (chỉ Master Admin / Admin Hiệu trưởng / Trưởng bộ môn / GV trong phạm vi môn).
-                </span>
               </div>
             </div>
           )}
@@ -490,22 +473,9 @@ async function GvDashboard({
                 { href: "/dashboard/tro-giang", icon: <IconTroGiang />, title: "Trợ giảng", desc: "Tra cứu câu hỏi (chỉ xem)" },
               ]}
             />
-            <ModuleCluster
-              title="Tài chính"
-              items={[
-                {
-                  href: "/dashboard/hoc-phi",
-                  icon: <IconHopDong />,
-                  title: "Học phí",
-                  desc: "Hợp đồng & thu tiền",
-                  locked: true,
-                  lockedNote: "Chỉ Kế toán / Thu ngân / Admin Tuyển sinh / Master Admin xem được.",
-                },
-              ]}
-            />
           </div>
           <span className={styles.noteSmall}>
-            * Không hiển thị số liệu tài chính/học phí — theo đúng phân quyền của vai trò {tenVaiTro(vaiTro)}.
+            * Không hiển thị cụm Tài chính — ngoài phạm vi vai trò {tenVaiTro(vaiTro)}.
           </span>
         </div>
       </div>
@@ -532,19 +502,6 @@ function TroGiangDashboard({ header, tenHienThi }: { header: ReactNode; tenHienT
 
         <div className={styles.welcomeGrid}>
           <div className={styles.welcomeCol}>
-            <span className={styles.clusterLabel}>Vận hành</span>
-            <div className={`${styles.welcomeCard} ${styles.welcomeCardLocked}`}>
-              <div className={styles.welcomeIconWrap}>
-                <IconLop className={styles.welcomeIcon} />
-              </div>
-              <div>
-                <div className={styles.welcomeCardTitle}>Lớp học</div>
-                <div className={styles.welcomeCardDesc}>Chưa được cấp quyền truy cập trực tiếp.</div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.welcomeCol}>
             <span className={styles.clusterLabel}>Học thuật</span>
             <Link href="/dashboard/tro-giang" className={styles.welcomeCard}>
               <div className={styles.welcomeIconWrap}>
@@ -555,19 +512,6 @@ function TroGiangDashboard({ header, tenHienThi }: { header: ReactNode; tenHienT
                 <div className={styles.welcomeCardDesc}>Xem danh mục & chi tiết câu hỏi theo môn học trong phạm vi được phân quyền.</div>
               </div>
             </Link>
-          </div>
-
-          <div className={styles.welcomeCol}>
-            <span className={styles.clusterLabel}>Tài chính</span>
-            <div className={`${styles.welcomeCard} ${styles.welcomeCardLocked}`}>
-              <div className={styles.welcomeIconWrap}>
-                <IconHopDong className={styles.welcomeIcon} />
-              </div>
-              <div>
-                <div className={styles.welcomeCardTitle}>Học phí</div>
-                <div className={styles.welcomeCardDesc}>Chưa được cấp quyền truy cập trực tiếp.</div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -642,22 +586,14 @@ type ModuleItem = {
   icon: ReactNode;
   title: string;
   desc: string;
-  locked?: boolean;
-  lockedNote?: string;
 };
 
-function ModuleCard({ href, icon, title, desc, locked, lockedNote }: ModuleItem) {
-  if (locked) {
-    return (
-      <div className={`${styles.moduleCard} ${styles.moduleCardLocked}`}>
-        <div className={styles.moduleIconWrap}>{icon}</div>
-        <div className={styles.moduleText}>
-          <span className={styles.moduleTitle}>{title}</span>
-          <span className={styles.moduleDesc}>{lockedNote ?? desc}</span>
-        </div>
-      </div>
-    );
-  }
+// QUY TẮC CỐ ĐỊNH: role không liên quan đến một chức năng thì KHÔNG hiện
+// chức năng đó cho họ — kể cả dạng mờ/khoá (locked). Không dùng placeholder
+// "chưa được cấp quyền" nữa; ModuleCluster/ModuleCard chỉ render đúng những
+// mục thật sự thuộc phạm vi vai trò, danh sách items truyền vào đã được lọc
+// sẵn theo vai trò tại nơi gọi (AdminDashboard/GvDashboard/TroGiangDashboard).
+function ModuleCard({ href, icon, title, desc }: ModuleItem) {
   return (
     <Link href={href} className={styles.moduleCard}>
       <div className={styles.moduleIconWrap}>{icon}</div>
@@ -670,6 +606,7 @@ function ModuleCard({ href, icon, title, desc, locked, lockedNote }: ModuleItem)
 }
 
 function ModuleCluster({ title, items }: { title: string; items: ModuleItem[] }) {
+  if (items.length === 0) return null;
   return (
     <div className={styles.cluster}>
       <span className={styles.clusterLabel}>{title}</span>
@@ -683,8 +620,8 @@ function ModuleCluster({ title, items }: { title: string; items: ModuleItem[] })
 }
 
 // 3 cụm khối nghiệp vụ dùng chung cho mọi dashboard — Vận hành / Học thuật /
-// Tài chính — ánh xạ đúng cùng 1 cấu trúc cho mọi vai trò, chỉ khác mục nào
-// hiện link thật (active) và mục nào hiện khoá (locked, ngoài phạm vi vai trò).
+// Tài chính — cùng 1 cấu trúc tên cụm cho mọi vai trò, nhưng mỗi cụm chỉ liệt
+// kê đúng những mục thuộc phạm vi vai trò đó (xem quy tắc ở ModuleCard).
 function ModuleClustersAdmin() {
   return (
     <div className={styles.moduleSection}>

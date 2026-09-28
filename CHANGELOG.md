@@ -20,6 +20,35 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-28 — Quy tắc "ẩn hẳn, không hiện dạng khoá" cho UI theo vai trò
+
+**Tóm tắt:** Người dùng phản hồi không muốn GV/Trưởng bộ môn/Trợ giảng nhìn
+thấy các khối chức năng không liên quan đến họ trên dashboard — kể cả ở dạng
+mờ/khoá kèm ghi chú "chưa được cấp quyền" (PR #27 trước đó có làm vậy). Đã
+sửa lại: bỏ hẳn khỏi UI, không còn trạng thái "locked" nào nữa.
+
+- **Trưởng bộ môn/GV**: không còn hiện cụm "Tài chính" (trước đó hiện dạng
+  khoá); thẻ "Kỳ đóng quá hạn" trong nhóm Học phí của Admin cũng ẩn hẳn cho
+  `quan_ly_chi_nhanh` thay vì hiện khoá (nhóm chỉ còn 2 thẻ, lưới 2 cột).
+- **Trợ giảng**: khối nghiệp vụ chỉ còn đúng 1 cụm "Học thuật" (1 thẻ Trợ
+  giảng) — bỏ hẳn cụm Vận hành/Tài chính từng hiện dạng khoá.
+- **Admin**: nhóm "Ngân hàng câu hỏi" không còn hiện dạng khoá cho vai trò
+  không có quyền đọc `cau_hoi` (ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh)
+  — ẩn hẳn.
+- Xoá `locked`/`lockedNote` khỏi `ModuleCard`/`ModuleItem` và các class CSS
+  `.lockedCard`/`.moduleCardLocked`/`.welcomeCardLocked` không còn dùng.
+- **Đã lưu thành quy tắc cố định vào memory dự án**
+  (`principles-and-practices.md`): "role không liên quan đến chức năng thì
+  không được nhìn thấy chức năng đó" — áp dụng cho mọi màn hình sau này,
+  không riêng dashboard.
+
+**Migration:** không có (chỉ đổi code frontend, không đổi schema/RLS).
+**Staging:** — (không dùng, theo quyết định của người dùng).
+**Production:** 🔲 chưa — cần PR merge vào `main` qua CI theo ADR-004.
+**Commit:** (điền sau khi commit)
+
+---
+
 ## 2026-09-28 — Khối nghiệp vụ dashboard chia 3 cụm (Vận hành/Học thuật/Tài chính)
 
 **Tóm tắt:** Theo yêu cầu người dùng, chia lại lưới "khối nghiệp vụ" trên
