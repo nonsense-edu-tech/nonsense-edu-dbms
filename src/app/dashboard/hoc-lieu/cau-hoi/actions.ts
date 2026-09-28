@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau, type LoaiDangCau } from "@/components/dangCauOptions";
+import { TRANG_THAI_LABEL } from "@/components/trangThaiCauHoi";
 
 type CauHoi = {
   id: string;
@@ -258,6 +259,94 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
     );
     if (themLuaChonError) return { error: mapDbError(themLuaChonError.message) };
   }
+
+  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Bước 5.4 — luồng nộp duyệt/duyệt câu hỏi (nhap → cho_duyet → da_duyet).
+// Mỗi hàm tự kiểm tra trang_thai hiện tại trước (thông báo tiếng Việt rõ
+// ràng) — lớp chặn thật vẫn là trigger DB (trg_chan_tu_duyet_cau_hoi chặn tự
+// duyệt, trg_cau_hoi_chan_gv_tu_duyet chặn gv duyệt — xem migration 0041),
+// đề phòng gọi trực tiếp qua API không qua các hàm này.
+// ---------------------------------------------------------------------------
+
+async function layTrangThaiHienTai(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string
+): Promise<{ trang_thai: string; nguoi_tao: string | null } | { error: string }> {
+  const { data, error } = await supabase.from("cau_hoi").select("trang_thai, nguoi_tao").eq("id", id).single();
+  if (error || !data) return { error: "Không tìm thấy câu hỏi." };
+  return data;
+}
+
+export async function nopDuyetCauHoi(id: string): Promise<XoaCauHoiResult> {
+  const supabase = await createClient();
+  if (!id) return { error: "Thiếu ID câu hỏi." };
+
+  const hienTai = await layTrangThaiHienTai(supabase, id);
+  if ("error" in hienTai) return hienTai;
+  if (hienTai.trang_thai !== "nhap") {
+    return {
+      error: `Chỉ câu hỏi đang ở trạng thái Nháp mới nộp duyệt được (hiện tại: ${TRANG_THAI_LABEL[hienTai.trang_thai] ?? hienTai.trang_thai}).`,
+    };
+  }
+
+  const { error } = await supabase.from("cau_hoi").update({ trang_thai: "cho_duyet" }).eq("id", id);
+  if (error) return { error: mapDbError(error.message) };
+
+  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  return { ok: true };
+}
+
+export async function duyetCauHoi(id: string): Promise<XoaCauHoiResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Chưa đăng nhập." };
+  if (!id) return { error: "Thiếu ID câu hỏi." };
+
+  const hienTai = await layTrangThaiHienTai(supabase, id);
+  if ("error" in hienTai) return hienTai;
+  if (hienTai.trang_thai !== "cho_duyet") {
+    return {
+      error: `Chỉ câu hỏi đang Chờ duyệt mới duyệt được (hiện tại: ${TRANG_THAI_LABEL[hienTai.trang_thai] ?? hienTai.trang_thai}).`,
+    };
+  }
+  if (hienTai.nguoi_tao === user.id) {
+    return { error: "Không được tự duyệt câu hỏi do chính mình tạo." };
+  }
+
+  const { error } = await supabase
+    .from("cau_hoi")
+    .update({ trang_thai: "da_duyet", nguoi_duyet: user.id, ngay_duyet: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: mapDbError(error.message) };
+
+  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  return { ok: true };
+}
+
+// Trả câu hỏi về Nháp để người tạo sửa lại — không lưu lý do (chưa có cột phù
+// hợp; cau_hoi.tien_trinh là khoá ngoại sang bảng tien_trinh của khung năng
+// lực, không phải ghi chú duyệt — không dùng nhầm). Ghi nợ kỹ thuật: nếu cần
+// lý do từ chối chi tiết, cần thêm cột/bảng riêng ở bước sau.
+export async function tuChoiDuyetCauHoi(id: string): Promise<XoaCauHoiResult> {
+  const supabase = await createClient();
+  if (!id) return { error: "Thiếu ID câu hỏi." };
+
+  const hienTai = await layTrangThaiHienTai(supabase, id);
+  if ("error" in hienTai) return hienTai;
+  if (hienTai.trang_thai !== "cho_duyet") {
+    return {
+      error: `Chỉ câu hỏi đang Chờ duyệt mới từ chối được (hiện tại: ${TRANG_THAI_LABEL[hienTai.trang_thai] ?? hienTai.trang_thai}).`,
+    };
+  }
+
+  const { error } = await supabase.from("cau_hoi").update({ trang_thai: "nhap" }).eq("id", id);
+  if (error) return { error: mapDbError(error.message) };
 
   revalidatePath("/dashboard/hoc-lieu/cau-hoi");
   return { ok: true };

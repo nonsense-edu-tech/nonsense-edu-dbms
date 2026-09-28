@@ -163,8 +163,24 @@
   background: rgba(224, 87, 87, 0.1);
 }
 
+.btnApprove {
+  background: transparent;
+  border: 1px solid rgba(60, 200, 138, 0.4);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.btnApprove:hover:not(:disabled) {
+  background: rgba(60, 200, 138, 0.12);
+}
+
 .btnEdit:disabled,
-.btnDelete:disabled {
+.btnDelete:disabled,
+.btnApprove:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

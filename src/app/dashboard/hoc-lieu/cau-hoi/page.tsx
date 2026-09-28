@@ -6,6 +6,7 @@ import CauHoiTable, { type CauHoiRow } from "@/components/CauHoiTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm", "gv"];
+const VAI_TRO_DUYET = ["master_admin", "admin_ht", "truong_bm"];
 
 export default async function CauHoiPage() {
   const supabase = await createClient();
@@ -39,7 +40,7 @@ export default async function CauHoiPage() {
     supabase
       .from("cau_hoi")
       .select(
-        "id, ma_cau_hoi, noi_dung, do_kho, loi_giai, dap_an_text, trang_thai, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at"
+        "id, ma_cau_hoi, noi_dung, do_kho, loi_giai, dap_an_text, trang_thai, nguoi_tao, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at"
       )
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
@@ -48,6 +49,7 @@ export default async function CauHoiPage() {
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
   const canWrite = isActive && VAI_TRO_QUAN_LY.includes(vaiTro);
+  const canDuyet = isActive && VAI_TRO_DUYET.includes(vaiTro);
 
   const capHocMap = new Map((capHocList ?? []).map((c) => [c.ma, c.ten]));
   const dangCauMap = new Map((dangCauList ?? []).map((d) => [d.ma, d.ten]));
@@ -70,6 +72,7 @@ export default async function CauHoiPage() {
       loi_giai: ch.loi_giai,
       dap_an_text: ch.dap_an_text,
       trang_thai: ch.trang_thai,
+      nguoi_tao: ch.nguoi_tao,
       cap_hoc_ten: ch.cap_hoc != null ? capHocMap.get(ch.cap_hoc) ?? String(ch.cap_hoc) : "—",
       mon_hoc_ten: monHoc?.ten ?? "—",
       hoc_phan_ten: hocPhan?.ten ?? "—",
@@ -120,11 +123,12 @@ export default async function CauHoiPage() {
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Danh sách câu hỏi ({cauHoiRows.length})</h2>
         <p className={styles.noticeBox}>
-          Câu hỏi mới tạo ở trạng thái <strong>Nháp</strong>. Chức năng nộp duyệt/duyệt và sửa câu hỏi sẽ có ở bước
-          kế tiếp (5.3-5.4). Giáo viên chỉ thấy câu hỏi thuộc môn/cấp học được phân quyền.
+          Câu hỏi mới tạo ở trạng thái <strong>Nháp</strong> → nộp duyệt chuyển <strong>Chờ duyệt</strong> → Admin học
+          thuật/Trưởng bộ môn/Master Admin duyệt thành <strong>Đã duyệt</strong> (không tự duyệt được câu hỏi của
+          chính mình). Giáo viên chỉ thấy câu hỏi thuộc môn/cấp học được phân quyền.
         </p>
         {cauHoiRows.length > 0 ? (
-          <CauHoiTable list={cauHoiRows} canWrite={canWrite} />
+          <CauHoiTable list={cauHoiRows} canWrite={canWrite} canDuyet={canDuyet} currentUserId={user.id} />
         ) : (
           <p className={styles.empty}>Chưa có câu hỏi nào.</p>
         )}
