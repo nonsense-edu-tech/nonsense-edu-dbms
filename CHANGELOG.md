@@ -60,10 +60,22 @@ migration DB — chỉ frontend.
   1). Trang `/dashboard/tro-giang`'s trước có card trùng lặp với mục sidebar
   → bỏ card, chỉ còn text hướng dẫn.
 - Migration: không có.
+- **Gộp với PR #28** (module "Quản lý người dùng", đã lên `main` sau khi
+  nhánh này tách ra): `src/app/dashboard/page.tsx` xoá hẳn
+  `ModuleClustersAdmin`/`ModuleCard`/`ModuleCluster` (trùng nội dung, chuyển
+  hết vào `Sidebar.tsx`); `src/app/dashboard/users/page.tsx` gộp thêm nhánh
+  `admin_ht` (cấp tài khoản) + bảng đã xoá mềm của PR #28, đồng thời bỏ
+  back-link cũ. Logic ẩn mục "Người dùng" khỏi vai trò không có quyền đọc
+  bảng `users` (trước nằm trong `ModuleClustersAdmin`, đã xoá) chuyển sang
+  hằng số `NGUOI_DUNG_TIER` (`src/lib/vai-tro.ts`) dùng trong `Sidebar.tsx`,
+  giữ đúng quy tắc "role không liên quan thì không thấy chức năng" đã chốt
+  2026-09-28.
 
-**Staging**: 🔲 chưa
-**Production**: 🔲 chưa
-**Commit**: (điền sau khi commit)
+**Staging**: — (không có migration DB; xác nhận qua Vercel Preview build của
+PR #31, `npx tsc --noEmit`/`npx eslint`/`npx next build` sạch trước khi merge).
+**Production**: ✅ đã áp dụng (29/09/2026) — merge PR #31 vào `main`, Vercel
+tự deploy theo pipeline.
+**Commit**: `a80b768` (PR #31, merge commit `f4f7498` gộp `origin/main`).
 
 ---
 
