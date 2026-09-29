@@ -58,7 +58,6 @@ export default async function HocPhanPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Học phần</h1>
-        <Link href="/dashboard/hoc-lieu" className={styles.backLink}>← Về học liệu</Link>
       </div>
 
       <nav className={styles.subNav}>

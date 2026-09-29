@@ -93,7 +93,6 @@ export default async function CauHoiPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Ngân hàng câu hỏi</h1>
-        <Link href="/dashboard/hoc-lieu" className={styles.backLink}>← Về học liệu</Link>
       </div>
 
       <nav className={styles.subNav}>

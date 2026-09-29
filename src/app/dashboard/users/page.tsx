@@ -42,7 +42,6 @@ export default async function UsersPage() {
       <main className={styles.page}>
         <div className={styles.header}>
           <h1 className={styles.title}>Cấp tài khoản Giáo viên / Trợ giảng</h1>
-          <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
         </div>
 
         <section className={styles.card}>
@@ -63,7 +62,6 @@ export default async function UsersPage() {
       <main className={styles.page}>
         <div className={styles.header}>
           <h1 className={styles.title}>Người dùng</h1>
-          <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
         </div>
         <section className={styles.card}>
           <p className={styles.noticeBox}>
@@ -90,10 +88,7 @@ export default async function UsersPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Người dùng</h1>
-        <div className={styles.headerActions}>
-          <Link href="/dashboard/users/moi" className={styles.btnPrimaryLink}>+ Tạo tài khoản</Link>
-          <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
-        </div>
+        <Link href="/dashboard/users/moi" className={styles.btnPrimaryLink}>+ Tạo tài khoản</Link>
       </div>
 
       <section className={styles.card}>

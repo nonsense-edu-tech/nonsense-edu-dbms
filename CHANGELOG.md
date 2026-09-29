@@ -20,6 +20,53 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-29 — Header + sidebar dùng chung, đồng nhất theme indigo, breadcrumb rút gọn
+
+**Tóm tắt:** Đồng nhất navigation bar + theme trên toàn bộ `/dashboard/**`
+(19 trang) theo mockup đã duyệt (canvas
+`https://claude.ai/artifact/FZZyb1vHu3WTaVu48njre3`, artboard 4/5). Không có
+migration DB — chỉ frontend.
+
+- **`src/app/dashboard/layout.tsx` (mới)**: bọc toàn bộ trang con, chứa
+  header (logo mới + breadcrumb + user/đăng xuất) và `<Sidebar>` dùng chung —
+  thay cho việc mỗi trang tự dựng header + 19 lần lặp lại theo cùng 1 pattern
+  `header/title/backLink`.
+- **`src/components/Sidebar.tsx` (mới)**: thay thế hoàn toàn khối "Khối
+  nghiệp vụ" từng nằm trên thân trang `/dashboard` (`ModuleClustersAdmin` +
+  cụm inline của GV/Trợ giảng) — cùng nội dung 3 cụm Vận hành/Học thuật/Tài
+  chính, lọc theo `nhomGiaoDien(vaiTro)` (đúng quy tắc "ẩn hẳn, không hiện
+  khoá" đã chốt 2026-09-28). Có toggle thu gọn (240px ↔ 64px icon-only), lưu
+  trạng thái vào `localStorage`.
+- **`src/components/Breadcrumb.tsx` (mới)**: đường dẫn điều hướng click được
+  trong header, map route → nhãn tiếng Việt. Rút gọn khi không đủ chỗ: luôn
+  giữ icon Trang chủ + 2 bước gần nhất, phần giữa gộp vào nút "···" (dropdown
+  liệt kê các bước bị ẩn).
+- **`src/lib/vai-tro.ts` (mới)**: gom `ADMIN_TIER`/`GV_TIER`/`TRO_GIANG_TIER`
+  + `nhomGiaoDien()` dùng chung giữa `layout.tsx`/`page.tsx`/`Sidebar.tsx`
+  (trước đó chỉ có trong `page.tsx`, tránh lệch danh sách vai trò).
+- **Theme**: `--accent` toàn hệ thống (`globals.css`) đổi từ cam-vàng sang
+  indigo `#5468D4` (trùng màu dashboard trước đó chỉ áp cục bộ qua
+  `--db-accent`) — áp dụng luôn cho trang đăng nhập và mọi form dùng
+  `--accent`/`--accent-dim` sẵn có. Bỏ override `--db-accent*` trong
+  `dashboard.module.css`.
+- **Logo**: thay logo cũ (`nonsense-edu-logo-horizontal.png`) bằng cặp ảnh
+  mới đã tách nền trong suốt — `public/brand/nonsense-edu-mascot-navy-transparent.png`
+  (panda) + `public/brand/nonsense-edu-wordmark-white-transparent.png` (chữ
+  "NONSENSE EDUCATION" màu trắng) — dựng từ file gốc người dùng gửi (bản đầu
+  bị lỗi thiếu chữ "A", đã dùng bản gửi lại).
+- **19 trang con**: bỏ `<h1>` + back-link tự dựng riêng lẻ (breadcrumb thay
+  thế); `subNav` (tab điều hướng anh em trong `hoc-phi`/`hoc-lieu`/`van-hanh`)
+  giữ nguyên — vai trò khác với breadcrumb (ancestor) và sidebar (module cấp
+  1). Trang `/dashboard/tro-giang`'s trước có card trùng lặp với mục sidebar
+  → bỏ card, chỉ còn text hướng dẫn.
+- Migration: không có.
+
+**Staging**: 🔲 chưa
+**Production**: 🔲 chưa
+**Commit**: (điền sau khi commit)
+
+---
+
 ## 2026-09-28 — Module "Quản lý người dùng" (CRUD, phạm vi, chi nhánh, mật khẩu)
 
 **Tóm tắt:** Xây mới hoàn chỉnh Khối 1 — module quản lý tài khoản nội bộ,

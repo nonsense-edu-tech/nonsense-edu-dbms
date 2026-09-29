@@ -35,7 +35,6 @@ export default async function LoaiPhongPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Loại phòng</h1>
-        <Link href="/dashboard/van-hanh" className={styles.backLink}>← Về vận hành</Link>
       </div>
 
       <nav className={styles.subNav}>

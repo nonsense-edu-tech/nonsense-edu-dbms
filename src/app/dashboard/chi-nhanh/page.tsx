@@ -55,7 +55,6 @@ export default async function ChiNhanhPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Chi nhánh</h1>
-        <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
       </div>
 
       <section className={styles.card}>

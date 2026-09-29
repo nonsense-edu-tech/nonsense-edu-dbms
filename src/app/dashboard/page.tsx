@@ -1,9 +1,6 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/login/actions";
 import { redirect } from "next/navigation";
+import { ADMIN_TIER, GV_TIER, TRO_GIANG_TIER } from "@/lib/vai-tro";
 import styles from "./dashboard.module.css";
 
 // Dashboard theo vai trò — 3 nhóm giao diện, khớp phân quyền RLS thật của
@@ -14,24 +11,9 @@ import styles from "./dashboard.module.css";
 //      hop_dong_hoc_phi/phieu_thu/ky_dong_hoc_phi — xem ghi chú QUYEN_ADMIN).
 //   2. "Trưởng bộ môn / GV" (truong_bm/gv) — chỉ học sinh đang phụ trách +
 //      học liệu của mình đang quản lý, không có số liệu tài chính/học phí.
-//   3. "Trợ giảng" (tro_giang) — không có thẻ số liệu nào, chỉ khối nghiệp vụ.
-// Thiết kế đã được duyệt trên canvas — xem mô tả lưu trong project docs.
-
-const VAI_TRO_LABEL: Record<string, string> = {
-  master_admin: "Master Admin",
-  admin_ts: "Admin Tuyển sinh",
-  admin_ht: "Admin Hiệu trưởng",
-  truong_bm: "Trưởng bộ môn",
-  gv: "Giáo viên",
-  ke_toan: "Kế toán",
-  thu_ngan: "Thu ngân",
-  quan_ly_chi_nhanh: "Quản lý chi nhánh",
-  tro_giang: "Trợ giảng",
-};
-
-const ADMIN_TIER = ["master_admin", "admin_ts", "admin_ht", "ke_toan", "thu_ngan", "quan_ly_chi_nhanh"];
-const GV_TIER = ["truong_bm", "gv"];
-const TRO_GIANG_TIER = ["tro_giang"];
+//   3. "Trợ giảng" (tro_giang) — không có thẻ số liệu nào.
+// Header + sidebar (khối nghiệp vụ, điều hướng) nằm ở layout.tsx dùng chung
+// cho toàn bộ /dashboard/** — trang này chỉ còn phần nội dung riêng theo vai trò.
 
 // Khớp đúng theo pg_policies thật trên production (kiểm tra 28/09/2026) —
 // KHÔNG suy đoán theo "vai trò nghe có vẻ admin thì chắc xem được hết".
@@ -43,14 +25,6 @@ function quyenAdmin(vaiTro: string) {
     vanHanh: true, // lop/buoi_hoc/phong_hoc/chi_nhanh — RLS đọc mở cho mọi vai trò đã đăng nhập
     nganHangCauHoi: ["master_admin", "admin_ht"].includes(vaiTro), // cau_hoi — ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh không có policy đọc
   };
-}
-
-function tenVaiTro(vaiTro: string) {
-  return VAI_TRO_LABEL[vaiTro] ?? vaiTro;
-}
-
-function chuCaiDau(s: string) {
-  return (s.trim()[0] ?? "?").toUpperCase();
 }
 
 function formatTien(n: number | null) {
@@ -145,83 +119,41 @@ export default async function DashboardPage() {
   const vaiTro = profile?.vai_tro ?? "";
   const tenHienThi = profile?.ho_ten?.trim() || user.email?.split("@")[0] || "bạn";
 
-  const header = (
-    <header className={styles.header}>
-      <div className={styles.brand}>
-        <Image
-          src="/brand/nonsense-edu-logo-horizontal.png"
-          alt="Nonsense Education"
-          width={220}
-          height={66}
-          priority
-          className={styles.logoImg}
-        />
-        {isActive && vaiTro && <span className={styles.roleBadge}>{tenVaiTro(vaiTro)}</span>}
-      </div>
-      <div className={styles.headerRight}>
-        <div className={styles.userChip}>
-          <div className={styles.avatar}>{chuCaiDau(tenHienThi)}</div>
-          <div className={styles.userMeta}>
-            <span className={styles.userName}>{tenHienThi}</span>
-            <span className={styles.userRole}>{user.email}</span>
-          </div>
-        </div>
-        <div className={styles.divider} />
-        <form action={signOut}>
-          <button type="submit" className={styles.btnSignOut}>
-            Đăng xuất
-          </button>
-        </form>
-      </div>
-    </header>
-  );
-
   if (!isActive || !vaiTro) {
     return (
-      <main className={styles.page}>
-        {header}
-        <div className={styles.content}>
-          <div className={styles.greeting}>
-            <div>
-              <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
-              <span className={styles.greetingSub}>
-                {isActive ? "Tài khoản chưa được gán vai trò." : "Tài khoản đang chờ Admin duyệt (trang_thai khác active)."}
-              </span>
-            </div>
+      <div className={styles.content}>
+        <div className={styles.greeting}>
+          <div>
+            <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
+            <span className={styles.greetingSub}>
+              {isActive ? "Tài khoản chưa được gán vai trò." : "Tài khoản đang chờ Admin duyệt (trang_thai khác active)."}
+            </span>
           </div>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (ADMIN_TIER.includes(vaiTro)) {
-    return <AdminDashboard vaiTro={vaiTro} tenHienThi={tenHienThi} header={header} />;
+    return <AdminDashboard vaiTro={vaiTro} tenHienThi={tenHienThi} />;
   }
   if (GV_TIER.includes(vaiTro)) {
-    return <GvDashboard vaiTro={vaiTro} tenHienThi={tenHienThi} header={header} userId={user.id} />;
+    return <GvDashboard tenHienThi={tenHienThi} userId={user.id} />;
   }
   if (TRO_GIANG_TIER.includes(vaiTro)) {
-    return <TroGiangDashboard header={header} tenHienThi={tenHienThi} />;
+    return <TroGiangDashboard tenHienThi={tenHienThi} />;
   }
 
-  // Vai trò lạ (không nằm trong 3 nhóm đã biết) — vẫn cho vào, chỉ hiện khối
-  // nghiệp vụ như Trợ giảng, tránh chặn cứng người dùng vì thiếu ánh xạ.
-  return <TroGiangDashboard header={header} tenHienThi={tenHienThi} />;
+  // Vai trò lạ (không nằm trong 3 nhóm đã biết) — vẫn cho vào, dùng màn hình
+  // tối thiểu như Trợ giảng, tránh chặn cứng người dùng vì thiếu ánh xạ.
+  return <TroGiangDashboard tenHienThi={tenHienThi} />;
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
 /* 1) ADMIN                                                                */
 /* ────────────────────────────────────────────────────────────────────── */
 
-async function AdminDashboard({
-  vaiTro,
-  tenHienThi,
-  header,
-}: {
-  vaiTro: string;
-  tenHienThi: string;
-  header: ReactNode;
-}) {
+async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienThi: string }) {
   const supabase = await createClient();
   const quyen = quyenAdmin(vaiTro);
   const { dauNgay, dauNgayMai, dauThang, dauThangSau, homNay } = bienNgayVN();
@@ -278,90 +210,85 @@ async function AdminDashboard({
   const coNhomTaiChinhHoacHocPhi = quyen.taiChinh || quyen.hopDong;
 
   return (
-    <main className={styles.page}>
-      {header}
-      <div className={styles.content}>
-        <div className={styles.greeting}>
-          <div>
-            <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
-            <span className={styles.greetingSub}>Toàn cảnh các khối nghiệp vụ trong phạm vi vai trò của bạn</span>
+    <div className={styles.content}>
+      <div className={styles.greeting}>
+        <div>
+          <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
+          <span className={styles.greetingSub}>Toàn cảnh các khối nghiệp vụ trong phạm vi vai trò của bạn</span>
+        </div>
+        <span className={styles.updatedTag}>Cập nhật lần cuối: hôm nay</span>
+      </div>
+
+      <div className={styles.groupsWrap}>
+        {coNhomTaiChinhHoacHocPhi && (
+          <>
+            {quyen.taiChinh && (
+              <div className={styles.group}>
+                <div className={styles.groupHead}>
+                  <IconTaiChinh />
+                  <span className={styles.groupLabel}>Tài chính</span>
+                  <span className={styles.groupHint}>Chỉ kế toán / thu ngân / admin_ts / master_admin</span>
+                </div>
+                <div className={styles.statGrid}>
+                  <StatCard label="Doanh thu tháng này" value={formatTien(doanhThuThang)} />
+                  <StatCard label="Công nợ chưa thu" value={formatTien(congNoChuaThu)} />
+                  <StatCard label="Phiếu thu hôm nay" value={formatSo(phieuThuHomNay)} />
+                </div>
+              </div>
+            )}
+
+            {quyen.hopDong && (
+              <div className={styles.group}>
+                <div className={styles.groupHead}>
+                  <IconHopDong />
+                  <span className={styles.groupLabel}>Học phí</span>
+                </div>
+                <div className={quyen.taiChinh ? styles.statGrid : styles.statGrid2}>
+                  <StatCard label="Hợp đồng đang hoạt động" value={formatSo(hopDongHoatDong)} />
+                  <StatCard label="Chờ duyệt" value={formatSo(hopDongChoDuyet)} tag={hopDongChoDuyet && hopDongChoDuyet > 0 ? { text: "cần xử lý", kind: "warn" } : undefined} />
+                  {quyen.taiChinh && (
+                    <StatCard label="Kỳ đóng quá hạn" value={formatSo(kyDongQuaHan)} tag={kyDongQuaHan && kyDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        <div className={styles.group}>
+          <div className={styles.groupHead}>
+            <IconVanHanh />
+            <span className={styles.groupLabel}>Vận hành</span>
           </div>
-          <span className={styles.updatedTag}>Cập nhật lần cuối: hôm nay</span>
+          <div className={styles.statGrid}>
+            <StatCard label="Buổi học hôm nay" value={formatSo(buoiHocHomNay)} />
+            <StatCard label="Phòng đang sử dụng hôm nay" value={formatSo(soPhongDangDung)} />
+            <StatCard label="Chi nhánh hoạt động" value={formatSo(chiNhanhHoatDong)} />
+          </div>
         </div>
 
-        <div className={styles.groupsWrap}>
-          {coNhomTaiChinhHoacHocPhi && (
-            <>
-              {quyen.taiChinh && (
-                <div className={styles.group}>
-                  <div className={styles.groupHead}>
-                    <IconTaiChinh />
-                    <span className={styles.groupLabel}>Tài chính</span>
-                    <span className={styles.groupHint}>Chỉ kế toán / thu ngân / admin_ts / master_admin</span>
-                  </div>
-                  <div className={styles.statGrid}>
-                    <StatCard label="Doanh thu tháng này" value={formatTien(doanhThuThang)} />
-                    <StatCard label="Công nợ chưa thu" value={formatTien(congNoChuaThu)} />
-                    <StatCard label="Phiếu thu hôm nay" value={formatSo(phieuThuHomNay)} />
-                  </div>
-                </div>
-              )}
-
-              {quyen.hopDong && (
-                <div className={styles.group}>
-                  <div className={styles.groupHead}>
-                    <IconHopDong />
-                    <span className={styles.groupLabel}>Học phí</span>
-                  </div>
-                  <div className={quyen.taiChinh ? styles.statGrid : styles.statGrid2}>
-                    <StatCard label="Hợp đồng đang hoạt động" value={formatSo(hopDongHoatDong)} />
-                    <StatCard label="Chờ duyệt" value={formatSo(hopDongChoDuyet)} tag={hopDongChoDuyet && hopDongChoDuyet > 0 ? { text: "cần xử lý", kind: "warn" } : undefined} />
-                    {quyen.taiChinh && (
-                      <StatCard label="Kỳ đóng quá hạn" value={formatSo(kyDongQuaHan)} tag={kyDongQuaHan && kyDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
+        {quyen.nganHangCauHoi && (
           <div className={styles.group}>
             <div className={styles.groupHead}>
-              <IconVanHanh />
-              <span className={styles.groupLabel}>Vận hành</span>
+              <IconHocLieu />
+              <span className={styles.groupLabel}>Ngân hàng câu hỏi</span>
             </div>
             <div className={styles.statGrid}>
-              <StatCard label="Buổi học hôm nay" value={formatSo(buoiHocHomNay)} />
-              <StatCard label="Phòng đang sử dụng hôm nay" value={formatSo(soPhongDangDung)} />
-              <StatCard label="Chi nhánh hoạt động" value={formatSo(chiNhanhHoatDong)} />
+              <StatCard label="Tổng câu hỏi" value={formatSo(tongCauHoi)} />
+              <StatCard label="Chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần duyệt", kind: "warn" } : undefined} />
+              <StatCard label="Đã duyệt tháng này" value={formatSo(cauHoiDaDuyetThang)} />
             </div>
           </div>
-
-          {quyen.nganHangCauHoi && (
-            <div className={styles.group}>
-              <div className={styles.groupHead}>
-                <IconHocLieu />
-                <span className={styles.groupLabel}>Ngân hàng câu hỏi</span>
-              </div>
-              <div className={styles.statGrid}>
-                <StatCard label="Tổng câu hỏi" value={formatSo(tongCauHoi)} />
-                <StatCard label="Chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần duyệt", kind: "warn" } : undefined} />
-                <StatCard label="Đã duyệt tháng này" value={formatSo(cauHoiDaDuyetThang)} />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <ChartsPlaceholder
-          items={[
-            { title: "Doanh thu 6 tháng gần nhất", kind: "Biểu đồ đường" },
-            { title: "Học sinh theo chi nhánh", kind: "Biểu đồ cột" },
-          ]}
-        />
-
-        <ModuleClustersAdmin vaiTro={vaiTro} />
+        )}
       </div>
-    </main>
+
+      <ChartsPlaceholder
+        items={[
+          { title: "Doanh thu 6 tháng gần nhất", kind: "Biểu đồ đường" },
+          { title: "Học sinh theo chi nhánh", kind: "Biểu đồ cột" },
+        ]}
+      />
+    </div>
   );
 }
 
@@ -369,17 +296,7 @@ async function AdminDashboard({
 /* 2) TRƯỞNG BỘ MÔN / GV                                                  */
 /* ────────────────────────────────────────────────────────────────────── */
 
-async function GvDashboard({
-  vaiTro,
-  tenHienThi,
-  header,
-  userId,
-}: {
-  vaiTro: string;
-  tenHienThi: string;
-  header: ReactNode;
-  userId: string;
-}) {
+async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId: string }) {
   const supabase = await createClient();
   const { dauTuan, dauTuanSau } = bienNgayVN();
 
@@ -416,114 +333,70 @@ async function GvDashboard({
   ]);
 
   return (
-    <main className={styles.page}>
-      {header}
-      <div className={styles.content}>
-        <div className={styles.greeting}>
-          <div>
-            <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
-            <span className={styles.greetingSub}>Học sinh đang phụ trách & học liệu bạn đang quản lý</span>
-          </div>
-          <span className={styles.updatedTag}>Cập nhật lần cuối: hôm nay</span>
+    <div className={styles.content}>
+      <div className={styles.greeting}>
+        <div>
+          <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
+          <span className={styles.greetingSub}>Học sinh đang phụ trách & học liệu bạn đang quản lý</span>
         </div>
+        <span className={styles.updatedTag}>Cập nhật lần cuối: hôm nay</span>
+      </div>
 
-        <div className={styles.groupsWrap}>
-          <div className={styles.group}>
-            <div className={styles.groupHead}>
-              <IconHocSinh />
-              <span className={styles.groupLabel}>Học sinh đang phụ trách</span>
-            </div>
-            <div className={styles.statGrid}>
-              <StatCard label="Tổng học sinh phụ trách" value={formatSo(hocSinhPhuTrach)} />
-              <StatCard label="Số lớp đang dạy" value={formatSo(lopIds.length)} />
-              <StatCard label="Buổi học tuần này" value={formatSo(buoiHocTuanNay)} />
-            </div>
+      <div className={styles.groupsWrap}>
+        <div className={styles.group}>
+          <div className={styles.groupHead}>
+            <IconHocSinh />
+            <span className={styles.groupLabel}>Học sinh đang phụ trách</span>
           </div>
-
-          <div className={styles.group}>
-            <div className={styles.groupHead}>
-              <IconHocLieu />
-              <span className={styles.groupLabel}>Học liệu của mình đang quản lý</span>
-            </div>
-            <div className={styles.statGrid}>
-              <StatCard label="Câu hỏi tôi đã tạo" value={formatSo(cauHoiDaTao)} />
-              <StatCard label="Đang chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần theo dõi", kind: "warn" } : undefined} />
-              <StatCard label="Đã được duyệt" value={formatSo(cauHoiDaDuyet)} tag={cauHoiDaDuyet && cauHoiDaDuyet > 0 ? { text: "", kind: "ok" } : undefined} />
-            </div>
+          <div className={styles.statGrid}>
+            <StatCard label="Tổng học sinh phụ trách" value={formatSo(hocSinhPhuTrach)} />
+            <StatCard label="Số lớp đang dạy" value={formatSo(lopIds.length)} />
+            <StatCard label="Buổi học tuần này" value={formatSo(buoiHocTuanNay)} />
           </div>
         </div>
 
-        <ChartsPlaceholder items={[{ title: "Học sinh theo lớp tôi đang dạy", kind: "Biểu đồ cột" }]} />
-
-        <div className={styles.moduleSection}>
-          <span className={styles.groupLabel}>Khối nghiệp vụ dành cho bạn</span>
-          <div className={styles.clusterList}>
-            <ModuleCluster
-              title="Vận hành"
-              items={[
-                { href: "/dashboard/lop", icon: <IconLop />, title: "Lớp học", desc: "Danh sách lớp đang dạy" },
-                { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, title: "Học sinh", desc: "Hồ sơ học sinh phụ trách" },
-                { href: "/dashboard/van-hanh", icon: <IconVanHanh />, title: "Vận hành", desc: "Lịch buổi học" },
-              ]}
-            />
-            <ModuleCluster
-              title="Học thuật"
-              items={[
-                { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, title: "Học liệu", desc: "Ngân hàng câu hỏi" },
-                { href: "/dashboard/tro-giang", icon: <IconTroGiang />, title: "Trợ giảng", desc: "Tra cứu câu hỏi (chỉ xem)" },
-              ]}
-            />
+        <div className={styles.group}>
+          <div className={styles.groupHead}>
+            <IconHocLieu />
+            <span className={styles.groupLabel}>Học liệu của mình đang quản lý</span>
           </div>
-          <span className={styles.noteSmall}>
-            * Không hiển thị cụm Tài chính — ngoài phạm vi vai trò {tenVaiTro(vaiTro)}.
-          </span>
+          <div className={styles.statGrid}>
+            <StatCard label="Câu hỏi tôi đã tạo" value={formatSo(cauHoiDaTao)} />
+            <StatCard label="Đang chờ duyệt" value={formatSo(cauHoiChoDuyet)} tag={cauHoiChoDuyet && cauHoiChoDuyet > 0 ? { text: "cần theo dõi", kind: "warn" } : undefined} />
+            <StatCard label="Đã được duyệt" value={formatSo(cauHoiDaDuyet)} tag={cauHoiDaDuyet && cauHoiDaDuyet > 0 ? { text: "", kind: "ok" } : undefined} />
+          </div>
         </div>
       </div>
-    </main>
+
+      <ChartsPlaceholder items={[{ title: "Học sinh theo lớp tôi đang dạy", kind: "Biểu đồ cột" }]} />
+    </div>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-/* 3) TRỢ GIẢNG — không có bảng biểu, chỉ khối nghiệp vụ                  */
+/* 3) TRỢ GIẢNG — không có bảng biểu, không có khối nghiệp vụ trên thân    */
+/*    trang (đã chuyển hết vào sidebar dùng chung)                        */
 /* ────────────────────────────────────────────────────────────────────── */
 
-function TroGiangDashboard({ header, tenHienThi }: { header: ReactNode; tenHienThi: string }) {
+function TroGiangDashboard({ tenHienThi }: { tenHienThi: string }) {
   return (
-    <main className={styles.page}>
-      {header}
-      <div className={styles.welcomeWrap}>
-        <div className={styles.welcomeHead}>
-          <h1 className={styles.welcomeTitle}>Xin chào, {tenHienThi}</h1>
-          <span className={styles.welcomeSub}>
-            Chọn một khối nghiệp vụ bên dưới để bắt đầu. Tài khoản trợ giảng chỉ tra cứu học liệu qua các lối vào
-            được cấp quyền — không hiển thị số liệu thống kê.
-          </span>
-        </div>
-
-        <div className={styles.welcomeGrid}>
-          <div className={styles.welcomeCol}>
-            <span className={styles.clusterLabel}>Học thuật</span>
-            <Link href="/dashboard/tro-giang" className={styles.welcomeCard}>
-              <div className={styles.welcomeIconWrap}>
-                <IconTroGiang className={styles.welcomeIcon} />
-              </div>
-              <div>
-                <div className={styles.welcomeCardTitle}>Trợ giảng — Tra cứu câu hỏi</div>
-                <div className={styles.welcomeCardDesc}>Xem danh mục & chi tiết câu hỏi theo môn học trong phạm vi được phân quyền.</div>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        <div className={styles.welcomeFootnote}>
-          <svg width="14" height="14" viewBox="0 0 24 24" style={{ stroke: "var(--text-lo)", fill: "none", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" }}>
-            <circle cx="12" cy="12" r="9.5" />
-            <path d="M12 8v5M12 16.2v.1" />
-          </svg>
-          Dữ liệu chỉ truy cập qua hàm RPC có kiểm tra quyền — không đọc trực tiếp bảng câu hỏi/lựa chọn.
-        </div>
+    <div className={styles.welcomeWrap}>
+      <div className={styles.welcomeHead}>
+        <h1 className={styles.welcomeTitle}>Xin chào, {tenHienThi}</h1>
+        <span className={styles.welcomeSub}>
+          Chọn một mục trong sidebar bên trái để bắt đầu. Tài khoản trợ giảng chỉ tra cứu học liệu qua các lối vào
+          được cấp quyền — không hiển thị số liệu thống kê.
+        </span>
       </div>
-    </main>
+
+      <div className={styles.welcomeFootnote}>
+        <svg width="14" height="14" viewBox="0 0 24 24" style={{ stroke: "var(--text-lo)", fill: "none", strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" }}>
+          <circle cx="12" cy="12" r="9.5" />
+          <path d="M12 8v5M12 16.2v.1" />
+        </svg>
+        Dữ liệu chỉ truy cập qua hàm RPC có kiểm tra quyền — không đọc trực tiếp bảng câu hỏi/lựa chọn.
+      </div>
+    </div>
   );
 }
 
@@ -581,87 +454,6 @@ function ChartsPlaceholder({ items }: { items: { title: string; kind: string }[]
   );
 }
 
-type ModuleItem = {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  desc: string;
-};
-
-// QUY TẮC CỐ ĐỊNH: role không liên quan đến một chức năng thì KHÔNG hiện
-// chức năng đó cho họ — kể cả dạng mờ/khoá (locked). Không dùng placeholder
-// "chưa được cấp quyền" nữa; ModuleCluster/ModuleCard chỉ render đúng những
-// mục thật sự thuộc phạm vi vai trò, danh sách items truyền vào đã được lọc
-// sẵn theo vai trò tại nơi gọi (AdminDashboard/GvDashboard/TroGiangDashboard).
-function ModuleCard({ href, icon, title, desc }: ModuleItem) {
-  return (
-    <Link href={href} className={styles.moduleCard}>
-      <div className={styles.moduleIconWrap}>{icon}</div>
-      <div className={styles.moduleText}>
-        <span className={styles.moduleTitle}>{title}</span>
-        <span className={styles.moduleDesc}>{desc}</span>
-      </div>
-    </Link>
-  );
-}
-
-function ModuleCluster({ title, items }: { title: string; items: ModuleItem[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div className={styles.cluster}>
-      <span className={styles.clusterLabel}>{title}</span>
-      <div className={styles.moduleGrid8}>
-        {items.map((it) => (
-          <ModuleCard key={it.title} {...it} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// 3 cụm khối nghiệp vụ dùng chung cho mọi dashboard — Vận hành / Học thuật /
-// Tài chính — cùng 1 cấu trúc tên cụm cho mọi vai trò, nhưng mỗi cụm chỉ liệt
-// kê đúng những mục thuộc phạm vi vai trò đó (xem quy tắc ở ModuleCard).
-function ModuleClustersAdmin({ vaiTro }: { vaiTro: string }) {
-  // "Người dùng" chỉ liên quan tới master_admin (quản lý toàn bộ) và
-  // admin_ht (cấp tài khoản gv/trợ giảng cho chi nhánh mình) — RLS thật trên
-  // users/nhat_ky/RPC admin_ht_tao_nhan_su chỉ 2 vai trò này có quyền, các
-  // vai trò admin-tier khác (ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh)
-  // ẩn hẳn theo đúng quy tắc 28/09/2026, không hiện dạng khoá.
-  const coQuyenNguoiDung = ["master_admin", "admin_ht"].includes(vaiTro);
-
-  return (
-    <div className={styles.moduleSection}>
-      <span className={styles.groupLabel}>Khối nghiệp vụ</span>
-      <div className={styles.clusterList}>
-        <ModuleCluster
-          title="Vận hành"
-          items={[
-            { href: "/dashboard/chi-nhanh", icon: <IconChiNhanh />, title: "Chi nhánh", desc: "Tạo & quản lý cơ sở" },
-            { href: "/dashboard/lop", icon: <IconLop />, title: "Lớp học", desc: "Tạo & quản lý lớp" },
-            { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, title: "Học sinh", desc: "Hồ sơ & ghi danh" },
-            { href: "/dashboard/van-hanh", icon: <IconVanHanh />, title: "Vận hành", desc: "Phòng học & buổi học" },
-            ...(coQuyenNguoiDung
-              ? [{ href: "/dashboard/users", icon: <IconNguoiDung />, title: "Người dùng", desc: "Vai trò & phân quyền" }]
-              : []),
-          ]}
-        />
-        <ModuleCluster
-          title="Học thuật"
-          items={[
-            { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, title: "Học liệu", desc: "Ngân hàng câu hỏi" },
-            { href: "/dashboard/tro-giang", icon: <IconTroGiang />, title: "Trợ giảng", desc: "Tra cứu câu hỏi" },
-          ]}
-        />
-        <ModuleCluster
-          title="Tài chính"
-          items={[{ href: "/dashboard/hoc-phi", icon: <IconHopDong />, title: "Học phí", desc: "Hợp đồng & thu tiền" }]}
-        />
-      </div>
-    </div>
-  );
-}
-
 /* ── Icon set (inline stroke SVG, không dùng emoji) ────────────────────── */
 function IconTaiChinh() {
   return (
@@ -672,9 +464,9 @@ function IconTaiChinh() {
     </svg>
   );
 }
-function IconHopDong({ className }: { className?: string }) {
+function IconHopDong() {
   return (
-    <svg className={className ?? styles.groupIcon} viewBox="0 0 24 24">
+    <svg className={styles.groupIcon} viewBox="0 0 24 24">
       <rect x="2.5" y="6" width="19" height="13" rx="2.5" />
       <path d="M2.5 10h19" />
       <path d="M6 14h4" />
@@ -702,41 +494,6 @@ function IconHocSinh() {
     <svg className={styles.groupIcon} viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="3.6" />
       <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-    </svg>
-  );
-}
-function IconLop({ className }: { className?: string }) {
-  return (
-    <svg className={className ?? styles.moduleIcon} viewBox="0 0 24 24">
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M3 9h18" />
-    </svg>
-  );
-}
-function IconChiNhanh() {
-  return (
-    <svg className={styles.moduleIcon} viewBox="0 0 24 24">
-      <path d="M4 21V9l8-5 8 5v12" />
-      <path d="M9 21v-7h6v7" />
-    </svg>
-  );
-}
-function IconTroGiang({ className }: { className?: string }) {
-  return (
-    <svg className={className ?? styles.moduleIcon} viewBox="0 0 24 24">
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3 20a6 6 0 0 1 12 0" />
-      <path d="M16.5 10.5 18 12l3-3.2" />
-    </svg>
-  );
-}
-function IconNguoiDung() {
-  return (
-    <svg className={styles.moduleIcon} viewBox="0 0 24 24">
-      <circle cx="8.5" cy="8" r="3" />
-      <path d="M2.5 20a6 6 0 0 1 12 0" />
-      <path d="M16 8.3a2.7 2.7 0 1 1 3.2 2.65" />
-      <path d="M14.5 20a5.2 5.2 0 0 1 8-4.4" />
     </svg>
   );
 }

@@ -59,7 +59,6 @@ export default async function PhongHocPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Phòng học</h1>
-        <Link href="/dashboard/van-hanh" className={styles.backLink}>← Về vận hành</Link>
       </div>
 
       <nav className={styles.subNav}>
