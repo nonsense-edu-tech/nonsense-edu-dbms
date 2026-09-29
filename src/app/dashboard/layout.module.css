@@ -1,0 +1,139 @@
+.shell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header: logo | breadcrumb (co giãn) | user ────────────────────────── */
+.header {
+  height: 60px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 0 20px 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.logoMascot {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.logoWordmark {
+  height: 22px;
+  width: auto;
+  display: block;
+}
+
+.roleBadge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.headerDivider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2, #1e2330);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.userName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.userRole {
+  font-size: 10px;
+  color: var(--text-mid);
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.btnSignOut {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-mid);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnSignOut:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ── Body: sidebar + main content ──────────────────────────────────────── */
+.body {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.main {
+  flex-grow: 1;
+  min-width: 0;
+  overflow-y: auto;
+}

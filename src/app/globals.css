@@ -7,8 +7,9 @@
   --bg:          #0F1117;   /* nền chính: gần đen, không thuần đen */
   --surface:     #181C27;   /* card/panel */
   --border:      #252B3B;   /* đường viền tinh tế */
-  --accent:      #F5A623;   /* cam-vàng: nhấn mạnh, CTA */
-  --accent-dim:  #B87A12;   /* accent tối hơn cho hover */
+  --accent:      #5468D4;   /* indigo: nhấn mạnh, CTA — đồng nhất theo logo chính thức (2026-09-29) */
+  --accent-dim:  #2E3592;   /* accent tối hơn cho hover */
+  --accent-wash: rgba(84, 104, 212, 0.12); /* nền mờ cho badge/tag dùng accent */
   --text-hi:     #F0F2F8;   /* tiêu đề, nội dung nổi */
   --text-mid:    #8B92A9;   /* nhãn, placeholder */
   --text-lo:     #4A5165;   /* border label, disabled */

@@ -94,7 +94,6 @@ export default async function ThuTienPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Thu tiền</h1>
-        <Link href="/dashboard/hoc-phi" className={styles.backLink}>← Về tổng quan học phí</Link>
       </div>
 
       <nav className={styles.subNav}>

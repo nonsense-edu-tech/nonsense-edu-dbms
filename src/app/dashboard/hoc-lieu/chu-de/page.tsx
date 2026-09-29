@@ -57,7 +57,6 @@ export default async function ChuDePage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Chủ đề</h1>
-        <Link href="/dashboard/hoc-lieu" className={styles.backLink}>← Về học liệu</Link>
       </div>
 
       <nav className={styles.subNav}>
