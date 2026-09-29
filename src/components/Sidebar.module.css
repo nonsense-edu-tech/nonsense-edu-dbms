@@ -1,0 +1,136 @@
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 4px;
+  overflow-y: auto;
+  transition: width 0.15s;
+}
+
+.sidebarCollapsed {
+  width: 64px;
+  align-items: center;
+  padding: 16px 12px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.sidebarCollapsed .group {
+  width: 100%;
+  align-items: center;
+}
+
+.groupLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-lo);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0 10px;
+  margin-bottom: 2px;
+}
+
+.groupDivider {
+  width: 20px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto 6px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 9px;
+  padding: 9px 10px;
+  color: var(--text-hi);
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebarCollapsed .navItem {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+.navItem:hover {
+  background: var(--surface-2, #1e2330);
+}
+
+.navItemActive {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-mid);
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.navItemActive .navIcon {
+  color: var(--accent);
+}
+
+.navLabel {
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.collapseBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--text-mid);
+  transition: border-color 0.15s, color 0.15s;
+  margin-top: 10px;
+}
+
+.sidebarCollapsed .collapseBtn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+}
+
+.collapseBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.roleFootnote {
+  font-size: 10px;
+  color: var(--text-lo);
+  padding: 8px 10px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

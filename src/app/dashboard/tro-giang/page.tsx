@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import TroGiangBrowser, { type MonHocKhaDung } from "@/components/TroGiangBrowser";
@@ -60,7 +59,6 @@ export default async function TroGiangPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Trợ giảng — Tra cứu câu hỏi</h1>
-        <Link href="/dashboard" className={styles.backLink}>← Về trang chủ</Link>
       </div>
 
       {!duocXem ? (

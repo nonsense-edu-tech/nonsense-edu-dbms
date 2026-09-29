@@ -88,7 +88,6 @@ export default async function HocPhiDashboardPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Học phí / Tài chính</h1>
-        <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
       </div>
 
       <nav className={styles.subNav}>

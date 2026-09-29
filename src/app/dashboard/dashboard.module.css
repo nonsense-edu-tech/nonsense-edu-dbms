@@ -1,10 +1,6 @@
-/* Dashboard nội bộ — theme riêng cho trang này, lấy màu từ logo chính thức
-   (indigo/navy), không đụng --accent cam-vàng dùng chung cho các trang khác. */
+/* Dashboard nội bộ — dùng chung theme indigo toàn hệ thống (--accent* ở globals.css). */
 .page {
-  --db-accent: #5468D4;
-  --db-accent-dim: #2E3592;
-  --db-accent-wash: rgba(84, 104, 212, 0.12);
-  min-height: 100dvh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -39,8 +35,8 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--db-accent);
-  background: var(--db-accent-wash);
+  color: var(--accent);
+  background: var(--accent-wash);
   border-radius: 999px;
   padding: 5px 12px;
   white-space: nowrap;
@@ -70,7 +66,7 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 12px;
-  color: var(--db-accent);
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -177,7 +173,7 @@
 .groupIcon {
   width: 15px;
   height: 15px;
-  color: var(--db-accent);
+  color: var(--accent);
   stroke: currentColor;
   fill: none;
   stroke-width: 1.7;
@@ -225,7 +221,7 @@
 }
 
 .statCard:hover {
-  border-color: var(--db-accent-dim);
+  border-color: var(--accent-dim);
 }
 
 .statCardRow {
@@ -256,8 +252,8 @@
 }
 
 .tagWarn {
-  color: var(--db-accent);
-  background: var(--db-accent-wash);
+  color: var(--accent);
+  background: var(--accent-wash);
 }
 
 .tagDanger {
@@ -375,7 +371,7 @@
 }
 
 .moduleCard:hover {
-  border-color: var(--db-accent);
+  border-color: var(--accent);
   background: var(--surface-2, #1E2330);
 }
 
@@ -484,7 +480,7 @@
 }
 
 .welcomeCard:hover {
-  border-color: var(--db-accent);
+  border-color: var(--accent);
   background: var(--surface-2, #1E2330);
   transform: translateY(-1px);
 }
@@ -493,7 +489,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--db-accent-wash);
+  background: var(--accent-wash);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -502,7 +498,7 @@
 .welcomeIcon {
   width: 22px;
   height: 22px;
-  color: var(--db-accent);
+  color: var(--accent);
   stroke: currentColor;
   fill: none;
   stroke-width: 1.7;

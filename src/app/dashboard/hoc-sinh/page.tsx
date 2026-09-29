@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HocSinhForm from "@/components/HocSinhForm";
@@ -119,7 +118,6 @@ export default async function HocSinhPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Học sinh</h1>
-        <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
       </div>
 
       <section className={styles.card}>

@@ -42,7 +42,6 @@ export default async function ChuongTrinhMonHocPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Chương trình - Môn học</h1>
-        <Link href="/dashboard/van-hanh" className={styles.backLink}>← Về vận hành</Link>
       </div>
 
       <nav className={styles.subNav}>

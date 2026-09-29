@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import UsersTable from "@/components/UsersTable";
@@ -32,7 +31,6 @@ export default async function UsersPage() {
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Người dùng</h1>
-        <Link href="/dashboard" className={styles.backLink}>← Về dashboard</Link>
       </div>
 
       <section className={styles.card}>
