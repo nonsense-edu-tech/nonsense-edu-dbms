@@ -18,6 +18,13 @@ export const ADMIN_TIER = ["master_admin", "admin_ts", "admin_ht", "ke_toan", "t
 export const GV_TIER = ["truong_bm", "gv"];
 export const TRO_GIANG_TIER = ["tro_giang"];
 
+// "Người dùng" chỉ liên quan tới master_admin (quản lý toàn bộ) và admin_ht
+// (cấp tài khoản gv/trợ giảng cho chi nhánh mình) — RLS thật trên
+// users/nhat_ky/RPC admin_ht_tao_nhan_su chỉ 2 vai trò này có quyền, các vai
+// trò admin-tier khác (ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh) ẩn hẳn
+// mục này theo đúng quy tắc 28/09/2026 — không hiện dạng khoá.
+export const NGUOI_DUNG_TIER = ["master_admin", "admin_ht"];
+
 export function tenVaiTro(vaiTro: string) {
   return VAI_TRO_LABEL[vaiTro] ?? vaiTro;
 }

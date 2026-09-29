@@ -41,6 +41,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Bắt buộc đổi mật khẩu mặc định ở lần đăng nhập đầu (module Quản lý
+  // người dùng, 28/09/2026) — chặn ở đây vì repo chưa có layout.tsx chung
+  // cho /dashboard, mỗi trang tự kiểm tra đăng nhập riêng.
+  if (user && pathname.startsWith("/dashboard") && pathname !== "/dashboard/doi-mat-khau") {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("phai_doi_mat_khau")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.phai_doi_mat_khau) {
+      return NextResponse.redirect(new URL("/dashboard/doi-mat-khau", request.url));
+    }
+  }
+
   return supabaseResponse;
 }
 

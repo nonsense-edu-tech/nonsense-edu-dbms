@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { nhomGiaoDien, tenVaiTro, type NhomGiaoDien } from "@/lib/vai-tro";
+import { nhomGiaoDien, tenVaiTro, NGUOI_DUNG_TIER, type NhomGiaoDien } from "@/lib/vai-tro";
 import styles from "./Sidebar.module.css";
 
 type NavItem = { href: string; icon: ReactNode; label: string };
@@ -14,8 +14,13 @@ type NavGroup = { label: string; items: NavItem[] };
 // đây. QUY TẮC CỐ ĐỊNH: role không liên quan đến cụm nào thì KHÔNG hiện cụm
 // đó, không hiện dạng khoá/mờ — nên mỗi nhóm liệt kê đúng danh sách nhóm đó
 // được thấy, không có "items rỗng nhưng vẫn render tiêu đề cụm".
-function navGroupsForNhom(nhom: NhomGiaoDien): NavGroup[] {
+function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
   if (nhom === "admin") {
+    // "Người dùng" chỉ hiện cho vai trò thật sự có quyền (xem NGUOI_DUNG_TIER)
+    // — ke_toan/thu_ngan/admin_ts/quan_ly_chi_nhanh không có policy đọc bảng
+    // users nên KHÔNG hiện mục này, đúng quy tắc "role không liên quan thì
+    // không thấy chức năng" (không hiện dạng khoá/mờ).
+    const coQuyenNguoiDung = NGUOI_DUNG_TIER.includes(vaiTro);
     return [
       {
         label: "Vận hành",
@@ -24,7 +29,7 @@ function navGroupsForNhom(nhom: NhomGiaoDien): NavGroup[] {
           { href: "/dashboard/lop", icon: <IconLop />, label: "Lớp học" },
           { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, label: "Học sinh" },
           { href: "/dashboard/van-hanh", icon: <IconVanHanh />, label: "Vận hành" },
-          { href: "/dashboard/users", icon: <IconNguoiDung />, label: "Người dùng" },
+          ...(coQuyenNguoiDung ? [{ href: "/dashboard/users", icon: <IconNguoiDung />, label: "Người dùng" }] : []),
         ],
       },
       {
@@ -95,7 +100,7 @@ export default function Sidebar({ vaiTro }: { vaiTro: string }) {
   }
 
   const nhom = nhomGiaoDien(vaiTro);
-  const groups = navGroupsForNhom(nhom);
+  const groups = navGroupsForNhom(nhom, vaiTro);
   // Tránh nhấp nháy layout khi chưa đọc xong localStorage: giữ trạng thái mở
   // rộng cho tới khi hydrate xong rồi mới áp trạng thái đã lưu.
   const isCollapsed = hydrated && collapsed;
