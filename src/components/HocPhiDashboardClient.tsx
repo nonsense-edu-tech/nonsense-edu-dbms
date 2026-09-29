@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useCatTrangCucBo } from "@/components/PhanTrang";
 import Link from "next/link";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { ngayHienThi } from "@/lib/formatDate";
@@ -112,9 +113,10 @@ export default function HocPhiDashboardClient({
   const conPhaiThu = Math.max(doanhThuThuan - thucThu, 0);
 
   const quaHanLoc = useMemo(
-    () => quaHan.filter((q) => theoChuongTrinh(q.chuong_trinh_ma)).sort((a, b) => b.so_ngay_tre_nhat - a.so_ngay_tre_nhat),
+    () => quaHan.filter((q) => theoChuongTrinh(q.chuong_trinh_ma)).sort((a, b) => b.so_ngay_tre_nhat - a.so_ngay_tre_nhat || a.hop_dong_id.localeCompare(b.hop_dong_id)),
     [quaHan, chuongTrinhChon]
   );
+  const { rows: quaHanTrang, thanh: thanhQuaHan } = useCatTrangCucBo(quaHanLoc);
 
   return (
     <>
@@ -214,7 +216,7 @@ export default function HocPhiDashboardClient({
                 </tr>
               </thead>
               <tbody>
-                {quaHanLoc.map((q) => (
+                {quaHanTrang.map((q) => (
                   <tr key={q.hop_dong_id}>
                     <td>{q.ho_ten} <span className={styles.mono}>({q.ma_hoc_sinh})</span></td>
                     <td>{q.ten_lop ?? "—"}</td>
@@ -229,6 +231,8 @@ export default function HocPhiDashboardClient({
             </table>
           </div>
         )}
+        {/* Cắt trang phía client: dashboard này tính tổng hợp trên toàn bộ dữ liệu nên đã tải hết về client. */}
+        {thanhQuaHan}
       </section>
     </>
   );

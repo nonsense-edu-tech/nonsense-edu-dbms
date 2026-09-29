@@ -20,6 +20,36 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-09-29 — Phân trang bảng (PR1: nền + 10 bảng danh mục + bảng "quá hạn")
+
+**Tóm tắt:** Bắt đầu áp phân trang cho mọi bảng để giảm tải dữ liệu: mặc định
+10 dòng/trang, chọn được 10/15/20/50, **server ép tối đa 50** (`?size=500` →
+50, giá trị lạ → 10). Trạng thái nằm trên URL (`?page=&size=`), số dòng/trang
+người dùng chọn được nhớ bằng `localStorage`. Không có migration DB — chỉ
+frontend. Đây là PR1 trong kế hoạch `claude/ke-hoach-phan-trang-bang.md` (Project);
+các bảng lớn (học sinh, câu hỏi, hợp đồng, phiếu thu, lớp, buổi học, trợ giảng)
+làm ở các PR sau nên **hiện vẫn còn giới hạn cứng cũ**.
+
+- **`src/lib/phan-trang.ts` (mới)**: `parsePhanTrang`, ép giá trị hợp lệ,
+  `duongDanTrangCuoi` (trang vượt tổng → lùi về trang cuối), rút gọn dãy số trang.
+- **`src/components/PhanTrang.tsx` (mới)**: thanh phân trang (Hiển thị x–y / tổng,
+  chọn số dòng, Trước/Sau, số trang); `useCatTrangCucBo` cho bảng dữ liệu đã nằm
+  hết ở client.
+- **Phân trang phía server** (`.range()` + `count: "exact"`, thêm `.order("id")`
+  làm thứ tự ổn định): Chi nhánh, Phòng học, Loại phòng, Gói học phí, Chương
+  trình–Môn học (khoá ghép vì không có `id`), Học phần, Bài học, Chủ đề, Người
+  dùng (2 bảng: `?page/?size` và `?xoa_page/?xoa_size`).
+- **Cắt trang phía client**: bảng "Đóng thiếu / chậm thu" ở dashboard học phí
+  (dashboard tính tổng hợp trên toàn bộ dữ liệu nên đã tải hết về client).
+- Ngoại lệ có chủ đích: bảng "quyền quản lý" trong mỗi dòng Chi nhánh vẫn tải
+  toàn bộ `user_chi_nhanh` (bảng nối nhỏ) — sẽ xem lại nếu lớn dần.
+
+- **Staging**: 🔲 chưa
+- **Production**: 🔲 chưa
+- **Commit**: (điền sau khi commit)
+
+---
+
 ## 2026-09-29 — Header + sidebar dùng chung, đồng nhất theme indigo, breadcrumb rút gọn
 
 **Tóm tắt:** Đồng nhất navigation bar + theme trên toàn bộ `/dashboard/**`

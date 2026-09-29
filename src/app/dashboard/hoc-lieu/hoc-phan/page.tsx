@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import HocPhanForm from "@/components/HocPhanForm";
 import HocPhanTable, { type HocPhanRow } from "@/components/HocPhanTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm"];
 
-export default async function HocPhanPage() {
+export default async function HocPhanPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,16 +19,22 @@ export default async function HocPhanPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: hocPhanList }, { data: monHocList }, { data: capHocList }] = await Promise.all([
+  const [{ data: profile }, { data: hocPhanList, count: tongHocPhan }, { data: monHocList }, { data: capHocList }] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase
       .from("hoc_phan")
-      .select("id, mon_hoc_id, ma, ten, mo_ta")
+      .select("id, mon_hoc_id, ma, ten, mo_ta", { count: "exact" })
       .is("deleted_at", null)
-      .order("ma"),
+      .order("ma")
+      .order("id")
+      .range(pp.from, pp.to),
     supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
   ]);
+
+  const total = tongHocPhan ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-lieu/hoc-phan", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -81,9 +91,12 @@ export default async function HocPhanPage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách học phần ({hocPhanRows.length})</h2>
-        {hocPhanRows.length > 0 ? (
-          <HocPhanTable list={hocPhanRows} canWrite={canWrite} />
+        <h2 className={styles.cardTitle}>Danh sách học phần ({total})</h2>
+        {total > 0 ? (
+          <>
+            <HocPhanTable list={hocPhanRows} canWrite={canWrite} />
+            <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có học phần nào.</p>
         )}

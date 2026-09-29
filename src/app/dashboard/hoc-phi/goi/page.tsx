@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import GoiHocPhiForm from "@/components/GoiHocPhiForm";
 import GoiHocPhiTable, { type GoiHocPhiRow } from "@/components/GoiHocPhiTable";
 import styles from "../hoc-phi.module.css";
@@ -8,7 +10,9 @@ import styles from "../hoc-phi.module.css";
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 const VAI_TRO_GHI = ["master_admin", "ke_toan"];
 
-export default async function GoiHocPhiPage() {
+export default async function GoiHocPhiPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,16 +20,22 @@ export default async function GoiHocPhiPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: chuongTrinhList }, { data: goiList }] = await Promise.all([
+  const [{ data: profile }, { data: chuongTrinhList }, { data: goiList, count: tongGoi }] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
     supabase
       .from("goi_hoc_phi")
-      .select("id, ten, chuong_trinh_ma, hinh_thuc_dong, gia_niem_yet, hieu_luc_tu, hieu_luc_den, dang_ap_dung")
+      .select("id, ten, chuong_trinh_ma, hinh_thuc_dong, gia_niem_yet, hieu_luc_tu, hieu_luc_den, dang_ap_dung", { count: "exact" })
       .is("deleted_at", null)
       .order("chuong_trinh_ma")
-      .order("hieu_luc_tu", { ascending: false }),
+      .order("hieu_luc_tu", { ascending: false })
+      .order("id")
+      .range(pp.from, pp.to),
   ]);
+
+  const total = tongGoi ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-phi/goi", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -77,9 +87,12 @@ export default async function GoiHocPhiPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Danh sách gói học phí ({goiRows.length})</h2>
-            {goiRows.length > 0 ? (
-              <GoiHocPhiTable list={goiRows} canEdit={canEdit} />
+            <h2 className={styles.cardTitle}>Danh sách gói học phí ({total})</h2>
+            {total > 0 ? (
+              <>
+                <GoiHocPhiTable list={goiRows} canEdit={canEdit} />
+                <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có gói học phí nào.</p>
             )}
