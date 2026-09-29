@@ -46,7 +46,7 @@ làm ở các PR sau nên **hiện vẫn còn giới hạn cứng cũ**.
 
 - **Staging**: 🔲 chưa
 - **Production**: 🔲 chưa
-- **Commit**: (điền sau khi commit)
+- **Commit**: `dd9db28` (nhánh `feat/phan-trang-bang-nen-danh-muc`, chưa merge)
 
 ---
 
