@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { xoaHocSinh, capNhatTrangThaiGhiDanh } from "@/app/dashboard/hoc-sinh/actions";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { xoaHocSinh, capNhatTrangThaiGhiDanh, xuatCsvHocSinh } from "@/app/dashboard/hoc-sinh/actions";
+import type { BoLocHocSinh } from "@/lib/hoc-sinh-loc";
 import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL, TRANG_THAI_GHI_DANH_LABEL, TRANG_THAI_GHI_DANH_OPTIONS } from "./hocSinhOptions";
 import { ngayHienThi } from "@/lib/formatDate";
 import { useToast } from "./ToastProvider";
@@ -41,82 +43,77 @@ export default function HocSinhTable({
   lopList,
   chiNhanhList,
   canDelete,
+  boLoc,
+  total,
+  dangLoc,
 }: {
   list: HocSinhRow[];
   lopList: LopOption[];
   chiNhanhList: ChiNhanhOption[];
   canDelete: boolean;
+  boLoc: BoLocHocSinh;
+  total: number;
+  dangLoc: boolean;
 }) {
-  const [query, setQuery] = useState("");
-  const [lopFilter, setLopFilter] = useState("");
-  const [chiNhanhFilter, setChiNhanhFilter] = useState("");
-  const [trangThaiFilter, setTrangThaiFilter] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const showToast = useToast();
+  const [isLocPending, startLocTransition] = useTransition();
+  const [isExporting, startExport] = useTransition();
+  const [query, setQuery] = useState(boLoc.q);
   const [editingRow, setEditingRow] = useState<HocSinhRow | null>(null);
   const [chuyenLopRow, setChuyenLopRow] = useState<HocSinhRow | null>(null);
   const coCotHanhDong = canDelete || list.some((hs) => hs.coTheSua);
 
-  const lopIdToChiNhanhId = useMemo(
-    () => new Map(lopList.map((l) => [l.id, l.chi_nhanh_id])),
-    [lopList]
+  // Bộ lọc nằm trên URL (?q &lop &cn &tt). Đổi bộ lọc luôn về trang 1.
+  const datBoLoc = useCallback(
+    (thayDoi: Partial<BoLocHocSinh>) => {
+      const qs = new URLSearchParams(searchParams.toString());
+      qs.delete("page");
+      for (const [k, v] of Object.entries(thayDoi)) {
+        if (v) qs.set(k, v);
+        else qs.delete(k);
+      }
+      const url = qs.size > 0 ? `${pathname}?${qs.toString()}` : pathname;
+      startLocTransition(() => router.replace(url));
+    },
+    [pathname, router, searchParams]
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return list.filter((hs) => {
-      if (q) {
-        const khop =
-          hs.ma_hoc_sinh.toLowerCase().includes(q) ||
-          hs.ho_ten.toLowerCase().includes(q) ||
-          (hs.lop_hien_tai ?? "").toLowerCase().includes(q);
-        if (!khop) return false;
-      }
-      if (lopFilter && hs.lop_hien_tai_id !== lopFilter) return false;
-      if (chiNhanhFilter) {
-        const chiNhanhCuaHs = hs.lop_hien_tai_id != null ? lopIdToChiNhanhId.get(hs.lop_hien_tai_id) : null;
-        if (chiNhanhCuaHs !== chiNhanhFilter) return false;
-      }
-      if (trangThaiFilter && hs.trang_thai_ghi_danh !== trangThaiFilter) return false;
-      return true;
-    });
-  }, [list, query, lopFilter, chiNhanhFilter, trangThaiFilter, lopIdToChiNhanhId]);
+  // Ô tìm kiếm: chờ ~300ms sau lần gõ cuối mới truy vấn server.
+  useEffect(() => {
+    const dangGo = query.trim();
+    if (dangGo === boLoc.q) return;
+    const t = setTimeout(() => datBoLoc({ q: dangGo }), 300);
+    return () => clearTimeout(t);
+  }, [query, boLoc.q, datBoLoc]);
+
+  // Back/Forward hoặc "Xoá bộ lọc" làm đổi ?q từ ngoài → đồng bộ lại ô nhập.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuery(boLoc.q);
+  }, [boLoc.q]);
 
   function handleExport() {
-    const header = [
-      "STT", "ID hoc sinh", "Ho va ten", "Lop hien tai", "Ten phu huynh", "SDT phu huynh",
-      "Ngay sinh", "Gioi tinh", "SDT hoc sinh", "Email", "CCCD", "Dia chi",
-      "Tinh trang dang ky", "Truong THPT", "Khoi thi", "NV1",
-    ];
-    const rows = filtered.map((hs) => [
-      String(hs.stt),
-      hs.ma_hoc_sinh,
-      hs.ho_ten,
-      hs.lop_hien_tai ?? "",
-      hs.ten_phu_huynh ?? "",
-      hs.sdt_phu_huynh ?? "",
-      hs.ngay_sinh ?? "",
-      hs.gioi_tinh ? (GIOI_TINH_LABEL[hs.gioi_tinh] ?? hs.gioi_tinh) : "",
-      hs.sdt_hoc_sinh ?? "",
-      hs.email ?? "",
-      hs.cccd ?? "",
-      hs.dia_chi ?? "",
-      hs.tinh_trang_dang_ky
-        ? hs.tinh_trang_dang_ky.map((t) => TINH_TRANG_DANG_KY_LABEL[t] ?? t).join(", ")
-        : "",
-      hs.truong_thpt ?? "",
-      hs.khoi_thi ?? "",
-      hs.nv1 ?? "",
-    ]);
-    const csv = [header, ...rows].map((r) => r.map(csvEscape).join(",")).join("\r\n");
-    // BOM để Excel mở tiếng Việt không lỗi font.
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `danh-sach-hoc-sinh-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    startExport(async () => {
+      const result = await xuatCsvHocSinh(boLoc);
+      if ("error" in result) {
+        showToast({ type: "error", message: `Xuất CSV thất bại: ${result.error}` });
+        return;
+      }
+      // BOM để Excel mở tiếng Việt không lỗi font.
+      const blob = new Blob(["\uFEFF" + result.csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `danh-sach-hoc-sinh-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast({ type: "success", message: `Đã xuất ${result.soDong} học sinh ra CSV.` });
+    });
   }
 
   return (
@@ -131,8 +128,8 @@ export default function HocSinhTable({
         />
         <select
           className={styles.rowSelect}
-          value={lopFilter}
-          onChange={(e) => setLopFilter(e.target.value)}
+          value={boLoc.lop}
+          onChange={(e) => datBoLoc({ lop: e.target.value })}
         >
           <option value="">— Tất cả lớp —</option>
           {lopList.map((lop) => (
@@ -145,8 +142,8 @@ export default function HocSinhTable({
         {chiNhanhList.length > 0 && (
           <select
             className={styles.rowSelect}
-            value={chiNhanhFilter}
-            onChange={(e) => setChiNhanhFilter(e.target.value)}
+            value={boLoc.cn}
+            onChange={(e) => datBoLoc({ cn: e.target.value })}
           >
             <option value="">— Tất cả chi nhánh —</option>
             {chiNhanhList.map((c) => (
@@ -156,26 +153,38 @@ export default function HocSinhTable({
         )}
         <select
           className={styles.rowSelect}
-          value={trangThaiFilter}
-          onChange={(e) => setTrangThaiFilter(e.target.value)}
+          value={boLoc.tt}
+          onChange={(e) => datBoLoc({ tt: e.target.value })}
         >
           <option value="">— Tất cả trạng thái ghi danh —</option>
           {TRANG_THAI_GHI_DANH_OPTIONS.map((t) => (
             <option key={t} value={t}>{TRANG_THAI_GHI_DANH_LABEL[t]}</option>
           ))}
         </select>
+        {dangLoc && (
+          <button
+            type="button"
+            className={styles.btnEdit}
+            onClick={() => {
+              setQuery("");
+              datBoLoc({ q: "", lop: "", cn: "", tt: "" });
+            }}
+          >
+            Xoá bộ lọc
+          </button>
+        )}
         <button
           type="button"
           className={styles.btnExport}
           onClick={handleExport}
-          disabled={filtered.length === 0}
+          disabled={total === 0 || isExporting}
         >
-          Xuất CSV ({filtered.length})
+          {isExporting ? "Đang xuất…" : `Xuất CSV (${total})`}
         </button>
       </div>
 
-      {filtered.length > 0 ? (
-        <div className={styles.tableWrap}>
+      {list.length > 0 ? (
+        <div className={`${styles.tableWrap} ${isLocPending ? styles.dangTai : ""}`}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -200,7 +209,7 @@ export default function HocSinhTable({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((hs) => (
+              {list.map((hs) => (
                 <HocSinhRowItem
                   key={hs.id}
                   hocSinh={hs}
@@ -214,7 +223,7 @@ export default function HocSinhTable({
           </table>
         </div>
       ) : (
-        <p className={styles.empty}>Không tìm thấy học sinh nào khớp.</p>
+        <p className={styles.empty}>{dangLoc ? "Không tìm thấy học sinh nào khớp." : "Chưa có học sinh nào."}</p>
       )}
 
       {editingRow && <HocSinhEditModal hocSinh={editingRow} onClose={() => setEditingRow(null)} />}
@@ -343,11 +352,4 @@ function HocSinhRowItem({
       )}
     </tr>
   );
-}
-
-function csvEscape(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }

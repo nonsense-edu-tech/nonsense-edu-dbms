@@ -323,3 +323,9 @@
   color: var(--accent);
   background: var(--accent-wash);
 }
+
+/* Đang tải kết quả lọc/đổi trang từ server — làm mờ nhẹ, giữ nguyên bố cục. */
+.dangTai {
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}

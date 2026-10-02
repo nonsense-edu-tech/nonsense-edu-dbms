@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { apDungBoLoc, chuanHoaBoLoc, type BoLocHocSinh } from "@/lib/hoc-sinh-loc";
+import { dongCsv, ghepCsv } from "@/lib/hoc-sinh-csv";
 
 type HocSinh = {
   id: string;
@@ -183,4 +185,59 @@ function mapDbError(msg: string): string {
   if (msg.includes("Chỉ Master Admin được xoá"))
     return "Chỉ Master Admin được xoá học sinh.";
   return msg;
+}
+
+export type XuatCsvHocSinhResult = { error: string } | { csv: string; soDong: number };
+
+const KICH_THUOC_LO_XUAT = 1000;
+// Chặn an toàn: tránh một lần xuất ngốn quá nhiều bộ nhớ/thời gian của server action.
+const TOI_DA_DONG_XUAT = 20000;
+
+/**
+ * Xuất CSV TOÀN BỘ học sinh khớp bộ lọc hiện tại (không chỉ trang đang xem).
+ * Tải theo lô 1000 dòng (PostgREST giới hạn ~1000 dòng/request). Chạy bằng
+ * client của chính người gọi nên RLS vẫn áp như khi xem danh sách.
+ */
+export async function xuatCsvHocSinh(boLocRaw: Partial<BoLocHocSinh>): Promise<XuatCsvHocSinhResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Phiên đăng nhập đã hết hạn." };
+
+  const boLoc = chuanHoaBoLoc(boLocRaw);
+
+  const { data: lopList, error: lopError } = await supabase
+    .from("lop")
+    .select("id, ma_lop, ten_lop, chi_nhanh_id")
+    .is("deleted_at", null);
+  if (lopError) return { error: mapDbError(lopError.message) };
+
+  const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
+  const tenLop = (id: string | null) => {
+    const l = id != null ? lopMap.get(id) : null;
+    return l ? (l.ten_lop ? `${l.ma_lop} — ${l.ten_lop}` : l.ma_lop) : "";
+  };
+
+  const rows: string[][] = [];
+  for (let from = 0; from < TOI_DA_DONG_XUAT; from += KICH_THUOC_LO_XUAT) {
+    const truyVan = apDungBoLoc(
+      supabase.from("v_hoc_sinh_danh_sach").select("*"),
+      boLoc,
+      lopList ?? []
+    )
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, from + KICH_THUOC_LO_XUAT - 1);
+
+    const { data, error } = await truyVan;
+    if (error) return { error: mapDbError(error.message) };
+    for (const hs of data ?? []) rows.push(dongCsv(hs, tenLop));
+    if ((data ?? []).length < KICH_THUOC_LO_XUAT) break;
+  }
+
+  if (rows.length >= TOI_DA_DONG_XUAT) {
+    return { error: `Quá ${TOI_DA_DONG_XUAT} dòng, vui lòng thu hẹp bộ lọc rồi xuất lại.` };
+  }
+  return { csv: ghepCsv(rows), soDong: rows.length };
 }

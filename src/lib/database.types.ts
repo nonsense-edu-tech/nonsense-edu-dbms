@@ -1713,6 +1713,31 @@ export type Database = {
           },
         ]
       }
+      v_hoc_sinh_danh_sach: {
+        Row: {
+          cccd: string | null
+          created_at: string | null
+          dia_chi: string | null
+          email: string | null
+          ghi_danh_id: string | null
+          gioi_tinh: string | null
+          ho_ten: string | null
+          id: string | null
+          khoi_thi: string | null
+          lop_hien_tai_id: string | null
+          ma_hoc_sinh: string | null
+          ngay_sinh: string | null
+          nv1: string | null
+          sdt_hoc_sinh: string | null
+          sdt_phu_huynh: string | null
+          stt: number | null
+          ten_phu_huynh: string | null
+          tinh_trang_dang_ky: string[] | null
+          trang_thai_ghi_danh: string | null
+          truong_thpt: string | null
+        }
+        Relationships: []
+      }
       v_hop_dong_qua_han: {
         Row: {
           ho_ten: string | null
