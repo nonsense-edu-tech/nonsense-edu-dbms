@@ -20,6 +20,37 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Phân trang bảng (PR2: Lớp, Buổi học, Câu hỏi, Phiếu thu)
+
+**Tóm tắt:** Tiếp tục phân trang server-side (xem PR1 ở mục 2026-09-29): bỏ các
+`limit` cứng đang cắt dữ liệu âm thầm. Không có migration DB — chỉ frontend.
+Xếp chồng trên nhánh PR1 (`feat/phan-trang-bang-nen-danh-muc`), cần merge PR1 trước.
+
+- **Phiếu thu** (`hoc-phi/thu-tien`): sửa lỗi hiển thị thật — production có 177
+  phiếu thu (đối chiếu 02/10/2026) nhưng trang chỉ lấy `limit(100)`, tức 77 phiếu
+  không hiện. Nay phân trang đủ. Tên học sinh + biên lai lấy bằng embed
+  (`hop_dong_hoc_phi(ghi_danh(hoc_sinh))`, `tep_dinh_kem`) chỉ cho phiếu của trang
+  hiện tại, thay cho việc tải toàn bộ `ghi_danh`/`hoc_sinh`/`tep_dinh_kem`. Hệ quả
+  tốt: phiếu của hợp đồng đã hoàn tất/huỷ giờ hiện đúng tên (trước đây ra "?" vì
+  chỉ tra trong danh sách hợp đồng đang hoạt động).
+- **Lớp**: sĩ số đếm ngay trong query (embed `hoc_sinh!lop_hien_tai_id(count)`),
+  bỏ cách cũ tải 2000 học sinh rồi đếm bằng JS.
+- **Buổi học**: bỏ `limit(200)`; chi phí (thù lao GV/chi phí phòng) chỉ tải cho các
+  buổi của trang hiện tại.
+- **Câu hỏi**: phân trang (trước đây tải toàn bộ).
+- Thêm `src/lib/embed.ts` (`motBanGhi`): `database.types.ts` chưa khai báo
+  Relationships nên supabase-js suy kiểu embed nhiều-một thành mảng dù runtime
+  trả object — helper chấp nhận cả hai.
+- Chưa kiểm thử truy vấn embed trực tiếp với PostgREST (môi trường phát triển bị
+  chặn gọi REST); đã đối chiếu tên khoá ngoại bằng SQL trên production. Cần bấm
+  thử trang Lớp và Thu tiền trên Vercel preview.
+
+- **Staging**: 🔲 chưa
+- **Production**: 🔲 chưa
+- **Commit**: (nhánh `feat/phan-trang-nhom-a-lop-buoi-hoc-cau-hoi-phieu-thu`, chưa merge)
+
+---
+
 ## 2026-10-02 — Import Master sheet 2026-2027 + siết tự duyệt hợp đồng học phí
 
 **Tóm tắt:** Nạp toàn bộ Master sheet lên production thay cho nhập tay: 14 lớp
