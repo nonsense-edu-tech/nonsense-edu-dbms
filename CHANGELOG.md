@@ -20,6 +20,28 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Import Master sheet 2026-2027 + siết tự duyệt hợp đồng học phí
+
+**Tóm tắt:** Nạp toàn bộ Master sheet lên production thay cho nhập tay: 14 lớp
+(thêm 7 lớp Nội trú), 160 học sinh, 154 hợp đồng học phí, 177 phiếu thu, 201
+kỳ đóng ĐGNL theo tháng, 13 gói học phí; doanh thu thuần 4.312.200.000, đã thu
+2.584.450.000 (khớp 100% bản chạy thử). Mọi dòng import gắn `import_batch_id`.
+Đồng thời vá lỗ hổng: trigger `chan_tu_duyet_hop_dong_hoc_phi` giờ chặn cả
+`nhap`/`cho_duyet` → `hoan_thanh` (trước chỉ chặn → `dang_hoat_dong`), và
+`import_batch` có policy chỉ `master_admin`.
+
+- **Migration:** `0043_import_master_sheet_expand.sql`, `0044_chan_duyet_hop_dong_va_policy_import_batch.sql`
+- **Staging:** 🔲 chưa áp (import chạy thử bằng transaction rollback trên production)
+- **Production:** ✅ đã áp — **NGOÀI pipeline** (trái ADR-004 luật (a)): `0043` qua MCP
+  `apply_migration` (ghi vào lịch sử với version `20261002045507`, không phải `0043`),
+  `0044` thủ công qua SQL Editor. Import dữ liệu chạy bằng 1 khối DO có chốt kiểm số liệu.
+  PR này chỉ ghi nhận lại file cho khớp; cả 2 file idempotent nên CI áp lại không hại.
+- **Lưu ý parity:** lịch sử production có dòng lạ `20261002045507` và chưa có `0043`/`0044`
+  → cần repair (xóa dòng lạ, ghi `0043`/`0044` đã áp) trước khi `supabase db push` chạy được.
+- **Commit:** (xem PR)
+
+---
+
 ## 2026-09-29 — Header + sidebar dùng chung, đồng nhất theme indigo, breadcrumb rút gọn
 
 **Tóm tắt:** Đồng nhất navigation bar + theme trên toàn bộ `/dashboard/**`
