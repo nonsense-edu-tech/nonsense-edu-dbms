@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
 import HocSinhSubNav from "@/components/HocSinhSubNav";
 import HocSinhTable, { type HocSinhRow } from "@/components/HocSinhTable";
+import { apDungBoLoc, parseBoLoc } from "@/lib/hoc-sinh-loc";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import styles from "./hoc-sinh.module.css";
 
 // Phòng trường hợp dữ liệu cũ (trước khi đổi cột sang text[]) vẫn còn ở dạng
@@ -12,7 +15,15 @@ function chuanHoaMang(v: unknown): string[] | null {
   return [String(v)];
 }
 
-export default async function HocSinhPage() {
+export default async function HocSinhPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
+  const boLoc = parseBoLoc(raw);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,33 +34,29 @@ export default async function HocSinhPage() {
   const [
     { data: profile },
     { data: lopList },
-    { data: hocSinhList },
-    { data: ghiDanhList },
     { data: userChiNhanhList },
     { data: chiNhanhList },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("lop").select("id, ma_lop, ten_lop, chi_nhanh_id").is("deleted_at", null).order("ma_lop", { ascending: false }),
-    supabase
-      .from("hoc_sinh")
-      .select(
-        "id, stt, ma_hoc_sinh, ho_ten, sdt_phu_huynh, lop_hien_tai_id, created_at, tinh_trang_dang_ky, ngay_sinh, gioi_tinh, email, sdt_hoc_sinh, cccd, truong_thpt, khoi_thi, nv1, ten_phu_huynh, dia_chi"
-      )
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1000),
-    // Lấy TOÀN BỘ ghi_danh (không lọc ngay_ket_thuc IS NULL) — bản ghi mới
-    // nhất mỗi học sinh mới là "hiện tại", kể cả khi đã đóng (bảo lưu/nghỉ/
-    // chuyển lớp). Lọc theo ngay_ket_thuc IS NULL sẽ khiến dropdown biến
-    // mất ngay sau khi đổi sang trạng thái khác "Đang học".
-    supabase
-      .from("ghi_danh")
-      .select("id, hoc_sinh_id, trang_thai, ngay_bat_dau")
-      .is("deleted_at", null)
-      .order("ngay_bat_dau", { ascending: false }),
     supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id),
     supabase.from("chi_nhanh").select("id, ten").is("deleted_at", null).order("ten"),
   ]);
+
+  // Chỉ lấy đúng 1 trang học sinh (đã lọc phía server) từ view
+  // v_hoc_sinh_danh_sach (security_invoker — RLS áp theo người xem).
+  const { data: hocSinhList, count } = await apDungBoLoc(
+    supabase.from("v_hoc_sinh_danh_sach").select("*", { count: "exact" }),
+    boLoc,
+    lopList ?? []
+  )
+    .order("created_at", { ascending: false })
+    .order("id")
+    .range(pp.from, pp.to);
+
+  const total = count ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-sinh", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const isMasterAdmin = isActive && profile?.vai_tro === "master_admin";
@@ -75,22 +82,13 @@ export default async function HocSinhPage() {
     : (chiNhanhList ?? []);
 
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
-  // ghiDanhList đã sắp ngay_bat_dau giảm dần — dòng đầu tiên gặp cho mỗi
-  // hoc_sinh_id chính là ghi danh mới nhất (hiện tại), dù đang mở hay đã đóng.
-  const ghiDanhHienTaiMap = new Map<string, { id: string; trang_thai: string }>();
-  for (const gd of ghiDanhList ?? []) {
-    if (!ghiDanhHienTaiMap.has(gd.hoc_sinh_id)) {
-      ghiDanhHienTaiMap.set(gd.hoc_sinh_id, gd);
-    }
-  }
   const hocSinhRows: HocSinhRow[] = (hocSinhList ?? []).map((hs) => {
     const lop = hs.lop_hien_tai_id != null ? lopMap.get(hs.lop_hien_tai_id) : null;
-    const ghiDanhMo = ghiDanhHienTaiMap.get(hs.id);
     return {
-      id: hs.id,
-      stt: hs.stt,
-      ma_hoc_sinh: hs.ma_hoc_sinh,
-      ho_ten: hs.ho_ten,
+      id: hs.id as string,
+      stt: hs.stt as number,
+      ma_hoc_sinh: hs.ma_hoc_sinh as string,
+      ho_ten: hs.ho_ten as string,
       sdt_phu_huynh: hs.sdt_phu_huynh,
       lop_hien_tai_id: hs.lop_hien_tai_id,
       lop_hien_tai: lop ? (lop.ten_lop ? `${lop.ma_lop} — ${lop.ten_lop}` : lop.ma_lop) : null,
@@ -105,14 +103,16 @@ export default async function HocSinhPage() {
       nv1: hs.nv1,
       ten_phu_huynh: hs.ten_phu_huynh,
       dia_chi: hs.dia_chi,
-      ghi_danh_id: ghiDanhMo?.id ?? null,
-      trang_thai_ghi_danh: ghiDanhMo?.trang_thai ?? null,
+      ghi_danh_id: hs.ghi_danh_id,
+      trang_thai_ghi_danh: hs.trang_thai_ghi_danh,
       coTheSua:
         isMasterAdmin ||
         isAdminTs ||
         (isQuanLyChiNhanh && hs.lop_hien_tai_id != null && lopIdsTrongPhamVi.has(hs.lop_hien_tai_id)),
     };
   });
+
+  const dangLoc = Boolean(boLoc.q || boLoc.lop || boLoc.cn || boLoc.tt);
 
   return (
     <main className={styles.page}>
@@ -123,17 +123,18 @@ export default async function HocSinhPage() {
       <HocSinhSubNav active="danh-sach" canCreate={isAllowed} />
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Tra cứu &amp; xuất danh sách học sinh ({hocSinhRows.length})</h2>
-        {hocSinhRows.length > 0 ? (
-          <HocSinhTable
-            list={hocSinhRows}
-            lopList={lopListChoForm}
-            chiNhanhList={chiNhanhListChoForm}
-            canDelete={canDelete}
-          />
-        ) : (
-          <p className={styles.empty}>Chưa có học sinh nào.</p>
-        )}
+        <h2 className={styles.cardTitle}>Tra cứu &amp; xuất danh sách học sinh ({total})</h2>
+        {/* Bộ lọc luôn hiện để người dùng xoá được bộ lọc kể cả khi kết quả rỗng. */}
+        <HocSinhTable
+          list={hocSinhRows}
+          lopList={lopListChoForm}
+          chiNhanhList={chiNhanhListChoForm}
+          canDelete={canDelete}
+          boLoc={boLoc}
+          total={total}
+          dangLoc={dangLoc}
+        />
+        <PhanTrang total={total} page={pp.page} size={pp.size} />
       </section>
     </main>
   );

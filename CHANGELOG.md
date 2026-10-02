@@ -20,6 +20,32 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Danh sách học sinh phân trang phía server + view `v_hoc_sinh_danh_sach` (PR3b)
+
+**Tóm tắt:** Danh sách học sinh hết giới hạn cứng 1000 dòng và hết lọc ở client: tìm kiếm,
+lọc lớp/chi nhánh/trạng thái ghi danh và phân trang chạy ở server (URL `?q&lop&cn&tt&page&size`),
+ô tìm kiếm debounce 300ms. Xuất CSV là server action, xuất TOÀN BỘ học sinh khớp bộ lọc
+(tải theo lô 1000, tối đa 20.000 dòng). CSV có thêm chống chèn công thức (ô bắt đầu `= + - @`
+được thêm dấu nháy; số điện thoại dạng `+84...` giữ nguyên).
+
+- **Migration:** `0045_v_hoc_sinh_danh_sach.sql` — Expand (chỉ thêm view `security_invoker`,
+  chỉ `SELECT` cho `authenticated`, thu hồi `anon`/`public`). Code CŨ không dùng view nên
+  chạy bình thường khi migration lên trước.
+- **Thứ tự bắt buộc (ADR-004):** merge PR migration (`feat/hoc-sinh-view-danh-sach`) và để
+  pipeline áp lên production TRƯỚC; chỉ merge PR code (`feat/hoc-sinh-danh-sach-phan-trang`)
+  sau khi view đã có trên production. Không áp tay.
+- Đã kiểm: truy vấn của view chạy chỉ-đọc trên production → 160 học sinh, mỗi người đúng 1
+  ghi danh (153 `dang_hoc`, 7 `da_nghi`), không nhân dòng. CHƯA chạy `get_advisors` sau khi
+  view tồn tại (view chưa được tạo) — chạy sau khi pipeline áp migration.
+- **Production**: migration `0045` ✅ đã áp dụng 02/10/2026 qua pipeline (PR #33 + sửa tag `adr004-type: expand`
+  ở `fix/migration-0045-tag-expand`); view có `security_invoker=true`, `anon` không có quyền, `authenticated` đọc
+  được 160 dòng. `get_advisors` (security + performance) sau khi áp: không có cảnh báo nào về view này. Ghi chú:
+  `authenticated` còn giữ quyền ghi mặc định của Supabase trên view — vô hại vì view có join/lateral nên không
+  ghi được; có thể thu hẹp bằng migration Expand sau. Code danh sách học sinh: 🔲 chưa merge.
+- **Commit**: (xem git log hai nhánh trên)
+
+---
+
 ## 2026-10-02 — Tab Học sinh tách 2 tab con: Tạo học sinh / Danh sách học sinh (PR3a)
 
 **Tóm tắt:** Theo yêu cầu của Hiệu trưởng, trang Học sinh có 2 tab con. `/dashboard/hoc-sinh`
