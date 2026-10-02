@@ -3,12 +3,22 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import HopDongForm, { type GhiDanhOption, type GoiOption } from "@/components/HopDongForm";
 import HopDongTable, { type HopDongRow } from "@/components/HopDongTable";
+import PhanTrang from "@/components/PhanTrang";
+import { motBanGhi } from "@/lib/embed";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import styles from "../hoc-phi.module.css";
 
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 const VAI_TRO_GHI = ["master_admin", "ke_toan", "admin_ts"];
 
-export default async function HopDongPage() {
+export default async function HopDongPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>;
+}) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,26 +29,44 @@ export default async function HopDongPage() {
   const [
     { data: profile },
     { data: chuongTrinhList },
-    { data: ghiDanhList },
-    { data: hocSinhList },
-    { data: lopList },
-    { data: hopDongList },
+    { data: hopDongList, count },
     { data: goiList },
-    { data: taiChinhList },
+    { data: ghiDanhDangHoc },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
-    supabase.from("ghi_danh").select("id, hoc_sinh_id, lop_id, trang_thai").is("deleted_at", null),
-    supabase.from("hoc_sinh").select("id, ho_ten, ma_hoc_sinh").is("deleted_at", null),
-    supabase.from("lop").select("id, ten_lop, chuong_trinh_ma").is("deleted_at", null),
+    // Chỉ lấy đúng 1 trang hợp đồng; tên học sinh / lớp / gói lấy bằng embed
+    // (thay cho việc tải toàn bộ ghi_danh/hoc_sinh/lop rồi join bằng Map).
     supabase
       .from("hop_dong_hoc_phi")
-      .select("id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, so_tien_giam, doanh_thu_thuan, trang_thai")
+      .select(
+        "id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, so_tien_giam, doanh_thu_thuan, trang_thai, goi_hoc_phi(ten), ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh), lop(chuong_trinh_ma))",
+        { count: "exact" }
+      )
       .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(pp.from, pp.to),
     supabase.from("goi_hoc_phi").select("id, ten, chuong_trinh_ma, gia_niem_yet, dang_ap_dung, hieu_luc_den").is("deleted_at", null),
-    supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, thuc_thu"),
+    // Dropdown "Tạo hợp đồng": ghi danh đang học CHƯA có hợp đồng. `hop_dong_hoc_phi(id)`
+    // cho biết đã có hợp đồng chưa (ghi_danh_id là UNIQUE nên tối đa 1).
+    supabase
+      .from("ghi_danh")
+      .select("id, hoc_sinh(ho_ten, ma_hoc_sinh, deleted_at), lop(ten_lop, chuong_trinh_ma), hop_dong_hoc_phi(id)")
+      .eq("trang_thai", "dang_hoc")
+      .is("deleted_at", null),
   ]);
+
+  const total = count ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-phi/hop-dong", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
+
+  // Thực thu chỉ tra cho các hợp đồng của trang hiện tại.
+  const hopDongIds = (hopDongList ?? []).map((hd) => hd.id);
+  const { data: taiChinhList } =
+    hopDongIds.length > 0
+      ? await supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, thuc_thu").in("hop_dong_id", hopDongIds)
+      : { data: [] as { hop_dong_id: string | null; thuc_thu: number | null }[] };
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -46,27 +74,24 @@ export default async function HopDongPage() {
   const canEdit = isActive && VAI_TRO_GHI.includes(vaiTro);
 
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
-  const hocSinhMap = new Map((hocSinhList ?? []).map((h) => [h.id, h]));
-  const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
-  const goiMap = new Map((goiList ?? []).map((g) => [g.id, g]));
   const thucThuMap = new Map((taiChinhList ?? []).map((tc) => [tc.hop_dong_id, tc.thuc_thu]));
 
-  const usedGhiDanhIds = new Set((hopDongList ?? []).map((hd) => hd.ghi_danh_id));
-
-  const ghiDanhKhaDung: GhiDanhOption[] = (ghiDanhList ?? [])
-    .filter((gd) => gd.trang_thai === "dang_hoc" && !usedGhiDanhIds.has(gd.id))
+  const ghiDanhKhaDung: GhiDanhOption[] = (ghiDanhDangHoc ?? [])
+    .filter((gd) => motBanGhi(gd.hop_dong_hoc_phi) == null)
     .map((gd) => {
-      const hs = hocSinhMap.get(gd.hoc_sinh_id);
-      const lop = lopMap.get(gd.lop_id);
-      return {
-        id: gd.id,
-        ho_ten: hs?.ho_ten ?? "?",
-        ma_hoc_sinh: hs?.ma_hoc_sinh ?? "?",
-        ten_lop: lop?.ten_lop ?? null,
-        chuong_trinh_ma: lop?.chuong_trinh_ma ?? "",
-        chuong_trinh_ten: chuongTrinhMap.get(lop?.chuong_trinh_ma ?? "") ?? "?",
-      };
+      const hs = motBanGhi(gd.hoc_sinh);
+      const lop = motBanGhi(gd.lop);
+      return { gd, hs, lop };
     })
+    .filter(({ hs }) => hs != null && hs.deleted_at == null)
+    .map(({ gd, hs, lop }) => ({
+      id: gd.id,
+      ho_ten: hs?.ho_ten ?? "?",
+      ma_hoc_sinh: hs?.ma_hoc_sinh ?? "?",
+      ten_lop: lop?.ten_lop ?? null,
+      chuong_trinh_ma: lop?.chuong_trinh_ma ?? "",
+      chuong_trinh_ten: chuongTrinhMap.get(lop?.chuong_trinh_ma ?? "") ?? "?",
+    }))
     .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, "vi"));
 
   const goiKhaDung: GoiOption[] = (goiList ?? [])
@@ -74,10 +99,10 @@ export default async function HopDongPage() {
     .map((g) => ({ id: g.id, ten: g.ten, chuong_trinh_ma: g.chuong_trinh_ma, gia_niem_yet: g.gia_niem_yet }));
 
   const hopDongRows: HopDongRow[] = (hopDongList ?? []).map((hd) => {
-    const gd = (ghiDanhList ?? []).find((g) => g.id === hd.ghi_danh_id);
-    const hs = gd ? hocSinhMap.get(gd.hoc_sinh_id) : undefined;
-    const lop = gd ? lopMap.get(gd.lop_id) : undefined;
-    const goi = goiMap.get(hd.goi_hoc_phi_id);
+    const gd = motBanGhi(hd.ghi_danh);
+    const hs = motBanGhi(gd?.hoc_sinh);
+    const lop = motBanGhi(gd?.lop);
+    const goi = motBanGhi(hd.goi_hoc_phi);
     return {
       id: hd.id,
       ho_ten: hs?.ho_ten ?? "?",
@@ -124,9 +149,12 @@ export default async function HopDongPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Danh sách hợp đồng ({hopDongRows.length})</h2>
+            <h2 className={styles.cardTitle}>Danh sách hợp đồng ({total})</h2>
             {hopDongRows.length > 0 ? (
-              <HopDongTable list={hopDongRows} canEdit={canEdit} />
+              <>
+                <HopDongTable list={hopDongRows} canEdit={canEdit} />
+                <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có hợp đồng nào.</p>
             )}
