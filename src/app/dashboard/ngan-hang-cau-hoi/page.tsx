@@ -6,6 +6,7 @@ import CauHoiLoc from "@/components/CauHoiLoc";
 import CauHoiSubNav from "@/components/CauHoiSubNav";
 import { apDungBoLocCauHoi, dangLocCauHoi, parseBoLocCauHoi } from "@/lib/cau-hoi-loc";
 import CauHoiTable, { type CauHoiRow } from "@/components/CauHoiTable";
+import { layHinhAnhCacCauHoi } from "./hinh-anh";
 import styles from "./ngan-hang-cau-hoi.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm", "gv"];
@@ -79,6 +80,8 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
   const dangLoc = dangLocCauHoi(boLoc);
   const canDuyet = isActive && VAI_TRO_DUYET.includes(vaiTro);
 
+  const hinhAnhMap = await layHinhAnhCacCauHoi(supabase, (cauHoiList ?? []).map((ch) => ch.id));
+
   const capHocMap = new Map((capHocList ?? []).map((c) => [c.ma, c.ten]));
   const dangCauMap = new Map((dangCauList ?? []).map((d) => [d.ma, d.ten]));
   const monHocByCode = new Map((monHocList ?? []).map((m) => [`${m.cap_hoc_ma}-${m.ma}`, m]));
@@ -93,6 +96,7 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
     const chuDe = monHoc && ch.chu_de != null ? chuDeByCode.get(`${monHoc.id}-${ch.chu_de}`) : undefined;
 
     return {
+      hinh_anh: hinhAnhMap.get(ch.id) ?? [],
       id: ch.id,
       ma_cau_hoi: ch.ma_cau_hoi,
       noi_dung: ch.noi_dung,

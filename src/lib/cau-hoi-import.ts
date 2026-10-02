@@ -38,7 +38,10 @@ export type KhoaCot =
   | "lua_chon_h"
   | "dap_an"
   | "do_kho"
-  | "loi_giai";
+  | "loi_giai"
+  | "anh_de"
+  | "anh_loi_giai"
+  | "anh_lua_chon";
 
 export const COT_TEMPLATE: { khoa: KhoaCot; nhan: string; batBuoc: boolean; rong: number }[] = [
   { khoa: "cap_hoc", nhan: "Cấp học (mã)", batBuoc: true, rong: 12 },
@@ -58,7 +61,34 @@ export const COT_TEMPLATE: { khoa: KhoaCot; nhan: string; batBuoc: boolean; rong
   { khoa: "dap_an", nhan: "Đáp án", batBuoc: false, rong: 24 },
   { khoa: "do_kho", nhan: "Độ khó (1-5)", batBuoc: false, rong: 12 },
   { khoa: "loi_giai", nhan: "Lời giải", batBuoc: false, rong: 40 },
+  { khoa: "anh_de", nhan: "Ảnh đề", batBuoc: false, rong: 24 },
+  { khoa: "anh_loi_giai", nhan: "Ảnh lời giải", batBuoc: false, rong: 24 },
+  { khoa: "anh_lua_chon", nhan: "Ảnh lựa chọn", batBuoc: false, rong: 28 },
 ];
+
+// ---- Ảnh đính kèm (đi kèm file zip chứa ảnh, ghép theo TÊN FILE) ----
+export const HINH_TOI_DA_MOI_DE = 5;
+export const HINH_TOI_DA_MOI_LOI_GIAI = 5;
+export const HINH_TOI_DA_BYTE_MOI_ANH = 2 * 1024 * 1024;
+/** Tổng dung lượng ảnh của 1 câu — để 1 câu luôn lọt trong giới hạn body của server action. */
+export const HINH_TOI_DA_BYTE_MOI_CAU = 15 * 1024 * 1024;
+export const DUOI_ANH_CHO_PHEP = ["jpg", "jpeg", "png", "webp"];
+
+/** Tên file ảnh mỗi câu tham chiếu (lưu theo tên GỐC trong ô; so khớp zip không phân biệt hoa/thường). */
+export type HinhNhap = {
+  de: string[];
+  loi_giai: string[];
+  /** thu_tu = vị trí lựa chọn trong danh sách lựa chọn đã lưu (bắt đầu từ 1). */
+  lua_chon: { thu_tu: number; ten: string }[];
+};
+
+export const khoaTenAnh = (ten: string) => ten.trim().toLowerCase();
+
+function tenAnhHopLe(ten: string): boolean {
+  if (ten === "" || ten.length > 150 || /[\\/:*?"<>\u0000]/.test(ten)) return false;
+  const duoi = ten.split(".").pop()?.toLowerCase() ?? "";
+  return ten.includes(".") && DUOI_ANH_CHO_PHEP.includes(duoi);
+}
 
 export const COT_BAT_BUOC: KhoaCot[] = COT_TEMPLATE.filter((c) => c.batBuoc).map((c) => c.khoa);
 
@@ -121,6 +151,8 @@ export type CauHoiNhap = {
   loi_giai: string | null;
   dap_an_text: string | null;
   lua_chon: { noi_dung: string; la_dap_an: boolean }[];
+  /** Ảnh đính kèm (tuỳ chọn) — chỉ có khi file import kèm zip ảnh. */
+  hinh?: HinhNhap;
 };
 
 export type HienThiViTri = {
@@ -201,8 +233,88 @@ export function kiemTraDapAn(
   }
 }
 
+/** Tách danh sách tên file trong 1 ô: ngăn cách bằng | hoặc xuống dòng. */
+function tachTenAnh(raw: string | undefined): string[] {
+  return chuoi(raw).split(/[|\n]/).map((t) => t.trim()).filter(Boolean);
+}
+
+/**
+ * Đọc 3 cột ảnh. Cột "Ảnh lựa chọn" có dạng `A:hinh1.png | C:hinh3.png` (chữ cái lựa chọn : tên file).
+ * Trả undefined nếu dòng không tham chiếu ảnh nào. Mọi lỗi được đẩy vào `loi`.
+ */
+function docHinhTuO(
+  o: Partial<Record<KhoaCot, string>>,
+  luaChonChu: string[],
+  anhZip: Map<string, number> | null,
+  loi: string[]
+): HinhNhap | undefined {
+  const de = tachTenAnh(o.anh_de);
+  const loiGiai = tachTenAnh(o.anh_loi_giai);
+  const luaChonTho = tachTenAnh(o.anh_lua_chon);
+  if (de.length + loiGiai.length + luaChonTho.length === 0) return undefined;
+
+  const luaChon: HinhNhap["lua_chon"] = [];
+  const daCoChu = new Set<string>();
+  for (const t of luaChonTho) {
+    const m = /^([A-Ha-h])\s*[:：]\s*(.+)$/.exec(t);
+    if (!m) {
+      loi.push(`Cột Ảnh lựa chọn phải có dạng "A:ten-file.png" (vd "A:a.png | C:c.png"), đang là "${t.slice(0, 40)}".`);
+      continue;
+    }
+    const chu = m[1].toUpperCase();
+    const viTri = luaChonChu.indexOf(chu);
+    if (viTri < 0) {
+      loi.push(`Ảnh lựa chọn ${chu}: lựa chọn ${chu} bỏ trống hoặc không tồn tại.`);
+      continue;
+    }
+    if (daCoChu.has(chu)) {
+      loi.push(`Lựa chọn ${chu} chỉ được 1 ảnh.`);
+      continue;
+    }
+    daCoChu.add(chu);
+    luaChon.push({ thu_tu: viTri + 1, ten: m[2].trim() });
+  }
+  if (de.length > HINH_TOI_DA_MOI_DE) loi.push(`Ảnh đề tối đa ${HINH_TOI_DA_MOI_DE} ảnh.`);
+  if (loiGiai.length > HINH_TOI_DA_MOI_LOI_GIAI) loi.push(`Ảnh lời giải tối đa ${HINH_TOI_DA_MOI_LOI_GIAI} ảnh.`);
+
+  const tatCa = [...de, ...loiGiai, ...luaChon.map((l) => l.ten)];
+  const daBao = new Set<string>();
+  let tong = 0;
+  const daTinh = new Set<string>();
+  for (const ten of tatCa) {
+    if (!tenAnhHopLe(ten)) {
+      if (!daBao.has(ten)) loi.push(`Tên file ảnh "${ten.slice(0, 40)}" không hợp lệ (chỉ nhận .jpg, .jpeg, .png, .webp, không có đường dẫn).`);
+      daBao.add(ten);
+      continue;
+    }
+    if (anhZip === null) {
+      if (!daBao.has("zip")) loi.push("Dòng này có ảnh đính kèm nhưng chưa tải file zip chứa ảnh.");
+      daBao.add("zip");
+      continue;
+    }
+    const kichThuoc = anhZip.get(khoaTenAnh(ten));
+    if (kichThuoc === undefined) {
+      if (!daBao.has(ten)) loi.push(`Không tìm thấy ảnh "${ten}" trong file zip.`);
+      daBao.add(ten);
+      continue;
+    }
+    if (!daTinh.has(khoaTenAnh(ten))) {
+      daTinh.add(khoaTenAnh(ten));
+      tong += kichThuoc;
+    }
+  }
+  if (tong > HINH_TOI_DA_BYTE_MOI_CAU) loi.push("Tổng dung lượng ảnh của câu này vượt 15MB.");
+
+  return { de, loi_giai: loiGiai, lua_chon: luaChon };
+}
+
 /** Chuẩn hoá 1 dòng thô → câu hỏi + danh sách lỗi/cảnh báo, đối chiếu với danh mục thật. */
-export function kiemTraDong(dong: DongTho, dm: DanhMucNhap): DongXemTruoc {
+export function kiemTraDong(
+  dong: DongTho,
+  dm: DanhMucNhap,
+  /** tên ảnh (chữ thường) → dung lượng byte, từ file zip; null = người dùng không tải zip. */
+  anhZip: Map<string, number> | null = null
+): DongXemTruoc {
   const loi: string[] = [];
   const canhBao: string[] = [];
   const o = dong.o;
@@ -287,6 +399,7 @@ export function kiemTraDong(dong: DongTho, dm: DanhMucNhap): DongXemTruoc {
   // --- Đáp án theo dạng câu
   const dapAnRaw = chuoi(o.dap_an);
   let luaChon: CauHoiNhap["lua_chon"] = [];
+  let luaChonChu: string[] = []; // chữ cái của từng lựa chọn còn lại (theo thứ tự lưu)
   let dapAnText: string | null = null;
 
   if (loai === "single" || loai === "multi" || loai === "dung_sai") {
@@ -306,6 +419,7 @@ export function kiemTraDong(dong: DongTho, dm: DanhMucNhap): DongXemTruoc {
       chuDung.add(chu);
     }
     luaChon = coNoiDung.map((l) => ({ noi_dung: l.nd, la_dap_an: chuDung.has(l.chu) }));
+    luaChonChu = coNoiDung.map((l) => l.chu);
   } else if (loai === "dien_khuyet") {
     const ds = dapAnRaw.split("|").map((s) => s.trim()).filter((s) => s !== "");
     dapAnText = ds.length > 0 ? ds.join(" | ") : null;
@@ -320,6 +434,8 @@ export function kiemTraDong(dong: DongTho, dm: DanhMucNhap): DongXemTruoc {
   }
 
   if (loai !== "khong_xac_dinh") kiemTraDapAn(loai, noiDung, luaChon, dapAnText, loi, canhBao);
+
+  const hinh = docHinhTuO(o, luaChonChu, anhZip, loi);
 
   const hopLe = loi.length === 0;
   const cauHoi: CauHoiNhap | null = hopLe
@@ -336,10 +452,26 @@ export function kiemTraDong(dong: DongTho, dm: DanhMucNhap): DongXemTruoc {
         loi_giai: loiGiai,
         dap_an_text: dapAnText,
         lua_chon: luaChon,
+        ...(hinh ? { hinh } : {}),
       }
     : null;
 
   return { soDong: dong.soDong, hopLe, loi, canhBao, trung: false, cauHoi, viTri };
+}
+
+/** Kiểm cấu trúc phần `hinh` (client gửi lên) — chỉ tên file, không tin gì khác. */
+function kiemTraCauTrucHinh(c: CauHoiNhap): string | null {
+  if (c.hinh === undefined) return null;
+  const h = c.hinh;
+  if (!h || !Array.isArray(h.de) || !Array.isArray(h.loi_giai) || !Array.isArray(h.lua_chon)) return "Ảnh đính kèm không hợp lệ.";
+  if (h.de.length > HINH_TOI_DA_MOI_DE || h.loi_giai.length > HINH_TOI_DA_MOI_LOI_GIAI) return "Số ảnh vượt giới hạn.";
+  const ten = [...h.de, ...h.loi_giai, ...h.lua_chon.map((l) => l?.ten)];
+  if (ten.some((t) => typeof t !== "string" || !tenAnhHopLe(t))) return "Tên file ảnh không hợp lệ.";
+  const thuTu = h.lua_chon.map((l) => l.thu_tu);
+  if (thuTu.some((t) => !Number.isInteger(t) || t < 1 || t > c.lua_chon.length) || new Set(thuTu).size !== thuTu.length) {
+    return "Ảnh lựa chọn không hợp lệ.";
+  }
+  return null;
 }
 
 /**
@@ -363,6 +495,8 @@ export function kiemTraCauTruc(c: CauHoiNhap): string | null {
   if (c.lua_chon.some((l) => typeof l?.noi_dung !== "string" || l.noi_dung.trim() === "" || typeof l.la_dap_an !== "boolean")) {
     return "Lựa chọn không hợp lệ.";
   }
+  const loiHinh = kiemTraCauTrucHinh(c);
+  if (loiHinh) return loiHinh;
   const loai = layLoaiDangCau(c.dang_cau);
   if (loai === "khong_xac_dinh") return "Dạng câu này chưa hỗ trợ nhập.";
   if (loai === "dien_khuyet" || loai === "text") {

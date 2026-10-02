@@ -36,7 +36,7 @@ export function dongViDu(dm: DanhMucNhap): DongViDu[] {
   const vt = chonViTriViDu(dm);
   const p = TIEN_TO_DONG_VI_DU;
   return [
-    { ...vt, dang_cau: "1", noi_dung: `${p} 2 + 3 bằng bao nhiêu?`, lua_chon_a: "4", lua_chon_b: "5", lua_chon_c: "6", lua_chon_d: "7", dap_an: "B", do_kho: "1", loi_giai: "2 + 3 = 5" },
+    { ...vt, dang_cau: "1", noi_dung: `${p} 2 + 3 bằng bao nhiêu?`, lua_chon_a: "4", lua_chon_b: "5", lua_chon_c: "6", lua_chon_d: "7", dap_an: "B", do_kho: "1", loi_giai: "2 + 3 = 5", anh_de: "vi-du-de.png", anh_loi_giai: "vi-du-loi-giai.png", anh_lua_chon: "A:vi-du-a.png | B:vi-du-b.png" },
     { ...vt, dang_cau: "2", noi_dung: `${p} Những số nào là số nguyên tố?`, lua_chon_a: "2", lua_chon_b: "4", lua_chon_c: "7", lua_chon_d: "9", dap_an: "A,C", do_kho: "2" },
     { ...vt, dang_cau: "3", noi_dung: `${p} Xét các mệnh đề sau:`, lua_chon_a: "5 là số lẻ", lua_chon_b: "6 là số nguyên tố", dap_an: "A", do_kho: "2" },
     { ...vt, dang_cau: "4", noi_dung: `${p} 3 + ___ = 10 và 4 x ___ = 20`, dap_an: "7 | 5", do_kho: "3" },
@@ -60,7 +60,9 @@ const HUONG_DAN: string[] = [
   "   - Dạng 7, 8: văn bản đáp án (tự luận có thể để trống).",
   "5. Lựa chọn A..H: dạng 1, 2, 3 điền các lựa chọn/mệnh đề (tối thiểu 2 lựa chọn với dạng 1, 2). Dạng 4, 7, 8 để trống các cột này.",
   "6. Độ khó: 1 đến 5 (có thể để trống). Lời giải: tuỳ chọn.",
-  "7. Tối đa 500 câu hỏi mỗi file. Sau khi tải lên, hệ thống hiển thị danh sách xem trước; câu hỏi nhập vào luôn ở trạng thái NHÁP, chờ nộp duyệt.",
+  "7. ẢNH (tuỳ chọn): ghi TÊN FILE ảnh vào cột \"Ảnh đề\", \"Ảnh lời giải\" (nhiều ảnh ngăn cách bằng dấu |, tối đa 5) và \"Ảnh lựa chọn\" (dạng A:a.png | C:c.png, mỗi lựa chọn 1 ảnh).",
+  "   Nén tất cả ảnh vào 1 file .zip (JPG/PNG/WebP, mỗi ảnh ≤ 2MB, zip ≤ 20MB, tên ảnh không trùng nhau) rồi tải lên cùng file câu hỏi. Tên ảnh không phân biệt hoa/thường. Chỉ dùng được khi nhập bằng file; lựa chọn có ảnh vẫn phải có chữ.",
+  "8. Tối đa 500 câu hỏi mỗi file. Sau khi tải lên, hệ thống hiển thị danh sách xem trước; câu hỏi nhập vào luôn ở trạng thái NHÁP, chờ nộp duyệt.",
 ];
 
 function themSheetBang(wb: ExcelJS.Workbook, ten: string, tieuDe: string[], dong: (string | number)[][], rong: number[]) {
