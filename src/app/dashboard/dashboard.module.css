@@ -273,6 +273,13 @@
   gap: 18px;
 }
 
+/* Màn hình hẹp: xếp biểu đồ thành 1 cột để đủ chỗ đọc. */
+@media (max-width: 760px) {
+  .chartsRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .chartCard {
   background: var(--surface);
   border: 1px solid var(--border);

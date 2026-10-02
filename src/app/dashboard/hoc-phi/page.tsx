@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { VAI_TRO_DOC_TAI_CHINH } from "@/lib/tai-chinh";
 import HocPhiDashboardClient, {
   type HopDongTaiChinh,
   type PhieuThuTaiChinh,
@@ -8,7 +9,7 @@ import HocPhiDashboardClient, {
 } from "@/components/HocPhiDashboardClient";
 import styles from "./hoc-phi.module.css";
 
-const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
+const VAI_TRO_DOC = VAI_TRO_DOC_TAI_CHINH; // dùng chung với dashboard Trang chủ (src/lib/tai-chinh.ts)
 
 export default async function HocPhiDashboardPage() {
   const supabase = await createClient();

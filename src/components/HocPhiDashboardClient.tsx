@@ -5,6 +5,13 @@ import { useCatTrangCucBo } from "@/components/PhanTrang";
 import Link from "next/link";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { ngayHienThi } from "@/lib/formatDate";
+import {
+  tinhConPhaiThu,
+  tinhDoanhThuThuan,
+  tinhSoHopDongHoatDong,
+  tinhThucThu,
+  type BoLocTaiChinh,
+} from "@/lib/tai-chinh";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type HopDongTaiChinh = {
@@ -78,39 +85,22 @@ export default function HocPhiDashboardClient({
   const denNgay = preset === "custom" ? customTo || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   const theoChuongTrinh = (ma: string) => chuongTrinhChon.length === 0 || chuongTrinhChon.includes(ma);
-  const trongKhoang = (ngay: string) => (!tuNgay || ngay >= tuNgay) && ngay <= denNgay;
 
   function toggleChuongTrinh(ma: string) {
     setChuongTrinhChon((cur) => (cur.includes(ma) ? cur.filter((c) => c !== ma) : [...cur, ma]));
   }
 
-  const soHopDongActive = useMemo(
-    () => hopDong.filter((h) => h.trang_thai === "dang_hoat_dong" && theoChuongTrinh(h.chuong_trinh_ma)).length,
-    [hopDong, chuongTrinhChon]
+  // Công thức nằm ở src/lib/tai-chinh.ts — dùng chung với dashboard Trang chủ
+  // để hai nơi luôn cho cùng một con số.
+  const loc: BoLocTaiChinh = useMemo(
+    () => ({ tuNgay, denNgay, chuongTrinhChon }),
+    [tuNgay, denNgay, chuongTrinhChon]
   );
 
-  const doanhThuThuan = useMemo(
-    () =>
-      hopDong
-        .filter(
-          (h) =>
-            (h.trang_thai === "dang_hoat_dong" || h.trang_thai === "hoan_thanh") &&
-            theoChuongTrinh(h.chuong_trinh_ma) &&
-            trongKhoang(h.ngay_moc)
-        )
-        .reduce((tong, h) => tong + h.doanh_thu_thuan, 0),
-    [hopDong, chuongTrinhChon, tuNgay, denNgay]
-  );
-
-  const thucThu = useMemo(
-    () =>
-      phieuThu
-        .filter((p) => theoChuongTrinh(p.chuong_trinh_ma) && trongKhoang(p.ngay_thu.slice(0, 10)))
-        .reduce((tong, p) => tong + (p.la_phieu_dao ? -p.so_tien : p.so_tien), 0),
-    [phieuThu, chuongTrinhChon, tuNgay, denNgay]
-  );
-
-  const conPhaiThu = Math.max(doanhThuThuan - thucThu, 0);
+  const soHopDongActive = useMemo(() => tinhSoHopDongHoatDong(hopDong, loc), [hopDong, loc]);
+  const doanhThuThuan = useMemo(() => tinhDoanhThuThuan(hopDong, loc), [hopDong, loc]);
+  const thucThu = useMemo(() => tinhThucThu(phieuThu, loc), [phieuThu, loc]);
+  const conPhaiThu = tinhConPhaiThu(doanhThuThuan, thucThu);
 
   const quaHanLoc = useMemo(
     () => quaHan.filter((q) => theoChuongTrinh(q.chuong_trinh_ma)).sort((a, b) => b.so_ngay_tre_nhat - a.so_ngay_tre_nhat || a.hop_dong_id.localeCompare(b.hop_dong_id)),
