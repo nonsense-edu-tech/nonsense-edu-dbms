@@ -20,6 +20,22 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Phân trang bảng Hợp đồng học phí (PR4)
+
+**Tóm tắt:** Trang `hoc-phi/hop-dong` phân trang phía server (`?page&size`). Bỏ kiểu tải TOÀN BỘ
+`ghi_danh`/`hoc_sinh`/`lop` rồi join bằng Map trong JS: tên học sinh, lớp, gói lấy bằng embed cho
+đúng các hợp đồng của trang hiện tại; thực thu (`v_tai_chinh_hop_dong`) chỉ tra cho các hợp đồng
+của trang. Không có migration DB — chỉ frontend (FK đã kiểm bằng SQL trên production: mỗi quan hệ
+embed chỉ có 1 FK nên không mơ hồ).
+
+- Dropdown "Tạo hợp đồng": vẫn là danh sách ghi danh đang học chưa có hợp đồng, nay lấy bằng 1 query
+  riêng (embed hợp đồng để loại ghi danh đã có). Loại luôn học sinh đã xoá mềm (trước đây hiện "?").
+  Giới hạn đã biết: PostgREST thường cắt ở 1000 dòng/request — nếu số học sinh đang học vượt 1000,
+  dropdown cần đổi thành ô tìm kiếm (hiện 153 đang học, chưa vướng).
+- **Production**: 🔲 chưa merge. **Commit**: (xem git log nhánh `feat/phan-trang-hop-dong`)
+
+---
+
 ## 2026-10-02 — Danh sách học sinh phân trang phía server + view `v_hoc_sinh_danh_sach` (PR3b)
 
 **Tóm tắt:** Danh sách học sinh hết giới hạn cứng 1000 dòng và hết lọc ở client: tìm kiếm,
