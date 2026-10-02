@@ -21,6 +21,8 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
     // users nên KHÔNG hiện mục này, đúng quy tắc "role không liên quan thì
     // không thấy chức năng" (không hiện dạng khoá/mờ).
     const coQuyenNguoiDung = NGUOI_DUNG_TIER.includes(vaiTro);
+    // "Đề thi": RLS chỉ cho master_admin/admin_ht/truong_bm/gv — các vai trò admin-tier khác ẩn hẳn.
+    const coQuyenDeThi = ["master_admin", "admin_ht"].includes(vaiTro);
     return [
       {
         label: "Vận hành",
@@ -38,6 +40,7 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
           { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
           { href: "/dashboard/ngan-hang-cau-hoi", icon: <IconCauHoi />, label: "Ngân hàng câu hỏi" },
+          ...(coQuyenDeThi ? [{ href: "/dashboard/de-thi", icon: <IconDeThi />, label: "Đề thi" }] : []),
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },
@@ -63,6 +66,7 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
           { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
           { href: "/dashboard/ngan-hang-cau-hoi", icon: <IconCauHoi />, label: "Ngân hàng câu hỏi" },
+          { href: "/dashboard/de-thi", icon: <IconDeThi />, label: "Đề thi" },
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },
@@ -221,6 +225,15 @@ function IconCauHoi() {
       <circle cx="12" cy="12" r="9" />
       <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7" />
       <path d="M12 17h.01" />
+    </svg>
+  );
+}
+function IconDeThi() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v4h4" />
+      <path d="M9.5 12h5M9.5 15.5h5" />
     </svg>
   );
 }

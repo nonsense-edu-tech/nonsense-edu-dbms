@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Đề thi theo ma trận đề (soạn ma trận → sinh đề → xem trước → chốt → xuất .docx)
+
+**Tóm tắt:** Giáo viên/Trưởng bộ môn/Admin soạn **ma trận đề** (mỗi dòng: câu độc lập hoặc cụm ngữ liệu; lọc theo dạng câu, học phần, bài học, chủ đề, tiến trình; khoảng độ khó; tuỳ chọn nới độ khó ±1 khi thiếu). Hệ thống **xáo trộn có seed** và chọn câu/cụm từ ngân hàng (chỉ câu **Đã duyệt**, trong phạm vi môn của người dùng), ưu tiên câu chưa dùng trong N đề đã chốt gần nhất (chống lặp, thiếu mới dùng lại và đánh dấu). Xem trước có công thức LaTeX, **khoá** / **đổi cụm**, sinh lại giữ phần đã khoá. **Chốt đề** chụp lại nội dung (không đổi theo ngân hàng nữa), sinh **nhiều mã đề** (101, 102…, hoán vị cụm/câu và đáp án A–D, lưu bố cục để xuất lại y hệt). Xuất **.docx** (Đề / Đáp án / Lời giải; công thức là công thức Word thật; ảnh nhúng) hoặc .zip cả bộ. Mục menu "Đề thi" cho master_admin, admin_ht, truong_bm, gv (trợ giảng và vai trò khác ẩn hẳn). Nội dung câu hỏi nay hiểu cú pháp công thức `$…$` / `$$…$$` (xem `docs/yeu-cau-bo-go-latex.md` — bộ gõ nhập công thức là việc tiếp theo).
+
+**Migration:** `0049_de_thi_theo_ma_tran.sql` (Expand: bảng `ma_tran_de`, `ma_tran_dong`, `de_cau_hoi_ban_chup`, `de_ma_de`; cột mới trên `de`/`de_cau_hoi`; policy INSERT/UPDATE/DELETE tách riêng; trigger khoá đề/ma trận đã chốt; hàm `pool_dong`, `do_phu_ma_tran`, `sinh_de`, `khoa_don_vi`, `goi_y_cum`, `doi_cum`, `chot_de`, `tao_ma_de`, `luu_ma_tran`, `nhan_ban_ma_tran`). Mã đề (`de.ma_de`) hiện tạm dạng `DTyymm-nnn` — chờ chốt quy ước ID tài liệu 14 hay 19 số. Thư viện mới: `temml`, `mathml2omml`.
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge → CI áp migration Expand (`db-parity-check.yml`) + duyệt môi trường `production-db`; sau đó deploy code.
+
+**Commit:** xem PR `feat/de-thi-theo-ma-tran`.
+
+---
+
 ## 2026-10-02 — Định dạng văn bản trong câu hỏi (in đậm / in nghiêng / gạch chân)
 
 **Tóm tắt:** Nội dung câu hỏi, lời giải, lựa chọn/mệnh đề và đáp án (điền khuyết, trả lời ngắn) có thanh công cụ **B / I / U** (và phím tắt Ctrl+B/I/U). Lưu dưới dạng HTML tối giản chỉ cho phép `<b> <i> <u> <br>`, làm sạch ở cả client lẫn server; danh sách câu hỏi và màn Trợ giảng hiển thị đúng định dạng. Dữ liệu cũ (văn bản thuần) hiển thị bình thường. Riêng nội dung câu hỏi và lời giải có thêm nút **thụt lề đầu dòng** (→ / Tab, giảm bằng ← / Shift+Tab; lưu bằng 2 ký tự em-space). Import từ file vẫn là văn bản thuần (được escape an toàn).
