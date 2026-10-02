@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import BaiHocForm from "@/components/BaiHocForm";
 import BaiHocTable, { type BaiHocRow } from "@/components/BaiHocTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm"];
 
-export default async function BaiHocPage() {
+export default async function BaiHocPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,18 +19,24 @@ export default async function BaiHocPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: baiHocList }, { data: hocPhanList }, { data: monHocList }, { data: capHocList }] =
+  const [{ data: profile }, { data: baiHocList, count: tongBaiHoc }, { data: hocPhanList }, { data: monHocList }, { data: capHocList }] =
     await Promise.all([
       supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
       supabase
         .from("bai_hoc")
-        .select("id, hoc_phan_id, ma, ten, mo_ta")
+        .select("id, hoc_phan_id, ma, ten, mo_ta", { count: "exact" })
         .is("deleted_at", null)
-        .order("ma"),
+        .order("ma")
+        .order("id")
+        .range(pp.from, pp.to),
       supabase.from("hoc_phan").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
       supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
       supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
     ]);
+
+  const total = tongBaiHoc ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-lieu/bai-hoc", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -89,9 +99,12 @@ export default async function BaiHocPage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách bài học ({baiHocRows.length})</h2>
-        {baiHocRows.length > 0 ? (
-          <BaiHocTable list={baiHocRows} canWrite={canWrite} />
+        <h2 className={styles.cardTitle}>Danh sách bài học ({total})</h2>
+        {total > 0 ? (
+          <>
+            <BaiHocTable list={baiHocRows} canWrite={canWrite} />
+            <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có bài học nào.</p>
         )}

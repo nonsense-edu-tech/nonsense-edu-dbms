@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import PhongHocForm from "@/components/PhongHocForm";
 import PhongHocTable, { type PhongHocRow } from "@/components/PhongHocTable";
 import styles from "../van-hanh.module.css";
 
-export default async function PhongHocPage() {
+export default async function PhongHocPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,9 +26,15 @@ export default async function PhongHocPage() {
   const isQuanLyChiNhanh = isActive && vaiTro === "quan_ly_chi_nhanh";
   const canReadLoaiPhong = isActive && (vaiTro === "master_admin" || vaiTro === "ke_toan");
 
-  const [{ data: phongHocList }, { data: chiNhanhList }, { data: loaiPhongList }, { data: myScope }] =
+  const [{ data: phongHocList, count: tongPhongHoc }, { data: chiNhanhList }, { data: loaiPhongList }, { data: myScope }] =
     await Promise.all([
-      supabase.from("phong_hoc").select("id, ten, chi_nhanh_id, loai_phong_id").is("deleted_at", null).order("ten"),
+      supabase
+        .from("phong_hoc")
+        .select("id, ten, chi_nhanh_id, loai_phong_id", { count: "exact" })
+        .is("deleted_at", null)
+        .order("ten")
+        .order("id")
+        .range(pp.from, pp.to),
       supabase.from("chi_nhanh").select("id, ma, ten").is("deleted_at", null).order("ma"),
       canReadLoaiPhong
         ? supabase.from("loai_phong").select("id, ten").is("deleted_at", null).order("ten")
@@ -33,6 +43,10 @@ export default async function PhongHocPage() {
         ? supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id)
         : Promise.resolve({ data: [] as { chi_nhanh_id: string }[] }),
     ]);
+
+  const total = tongPhongHoc ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/van-hanh/phong-hoc", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const chiNhanhMap = new Map((chiNhanhList ?? []).map((c) => [c.id, c.ten]));
   const loaiPhongMap = new Map((loaiPhongList ?? []).map((l) => [l.id, l.ten]));
@@ -87,8 +101,9 @@ export default async function PhongHocPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Danh sách phòng học ({phongHocRows.length})</h2>
-            {phongHocRows.length > 0 ? (
+            <h2 className={styles.cardTitle}>Danh sách phòng học ({total})</h2>
+            {total > 0 ? (
+              <>
               <PhongHocTable
                 list={phongHocRows}
                 isMasterAdmin={isMasterAdmin}
@@ -98,6 +113,8 @@ export default async function PhongHocPage() {
                 chiNhanhList={chiNhanhOptions}
                 loaiPhongList={loaiPhongOptions}
               />
+              <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có phòng học nào.</p>
             )}

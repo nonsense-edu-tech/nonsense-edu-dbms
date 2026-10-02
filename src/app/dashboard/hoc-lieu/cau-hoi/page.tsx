@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import CauHoiForm from "@/components/CauHoiForm";
 import CauHoiTable, { type CauHoiRow } from "@/components/CauHoiTable";
 import styles from "../hoc-lieu.module.css";
@@ -8,7 +10,9 @@ import styles from "../hoc-lieu.module.css";
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm", "gv"];
 const VAI_TRO_DUYET = ["master_admin", "admin_ht", "truong_bm"];
 
-export default async function CauHoiPage() {
+export default async function CauHoiPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -26,7 +30,7 @@ export default async function CauHoiPage() {
     { data: baiHocList },
     { data: chuDeList },
     { data: dangCauList },
-    { data: cauHoiList },
+    { data: cauHoiList, count: tongCauHoi },
     { data: nangLucList },
     { data: tienTrinhList },
   ] = await Promise.all([
@@ -42,10 +46,13 @@ export default async function CauHoiPage() {
     supabase
       .from("cau_hoi")
       .select(
-        "id, ma_cau_hoi, noi_dung, do_kho, loi_giai, dap_an_text, trang_thai, nguoi_tao, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at"
+        "id, ma_cau_hoi, noi_dung, do_kho, loi_giai, dap_an_text, trang_thai, nguoi_tao, cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, created_at",
+        { count: "exact" }
       )
       .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(pp.from, pp.to),
     // Chỉ mã năng lực còn hiệu lực (hieu_luc_den null) — mã đã đóng không cho
     // gắn mới, xem quy ước ở areas/khung-nang-luc.md.
     supabase.from("nang_luc").select("id, ma_nang_luc, ten, mien").is("hieu_luc_den", null).order("mien").order("ma_nang_luc"),
@@ -54,6 +61,10 @@ export default async function CauHoiPage() {
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
+  const total = tongCauHoi ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-lieu/cau-hoi", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
+
   const canWrite = isActive && VAI_TRO_QUAN_LY.includes(vaiTro);
   const canDuyet = isActive && VAI_TRO_DUYET.includes(vaiTro);
 
@@ -126,13 +137,14 @@ export default async function CauHoiPage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách câu hỏi ({cauHoiRows.length})</h2>
+        <h2 className={styles.cardTitle}>Danh sách câu hỏi ({total})</h2>
         <p className={styles.noticeBox}>
           Câu hỏi mới tạo ở trạng thái <strong>Nháp</strong> → nộp duyệt chuyển <strong>Chờ duyệt</strong> → Admin học
           thuật/Trưởng bộ môn/Master Admin duyệt thành <strong>Đã duyệt</strong> (không tự duyệt được câu hỏi của
           chính mình). Giáo viên chỉ thấy câu hỏi thuộc môn/cấp học được phân quyền.
         </p>
-        {cauHoiRows.length > 0 ? (
+        {total > 0 ? (
+          <>
           <CauHoiTable
             list={cauHoiRows}
             canWrite={canWrite}
@@ -141,6 +153,8 @@ export default async function CauHoiPage() {
             nangLucOptions={nangLucList ?? []}
             tienTrinhOptions={tienTrinhList ?? []}
           />
+          <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có câu hỏi nào.</p>
         )}

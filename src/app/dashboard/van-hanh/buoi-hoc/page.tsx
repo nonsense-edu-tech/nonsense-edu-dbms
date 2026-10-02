@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import BuoiHocForm, { type LopOption } from "@/components/BuoiHocForm";
 import BuoiHocTable, { type BuoiHocRow } from "@/components/BuoiHocTable";
 import styles from "../van-hanh.module.css";
 
-export default async function BuoiHocPage() {
+export default async function BuoiHocPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,8 +35,7 @@ export default async function BuoiHocPage() {
     { data: monHocList },
     { data: phongHocList },
     { data: chiNhanhList },
-    { data: lichList },
-    { data: chiPhiList },
+    { data: lichList, count: tongBuoiHoc },
     { data: gvList },
     { data: myScope },
   ] = await Promise.all([
@@ -42,18 +45,31 @@ export default async function BuoiHocPage() {
     supabase.from("chi_nhanh").select("id, ma, ten").is("deleted_at", null),
     supabase
       .from("buoi_hoc_lich")
-      .select("id, lop_id, mon_hoc_ma, gv_id, phong_hoc_id, ngay, gio_bat_dau, gio_ket_thuc, trang_thai")
+      .select("id, lop_id, mon_hoc_ma, gv_id, phong_hoc_id, ngay, gio_bat_dau, gio_ket_thuc, trang_thai", { count: "exact" })
       .is("deleted_at", null)
       .order("ngay", { ascending: false })
-      .limit(200),
-    canSeeCost
-      ? supabase.from("buoi_hoc_chi_phi").select("id, thu_lao_gv, chi_phi_phong").is("deleted_at", null)
-      : Promise.resolve({ data: [] as { id: string; thu_lao_gv: number | null; chi_phi_phong: number | null }[] }),
+      .order("id")
+      .range(pp.from, pp.to),
     supabase.rpc("danh_sach_gv") as unknown as Promise<{ data: { id: string; ho_ten: string }[] | null }>,
     isQuanLyChiNhanh
       ? supabase.from("user_chi_nhanh").select("chi_nhanh_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] as { chi_nhanh_id: string }[] }),
   ]);
+
+  const total = tongBuoiHoc ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/van-hanh/buoi-hoc", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
+
+  // Chi phí chỉ tải cho các buổi của trang hiện tại (cột chi phí chỉ Master Admin/Kế toán thấy).
+  const lichIds = (lichList ?? []).map((b) => b.id);
+  const { data: chiPhiList } =
+    canSeeCost && lichIds.length > 0
+      ? await supabase
+          .from("buoi_hoc_chi_phi")
+          .select("id, thu_lao_gv, chi_phi_phong")
+          .in("id", lichIds)
+          .is("deleted_at", null)
+      : { data: [] as { id: string; thu_lao_gv: number | null; chi_phi_phong: number | null }[] };
 
   const lopMap = new Map((lopList ?? []).map((l) => [l.id, l]));
   const monHocMap = new Map((monHocList ?? []).map((m) => [`${m.cap_hoc_ma}-${m.ma}`, m.ten]));
@@ -154,13 +170,14 @@ export default async function BuoiHocPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Danh sách buổi học ({buoiHocRows.length})</h2>
+            <h2 className={styles.cardTitle}>Danh sách buổi học ({total})</h2>
             {!canSeeCost && (
               <p className={styles.empty} style={{ marginBottom: 12 }}>
                 Cột chi phí (thù lao GV, chi phí phòng) chỉ Master Admin/Kế toán xem được.
               </p>
             )}
-            {buoiHocRows.length > 0 ? (
+            {total > 0 ? (
+              <>
               <BuoiHocTable
                 list={buoiHocRows}
                 editableIds={editableIds}
@@ -171,6 +188,8 @@ export default async function BuoiHocPage() {
                 gvList={gvOptions}
                 phongHocList={phongHocOptions}
               />
+              <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có buổi học nào.</p>
             )}

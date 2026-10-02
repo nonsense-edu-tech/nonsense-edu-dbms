@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { motBanGhi } from "@/lib/embed";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import PhieuThuForm, { type HopDongDangHoatDong } from "@/components/PhieuThuForm";
 import PhieuThuTable, { type PhieuThuRow } from "@/components/PhieuThuTable";
 import styles from "../hoc-phi.module.css";
@@ -8,7 +11,9 @@ import styles from "../hoc-phi.module.css";
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 const VAI_TRO_GHI = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 
-export default async function ThuTienPage() {
+export default async function ThuTienPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,8 +28,7 @@ export default async function ThuTienPage() {
     { data: hocSinhList },
     { data: lopList },
     { data: chuongTrinhList },
-    { data: phieuThuList },
-    { data: tepDinhKemList },
+    { data: phieuThuList, count: tongPhieuThu },
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai, ho_ten").eq("id", user.id).single(),
     supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, ghi_danh_id, chuong_trinh_ma, con_phai_thu, trang_thai"),
@@ -34,11 +38,21 @@ export default async function ThuTienPage() {
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null),
     supabase
       .from("phieu_thu")
-      .select("id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, nguoi_thu_ten, tep_dinh_kem_id, tep_dinh_kem_id_2")
+      // Tên học sinh + biên lai lấy bằng embed (chỉ cho phiếu của trang hiện tại), thay cho
+      // việc tải toàn bộ ghi_danh/hoc_sinh/tep_dinh_kem rồi ghép bằng Map. Phiếu của hợp đồng
+      // KHÔNG còn hoạt động (đã hoàn tất/huỷ) cũng ra đúng tên thay vì "?".
+      .select(
+        "id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, nguoi_thu_ten, hop_dong_hoc_phi(ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh))), bien_lai_1:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_fkey(ten_tep, duong_dan_luu_tru), bien_lai_2:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_2_fkey(ten_tep, duong_dan_luu_tru)",
+        { count: "exact" }
+      )
       .order("created_at", { ascending: false })
-      .limit(100),
-    supabase.from("tep_dinh_kem").select("id, ten_tep, duong_dan_luu_tru"),
+      .order("id")
+      .range(pp.from, pp.to),
   ]);
+
+  const total = tongPhieuThu ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-phi/thu-tien", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -49,7 +63,6 @@ export default async function ThuTienPage() {
   const hocSinhMap = new Map((hocSinhList ?? []).map((h) => [h.id, h]));
   const ghiDanhMap = new Map((ghiDanhList ?? []).map((g) => [g.id, g]));
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
-  const tepDinhKemMap = new Map((tepDinhKemList ?? []).map((t) => [t.id, t]));
 
   const hopDongDangHoatDong: HopDongDangHoatDong[] = (taiChinhList ?? [])
     .filter((tc) => tc.trang_thai === "dang_hoat_dong")
@@ -66,20 +79,16 @@ export default async function ThuTienPage() {
     })
     .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, "vi"));
 
-  const hopDongHocSinhMap = new Map(hopDongDangHoatDong.map((h) => [h.id, h]));
-
   const phieuThuRows: PhieuThuRow[] = (phieuThuList ?? []).map((pt) => {
-    const info = hopDongHocSinhMap.get(pt.hop_dong_id);
-    const bienLai = [pt.tep_dinh_kem_id, pt.tep_dinh_kem_id_2]
-      .filter((id): id is string => id != null)
-      .map((id) => tepDinhKemMap.get(id))
-      .filter((t): t is { id: string; ten_tep: string; duong_dan_luu_tru: string } => t != null)
+    const hocSinh = motBanGhi(motBanGhi(motBanGhi(pt.hop_dong_hoc_phi)?.ghi_danh)?.hoc_sinh);
+    const bienLai = [motBanGhi(pt.bien_lai_1), motBanGhi(pt.bien_lai_2)]
+      .filter((t): t is NonNullable<typeof t> => t != null)
       .map((t) => ({ ten_tep: t.ten_tep, duong_dan_luu_tru: t.duong_dan_luu_tru }));
     return {
       id: pt.id,
       ma_phieu_thu: pt.ma_phieu_thu,
-      ho_ten: info?.ho_ten ?? "?",
-      ma_hoc_sinh: info?.ma_hoc_sinh ?? "?",
+      ho_ten: hocSinh?.ho_ten ?? "?",
+      ma_hoc_sinh: hocSinh?.ma_hoc_sinh ?? "?",
       so_tien: pt.so_tien,
       ngay_thu: pt.ngay_thu,
       hinh_thuc: pt.hinh_thuc,
@@ -122,9 +131,12 @@ export default async function ThuTienPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Lịch sử phiếu thu ({phieuThuRows.length})</h2>
-            {phieuThuRows.length > 0 ? (
-              <PhieuThuTable list={phieuThuRows} />
+            <h2 className={styles.cardTitle}>Lịch sử phiếu thu ({total})</h2>
+            {total > 0 ? (
+              <>
+                <PhieuThuTable list={phieuThuRows} />
+                <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có phiếu thu nào.</p>
             )}

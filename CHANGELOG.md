@@ -20,6 +20,55 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Tab Học sinh tách 2 tab con: Tạo học sinh / Danh sách học sinh (PR3a)
+
+**Tóm tắt:** Theo yêu cầu của Hiệu trưởng, trang Học sinh có 2 tab con. `/dashboard/hoc-sinh`
+vẫn là Danh sách học sinh; form tạo học sinh chuyển sang `/dashboard/hoc-sinh/tao-moi`.
+Không có migration DB — chỉ frontend. Xếp chồng trên PR2.
+
+- Tab "Tạo học sinh" chỉ hiện với `master_admin`/`admin_ts`/`quan_ly_chi_nhanh`; vai trò
+  khác vào thẳng `/tao-moi` sẽ bị chuyển về danh sách. `quan_ly_chi_nhanh` chỉ thấy lớp
+  thuộc chi nhánh của mình trong ô chọn lớp.
+- Danh sách học sinh chưa phân trang server-side (vẫn lọc phía client, `limit(1000)`) —
+  làm ở PR3b vì cần view `v_hoc_sinh_danh_sach` (migration 0045) đi trước.
+
+- **Staging**: 🔲 (không có migration; staging đang tạm dừng)
+- **Production**: 🔲 chưa merge
+- **Commit**: (xem git log nhánh `feat/hoc-sinh-tab-con-phan-trang`)
+
+---
+
+## 2026-10-02 — Phân trang bảng (PR2: Lớp, Buổi học, Câu hỏi, Phiếu thu)
+
+**Tóm tắt:** Tiếp tục phân trang server-side (xem PR1 ở mục 2026-09-29): bỏ các
+`limit` cứng đang cắt dữ liệu âm thầm. Không có migration DB — chỉ frontend.
+Xếp chồng trên nhánh PR1 (`feat/phan-trang-bang-nen-danh-muc`), cần merge PR1 trước.
+
+- **Phiếu thu** (`hoc-phi/thu-tien`): sửa lỗi hiển thị thật — production có 177
+  phiếu thu (đối chiếu 02/10/2026) nhưng trang chỉ lấy `limit(100)`, tức 77 phiếu
+  không hiện. Nay phân trang đủ. Tên học sinh + biên lai lấy bằng embed
+  (`hop_dong_hoc_phi(ghi_danh(hoc_sinh))`, `tep_dinh_kem`) chỉ cho phiếu của trang
+  hiện tại, thay cho việc tải toàn bộ `ghi_danh`/`hoc_sinh`/`tep_dinh_kem`. Hệ quả
+  tốt: phiếu của hợp đồng đã hoàn tất/huỷ giờ hiện đúng tên (trước đây ra "?" vì
+  chỉ tra trong danh sách hợp đồng đang hoạt động).
+- **Lớp**: sĩ số đếm ngay trong query (embed `hoc_sinh!lop_hien_tai_id(count)`),
+  bỏ cách cũ tải 2000 học sinh rồi đếm bằng JS.
+- **Buổi học**: bỏ `limit(200)`; chi phí (thù lao GV/chi phí phòng) chỉ tải cho các
+  buổi của trang hiện tại.
+- **Câu hỏi**: phân trang (trước đây tải toàn bộ).
+- Thêm `src/lib/embed.ts` (`motBanGhi`): `database.types.ts` chưa khai báo
+  Relationships nên supabase-js suy kiểu embed nhiều-một thành mảng dù runtime
+  trả object — helper chấp nhận cả hai.
+- Chưa kiểm thử truy vấn embed trực tiếp với PostgREST (môi trường phát triển bị
+  chặn gọi REST); đã đối chiếu tên khoá ngoại bằng SQL trên production. Cần bấm
+  thử trang Lớp và Thu tiền trên Vercel preview.
+
+- **Staging**: 🔲 chưa
+- **Production**: 🔲 chưa
+- **Commit**: (nhánh `feat/phan-trang-nhom-a-lop-buoi-hoc-cau-hoi-phieu-thu`, chưa merge)
+
+---
+
 ## 2026-10-02 — Import Master sheet 2026-2027 + siết tự duyệt hợp đồng học phí
 
 **Tóm tắt:** Nạp toàn bộ Master sheet lên production thay cho nhập tay: 14 lớp
@@ -39,6 +88,36 @@ kỳ đóng ĐGNL theo tháng, 13 gói học phí; doanh thu thuần 4.312.200.0
 - **Lưu ý parity:** lịch sử production có dòng lạ `20261002045507` và chưa có `0043`/`0044`
   → cần repair (xóa dòng lạ, ghi `0043`/`0044` đã áp) trước khi `supabase db push` chạy được.
 - **Commit:** (xem PR)
+
+---
+
+## 2026-09-29 — Phân trang bảng (PR1: nền + 10 bảng danh mục + bảng "quá hạn")
+
+**Tóm tắt:** Bắt đầu áp phân trang cho mọi bảng để giảm tải dữ liệu: mặc định
+10 dòng/trang, chọn được 10/15/20/50, **server ép tối đa 50** (`?size=500` →
+50, giá trị lạ → 10). Trạng thái nằm trên URL (`?page=&size=`), số dòng/trang
+người dùng chọn được nhớ bằng `localStorage`. Không có migration DB — chỉ
+frontend. Đây là PR1 trong kế hoạch `claude/ke-hoach-phan-trang-bang.md` (Project);
+các bảng lớn (học sinh, câu hỏi, hợp đồng, phiếu thu, lớp, buổi học, trợ giảng)
+làm ở các PR sau nên **hiện vẫn còn giới hạn cứng cũ**.
+
+- **`src/lib/phan-trang.ts` (mới)**: `parsePhanTrang`, ép giá trị hợp lệ,
+  `duongDanTrangCuoi` (trang vượt tổng → lùi về trang cuối), rút gọn dãy số trang.
+- **`src/components/PhanTrang.tsx` (mới)**: thanh phân trang (Hiển thị x–y / tổng,
+  chọn số dòng, Trước/Sau, số trang); `useCatTrangCucBo` cho bảng dữ liệu đã nằm
+  hết ở client.
+- **Phân trang phía server** (`.range()` + `count: "exact"`, thêm `.order("id")`
+  làm thứ tự ổn định): Chi nhánh, Phòng học, Loại phòng, Gói học phí, Chương
+  trình–Môn học (khoá ghép vì không có `id`), Học phần, Bài học, Chủ đề, Người
+  dùng (2 bảng: `?page/?size` và `?xoa_page/?xoa_size`).
+- **Cắt trang phía client**: bảng "Đóng thiếu / chậm thu" ở dashboard học phí
+  (dashboard tính tổng hợp trên toàn bộ dữ liệu nên đã tải hết về client).
+- Ngoại lệ có chủ đích: bảng "quyền quản lý" trong mỗi dòng Chi nhánh vẫn tải
+  toàn bộ `user_chi_nhanh` (bảng nối nhỏ) — sẽ xem lại nếu lớn dần.
+
+- **Staging**: 🔲 chưa
+- **Production**: 🔲 chưa
+- **Commit**: `dd9db28` (nhánh `feat/phan-trang-bang-nen-danh-muc`, chưa merge)
 
 ---
 

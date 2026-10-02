@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import ChuDeForm from "@/components/ChuDeForm";
 import ChuDeTable, { type ChuDeRow } from "@/components/ChuDeTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm"];
 
-export default async function ChuDePage() {
+export default async function ChuDePage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,16 +19,22 @@ export default async function ChuDePage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: chuDeList }, { data: monHocList }, { data: capHocList }] = await Promise.all([
+  const [{ data: profile }, { data: chuDeList, count: tongChuDe }, { data: monHocList }, { data: capHocList }] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase
       .from("chu_de")
-      .select("id, mon_hoc_id, ma, ten, mo_ta")
+      .select("id, mon_hoc_id, ma, ten, mo_ta", { count: "exact" })
       .is("deleted_at", null)
-      .order("ma"),
+      .order("ma")
+      .order("id")
+      .range(pp.from, pp.to),
     supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
   ]);
+
+  const total = tongChuDe ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/hoc-lieu/chu-de", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
@@ -80,9 +90,12 @@ export default async function ChuDePage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách chủ đề ({chuDeRows.length})</h2>
-        {chuDeRows.length > 0 ? (
-          <ChuDeTable list={chuDeRows} canWrite={canWrite} />
+        <h2 className={styles.cardTitle}>Danh sách chủ đề ({total})</h2>
+        {total > 0 ? (
+          <>
+            <ChuDeTable list={chuDeRows} canWrite={canWrite} />
+            <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có chủ đề nào.</p>
         )}

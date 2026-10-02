@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import LoaiPhongForm from "@/components/LoaiPhongForm";
 import LoaiPhongTable, { type LoaiPhongRow } from "@/components/LoaiPhongTable";
 import styles from "../van-hanh.module.css";
 
 const VAI_TRO_DOC = ["master_admin", "ke_toan"];
 
-export default async function LoaiPhongPage() {
+export default async function LoaiPhongPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,13 +19,15 @@ export default async function LoaiPhongPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: loaiPhongList }] = await Promise.all([
+  const [{ data: profile }, { data: loaiPhongList, count: tongLoaiPhong }] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase
       .from("loai_phong")
-      .select("id, ten, don_gia_thue_gio, don_gia_dien_nuoc_gio, don_gia_khau_hao_gio, hieu_luc_tu, hieu_luc_den")
+      .select("id, ten, don_gia_thue_gio, don_gia_dien_nuoc_gio, don_gia_khau_hao_gio, hieu_luc_tu, hieu_luc_den", { count: "exact" })
       .is("deleted_at", null)
-      .order("ten"),
+      .order("ten")
+      .order("id")
+      .range(pp.from, pp.to),
   ]);
 
   const isActive = profile?.trang_thai === "active";
@@ -30,6 +36,9 @@ export default async function LoaiPhongPage() {
   const isMasterAdmin = isActive && vaiTro === "master_admin";
 
   const loaiPhongRows: LoaiPhongRow[] = canRead ? loaiPhongList ?? [] : [];
+  const total = canRead ? tongLoaiPhong ?? 0 : 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/van-hanh/loai-phong", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   return (
     <main className={styles.page}>
@@ -64,9 +73,12 @@ export default async function LoaiPhongPage() {
           </section>
 
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Danh sách loại phòng ({loaiPhongRows.length})</h2>
-            {loaiPhongRows.length > 0 ? (
-              <LoaiPhongTable list={loaiPhongRows} canEdit={isMasterAdmin} canDelete={isMasterAdmin} />
+            <h2 className={styles.cardTitle}>Danh sách loại phòng ({total})</h2>
+            {total > 0 ? (
+              <>
+                <LoaiPhongTable list={loaiPhongRows} canEdit={isMasterAdmin} canDelete={isMasterAdmin} />
+                <PhanTrang total={total} page={pp.page} size={pp.size} />
+              </>
             ) : (
               <p className={styles.empty}>Chưa có loại phòng nào.</p>
             )}

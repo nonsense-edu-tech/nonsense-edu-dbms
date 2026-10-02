@@ -5,9 +5,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import UsersTable from "@/components/UsersTable";
 import TaiKhoanDaXoaTable from "@/components/TaiKhoanDaXoaTable";
 import TaoTaiKhoanForm from "@/components/TaoTaiKhoanForm";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import styles from "./users.module.css";
 
-export default async function UsersPage() {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  // Trang có 2 bảng nên tách 2 bộ tham số: ?page/?size (tài khoản) và ?xoa_page/?xoa_size (đã xoá).
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
+  const ppXoa = parsePhanTrang(raw, "xoa");
   const supabase = await createClient();
   const {
     data: { user },
@@ -76,13 +82,30 @@ export default async function UsersPage() {
   // Master Admin: dùng service role để thấy cả tài khoản đã xoá mềm (bị
   // p_users_read ẩn đi vì lọc deleted_at IS NULL) — quyền đã xác nhận ở trên.
   const admin = createAdminClient();
-  const { data: allUsers } = await admin
-    .from("users")
-    .select("id, email, ho_ten, vai_tro, trang_thai, deleted_at")
-    .order("created_at", { ascending: true });
+  const COT = "id, email, ho_ten, vai_tro, trang_thai, deleted_at";
+  const [{ data: usersList, count: tongUsers }, { data: daXoaList, count: tongDaXoa }] = await Promise.all([
+    admin
+      .from("users")
+      .select(COT, { count: "exact" })
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .order("id")
+      .range(pp.from, pp.to),
+    admin
+      .from("users")
+      .select(COT, { count: "exact" })
+      .not("deleted_at", "is", null)
+      .order("created_at", { ascending: true })
+      .order("id")
+      .range(ppXoa.from, ppXoa.to),
+  ]);
 
-  const usersList = (allUsers ?? []).filter((u) => !u.deleted_at);
-  const daXoaList = (allUsers ?? []).filter((u) => u.deleted_at);
+  const total = tongUsers ?? 0;
+  const totalXoa = tongDaXoa ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/users", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
+  const trangCuoiXoa = duongDanTrangCuoi("/dashboard/users", raw, ppXoa, totalXoa, "xoa");
+  if (trangCuoiXoa) redirect(trangCuoiXoa);
 
   return (
     <main className={styles.page}>
@@ -92,18 +115,22 @@ export default async function UsersPage() {
       </div>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách tài khoản ({usersList.length})</h2>
-        {usersList.length > 0 ? (
-          <UsersTable list={usersList} currentUserId={user.id} />
+        <h2 className={styles.cardTitle}>Danh sách tài khoản ({total})</h2>
+        {total > 0 ? (
+          <>
+            <UsersTable list={usersList ?? []} currentUserId={user.id} />
+            <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có tài khoản nào.</p>
         )}
       </section>
 
-      {daXoaList.length > 0 && (
+      {totalXoa > 0 && (
         <section className={styles.card}>
-          <h2 className={styles.cardTitle}>Đã xoá ({daXoaList.length})</h2>
-          <TaiKhoanDaXoaTable list={daXoaList} />
+          <h2 className={styles.cardTitle}>Đã xoá ({totalXoa})</h2>
+          <TaiKhoanDaXoaTable list={daXoaList ?? []} />
+          <PhanTrang total={totalXoa} page={ppXoa.page} size={ppXoa.size} prefix="xoa" />
         </section>
       )}
 

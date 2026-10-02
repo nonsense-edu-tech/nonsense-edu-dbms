@@ -12,6 +12,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard": "Trang chủ",
   "/dashboard/lop": "Lớp học",
   "/dashboard/hoc-sinh": "Học sinh",
+  "/dashboard/hoc-sinh/tao-moi": "Tạo học sinh",
   "/dashboard/chi-nhanh": "Chi nhánh",
   "/dashboard/users": "Người dùng",
   "/dashboard/tro-giang": "Trợ giảng",

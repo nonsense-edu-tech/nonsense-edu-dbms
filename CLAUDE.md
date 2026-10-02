@@ -120,6 +120,13 @@ thụ trực tiếp `ma_hoc_sinh` làm Person ID (giới hạn ≤16 ký tự, c
   message: "<Tên hành động> thất bại: " + result.error})` khi thất bại — bổ
   sung THÊM vào khung lỗi/thành công inline hiện có (không thay thế). Xem các
   component ở `lop`/`hoc-sinh`/`chi-nhanh`/`van-hanh`/`hoc-phi` làm mẫu.
+- **Mọi bảng danh sách mới (và bảng sửa lại từ nay) PHẢI phân trang**: mặc định
+  10 dòng, chọn được 10/15/20/50, tối đa 50 — dùng `parsePhanTrang()` từ
+  `src/lib/phan-trang.ts` + `.range(pp.from, pp.to)` với `count: "exact"` ở
+  trang server, và `<PhanTrang>` từ `src/components/PhanTrang.tsx`. Luôn thêm
+  `.order("id")` sau cột sắp xếp chính (thứ tự phải ổn định giữa các trang) và
+  gọi `duongDanTrangCuoi()` + `redirect()` khi trang vượt tổng. Không dùng
+  `.limit(N)` cứng cho danh sách hiển thị (sẽ cắt dữ liệu âm thầm).
 - **Sau MỖI lần deploy (áp dụng migration DB, hoặc đổi hành vi/RLS đáng kể)
   PHẢI ghi 1 mục mới vào `CHANGELOG.md`** ở gốc dự án — nêu rõ tóm tắt, tên
   file migration (nếu có), và trạng thái riêng cho staging (`yxfgwzdxoxuoaulcjlcf`)

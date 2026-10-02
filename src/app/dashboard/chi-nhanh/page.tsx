@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import PhanTrang from "@/components/PhanTrang";
+import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import ChiNhanhForm from "@/components/ChiNhanhForm";
 import ChiNhanhTable, { type ChiNhanhRow, type QuanLyOption } from "@/components/ChiNhanhTable";
 import styles from "./chi-nhanh.module.css";
 
-export default async function ChiNhanhPage() {
+export default async function ChiNhanhPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const raw = await searchParams;
+  const pp = parsePhanTrang(raw);
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,13 +17,23 @@ export default async function ChiNhanhPage() {
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: chiNhanhList }, { data: userChiNhanhList }, { data: quanLyUserList }] =
+  const [{ data: profile }, { data: chiNhanhList, count: tongChiNhanh }, { data: userChiNhanhList }, { data: quanLyUserList }] =
     await Promise.all([
       supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
-      supabase.from("chi_nhanh").select("id, ma, ten, dia_chi").is("deleted_at", null).order("ma"),
+      supabase
+        .from("chi_nhanh")
+        .select("id, ma, ten, dia_chi", { count: "exact" })
+        .is("deleted_at", null)
+        .order("ma")
+        .order("id")
+        .range(pp.from, pp.to),
       supabase.from("user_chi_nhanh").select("id, user_id, chi_nhanh_id"),
       supabase.from("users").select("id, email, ho_ten").eq("vai_tro", "quan_ly_chi_nhanh").eq("trang_thai", "active"),
     ]);
+
+  const total = tongChiNhanh ?? 0;
+  const trangCuoi = duongDanTrangCuoi("/dashboard/chi-nhanh", raw, pp, total);
+  if (trangCuoi) redirect(trangCuoi);
 
   const isActive = profile?.trang_thai === "active";
   const isMasterAdmin = isActive && profile?.vai_tro === "master_admin";
@@ -70,9 +84,12 @@ export default async function ChiNhanhPage() {
       </section>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Danh sách chi nhánh ({chiNhanhRows.length})</h2>
-        {chiNhanhRows.length > 0 ? (
-          <ChiNhanhTable list={chiNhanhRows} quanLyOptions={quanLyOptions} canEdit={canEdit} canDelete={canDelete} />
+        <h2 className={styles.cardTitle}>Danh sách chi nhánh ({total})</h2>
+        {total > 0 ? (
+          <>
+            <ChiNhanhTable list={chiNhanhRows} quanLyOptions={quanLyOptions} canEdit={canEdit} canDelete={canDelete} />
+            <PhanTrang total={total} page={pp.page} size={pp.size} />
+          </>
         ) : (
           <p className={styles.empty}>Chưa có chi nhánh nào.</p>
         )}
