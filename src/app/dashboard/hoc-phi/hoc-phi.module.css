@@ -317,3 +317,39 @@
   color: var(--text-hi);
   font-weight: 500;
 }
+
+/* ── Ô tìm kiếm bảng (OTimKiem) ─────────────────────────────────────── */
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 220px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  font-size: 14px;
+  color: var(--text-hi);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.searchInput::placeholder {
+  color: var(--text-lo);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.searchInfo {
+  font-size: 12px;
+  color: var(--text-mid);
+}

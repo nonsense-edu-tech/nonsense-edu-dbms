@@ -6,6 +6,8 @@ import { motBanGhi } from "@/lib/embed";
 import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import PhieuThuForm, { type HopDongDangHoatDong } from "@/components/PhieuThuForm";
 import PhieuThuTable, { type PhieuThuRow } from "@/components/PhieuThuTable";
+import OTimKiem from "@/components/OTimKiem";
+import { layTuKhoa, timHopDongTheoTuKhoa, tuKhoaLaSoTien } from "@/lib/tim-kiem-hoc-phi";
 import styles from "../hoc-phi.module.css";
 
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
@@ -14,12 +16,41 @@ const VAI_TRO_GHI = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 export default async function ThuTienPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
   const pp = parsePhanTrang(raw);
+  const q = layTuKhoa(raw);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  // Tìm kiếm: mã phiếu, ghi chú, người thu, số tiền (nếu gõ toàn số) + tên/mã học sinh
+  // (tra ngược ra hợp đồng của học sinh đó, kể cả hợp đồng đã hoàn tất/huỷ).
+  let quaRong = false;
+  let dieuKienTim: string | null = null;
+  if (q) {
+    const hd = await timHopDongTheoTuKhoa(supabase, q, { gomLopVaGoi: false, boDaXoa: false });
+    quaRong = hd.quaRong;
+    const dk = [`ma_phieu_thu.ilike.%${q}%`, `ghi_chu.ilike.%${q}%`, `nguoi_thu_ten.ilike.%${q}%`];
+    const soTien = tuKhoaLaSoTien(q);
+    if (soTien != null) dk.push(`so_tien.eq.${soTien}`);
+    if (hd.ids.length > 0) dk.push(`hop_dong_id.in.(${hd.ids.join(",")})`);
+    dieuKienTim = dk.join(",");
+  }
+
+  let truyVanPhieuThu = supabase
+    .from("phieu_thu")
+    // Tên học sinh + biên lai lấy bằng embed (chỉ cho phiếu của trang hiện tại), thay cho
+    // việc tải toàn bộ ghi_danh/hoc_sinh/tep_dinh_kem rồi ghép bằng Map. Phiếu của hợp đồng
+    // KHÔNG còn hoạt động (đã hoàn tất/huỷ) cũng ra đúng tên thay vì "?".
+    .select(
+      "id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, nguoi_thu_ten, hop_dong_hoc_phi(ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh))), bien_lai_1:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_fkey(ten_tep, duong_dan_luu_tru), bien_lai_2:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_2_fkey(ten_tep, duong_dan_luu_tru)",
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .order("id")
+    .range(pp.from, pp.to);
+  if (dieuKienTim) truyVanPhieuThu = truyVanPhieuThu.or(dieuKienTim);
 
   const [
     { data: profile },
@@ -36,18 +67,7 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
     supabase.from("hoc_sinh").select("id, ho_ten, ma_hoc_sinh").is("deleted_at", null),
     supabase.from("lop").select("id, chuong_trinh_ma").is("deleted_at", null),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null),
-    supabase
-      .from("phieu_thu")
-      // Tên học sinh + biên lai lấy bằng embed (chỉ cho phiếu của trang hiện tại), thay cho
-      // việc tải toàn bộ ghi_danh/hoc_sinh/tep_dinh_kem rồi ghép bằng Map. Phiếu của hợp đồng
-      // KHÔNG còn hoạt động (đã hoàn tất/huỷ) cũng ra đúng tên thay vì "?".
-      .select(
-        "id, ma_phieu_thu, hop_dong_id, so_tien, ngay_thu, hinh_thuc, la_phieu_dao, ghi_chu, nguoi_thu_ten, hop_dong_hoc_phi(ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh))), bien_lai_1:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_fkey(ten_tep, duong_dan_luu_tru), bien_lai_2:tep_dinh_kem!phieu_thu_tep_dinh_kem_id_2_fkey(ten_tep, duong_dan_luu_tru)",
-        { count: "exact" }
-      )
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range(pp.from, pp.to),
+    truyVanPhieuThu,
   ]);
 
   const total = tongPhieuThu ?? 0;
@@ -132,13 +152,19 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
 
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Lịch sử phiếu thu ({total})</h2>
+            {(total > 0 || q) && (
+              <OTimKiem q={q} placeholder="Tìm theo mã phiếu, học sinh, số tiền, người thu, ghi chú..." ketQua={total} />
+            )}
+            {quaRong && (
+              <p className={styles.noticeBox}>Từ khoá khớp quá nhiều học sinh nên kết quả có thể thiếu — hãy nhập cụ thể hơn.</p>
+            )}
             {total > 0 ? (
               <>
                 <PhieuThuTable list={phieuThuRows} />
                 <PhanTrang total={total} page={pp.page} size={pp.size} />
               </>
             ) : (
-              <p className={styles.empty}>Chưa có phiếu thu nào.</p>
+              <p className={styles.empty}>{q ? `Không có phiếu thu nào khớp "${q}".` : "Chưa có phiếu thu nào."}</p>
             )}
           </section>
         </>
