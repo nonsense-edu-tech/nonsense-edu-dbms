@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 export type HinhAnhCu = { id: string; url: string };
@@ -30,6 +30,8 @@ export default function HinhAnhInput({
   const [tep, setTep] = useState<File[]>([]);
   const [cu, setCu] = useState<HinhAnhCu[]>(anhCu ?? []);
   const [loi, setLoi] = useState<string | null>(null);
+  const [keoVao, setKeoVao] = useState(false);
+  const inputId = useId();
 
   const xemTruoc = useMemo(() => tep.map((f) => URL.createObjectURL(f)), [tep]);
   useEffect(() => () => xemTruoc.forEach((u) => URL.revokeObjectURL(u)), [xemTruoc]);
@@ -46,7 +48,17 @@ export default function HinhAnhInput({
   }
 
   function handleChon(e: React.ChangeEvent<HTMLInputElement>) {
-    const chon = Array.from(e.target.files ?? []);
+    nhanTep(Array.from(e.target.files ?? []));
+  }
+
+  function handleTha(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setKeoVao(false);
+    if (disabled || daDay) return;
+    nhanTep(Array.from(e.dataTransfer.files ?? []));
+  }
+
+  function nhanTep(chon: File[]) {
     const hopLe: File[] = [];
     let thongBao: string | null = null;
     for (const f of chon) {
@@ -110,6 +122,7 @@ export default function HinhAnhInput({
         ))}
       </div>
       <input
+        id={inputId}
         ref={inputRef}
         type="file"
         name={ten}
@@ -117,9 +130,26 @@ export default function HinhAnhInput({
         multiple={toiDa > 1}
         onChange={handleChon}
         disabled={disabled || daDay}
-        className={styles.fileInput}
-        aria-label={`Thêm ảnh cho ${nhan}`}
+        className={styles.tepUploadInput}
       />
+      {!daDay && (
+        <label
+          htmlFor={inputId}
+          className={`${styles.tepUploadKhung} ${toiDa === 1 ? styles.tepUploadNho : ""} ${keoVao ? styles.tepUploadKeoVao : ""} ${disabled ? styles.tepUploadTat : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!disabled) setKeoVao(true);
+          }}
+          onDragLeave={() => setKeoVao(false)}
+          onDrop={handleTha}
+        >
+          <span className={styles.tepUploadIcon} aria-hidden="true">⬆</span>
+          <span className={styles.tepUploadTieuDe}>
+            {toiDa === 1 ? `Thêm ảnh cho ${nhan}` : `Chọn hoặc kéo thả ảnh ${nhan}`}
+          </span>
+          {toiDa > 1 && <span className={styles.tepUploadMoTa}>JPG, PNG, WebP · ≤ 2MB/ảnh · tối đa {toiDa} ảnh</span>}
+        </label>
+      )}
       {loi && <p className={styles.ghiChuLoi}>{loi}</p>}
     </div>
   );
