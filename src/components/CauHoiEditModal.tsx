@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { suaCauHoi, layLuaChonCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
+import { suaCauHoi, layLuaChonCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { layLoaiDangCau } from "./dangCauOptions";
 import DapAnFields, { type LuaChonInitial } from "./DapAnFields";
 import type { CauHoiRow } from "./CauHoiTable";
 import formStyles from "./Form.module.css";
-import modalStyles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
+import modalStyles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);

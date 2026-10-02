@@ -86,7 +86,6 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
         <Link href="/dashboard/hoc-lieu/chu-de" className={styles.subNavLink}>Chủ đề</Link>
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Bài học</Link>
-        <Link href="/dashboard/hoc-lieu/cau-hoi" className={styles.subNavLink}>Câu hỏi</Link>
       </nav>
 
       <section className={styles.card}>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { xoaCauHoi, nopDuyetCauHoi, duyetCauHoi, tuChoiDuyetCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
-import type { NangLucOption } from "@/app/dashboard/hoc-lieu/cau-hoi/nangLucActions";
+import { xoaCauHoi, nopDuyetCauHoi, duyetCauHoi, tuChoiDuyetCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
+import type { NangLucOption } from "@/app/dashboard/ngan-hang-cau-hoi/nangLucActions";
 import { useToast } from "./ToastProvider";
 import CauHoiEditModal from "./CauHoiEditModal";
 import CauHoiNangLucModal, { type TienTrinhOption } from "./CauHoiNangLucModal";
 import { TRANG_THAI_LABEL, TRANG_THAI_BADGE } from "./trangThaiCauHoi";
-import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
+import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 export type CauHoiRow = {
   id: string;
