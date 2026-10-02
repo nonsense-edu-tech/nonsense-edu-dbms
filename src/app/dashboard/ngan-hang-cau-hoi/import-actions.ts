@@ -12,10 +12,12 @@ import {
   type CauHoiNhap,
   type DongXemTruoc,
 } from "@/lib/cau-hoi-import";
+import { docZipAnh, mimeTheoByte } from "@/lib/cau-hoi-doc-zip";
 import { luuCauHoi } from "./luu-cau-hoi";
+import { dacTaTuTenAnh, donDepCauHoi, luuHinhAnh } from "./hinh-anh";
 import { kiemTraQuyenNhap, layDanhMucNhap } from "./nhap-ho-tro";
 
-export type XemTruocResult = { error: string } | { tenFile: string; dong: DongXemTruoc[] };
+export type XemTruocResult = { error: string } | { tenFile: string; dong: DongXemTruoc[]; canhBaoZip: string[]; coZip: boolean };
 export type KetQuaNhapDong = { chiSo: number; ma_cau_hoi?: string; error?: string };
 export type NhapHangLoatResult = { error: string } | { ketQua: KetQuaNhapDong[] };
 
@@ -95,9 +97,20 @@ export async function xemTruocNhapCauHoi(formData: FormData): Promise<XemTruocRe
     return { error: `Không tải được danh mục để đối chiếu: ${e instanceof Error ? e.message : "lỗi không rõ"}` };
   }
 
-  const dong = doc.dong.map((d) => kiemTraDong(d, danhMuc));
+  // File zip ảnh (tuỳ chọn) — ghép với cột Ảnh đề/Ảnh lời giải/Ảnh lựa chọn theo tên file.
+  let anhZip: Map<string, number> | null = null;
+  let canhBaoZip: string[] = [];
+  const zip = formData.get("zip_anh");
+  if (zip instanceof File && zip.size > 0) {
+    const docZip = await docZipAnh(await zip.arrayBuffer());
+    if ("error" in docZip) return docZip;
+    anhZip = docZip.anh;
+    canhBaoZip = docZip.canhBao;
+  }
+
+  const dong = doc.dong.map((d) => kiemTraDong(d, danhMuc, anhZip));
   await danhDauTrung(supabase, dong);
-  return { tenFile: file.name, dong };
+  return { tenFile: file.name, dong, canhBaoZip, coZip: anhZip !== null };
 }
 
 /**
@@ -106,10 +119,22 @@ export async function xemTruocNhapCauHoi(formData: FormData): Promise<XemTruocRe
  * cap_ma_cau_hoi() kiểm ở DB. Mỗi câu độc lập — lỗi 1 câu không chặn câu khác.
  * Câu mới luôn ở trạng thái Nháp (mặc định của cột trang_thai).
  */
-export async function nhapCauHoiHangLoat(danhSach: CauHoiNhap[]): Promise<NhapHangLoatResult> {
+export async function nhapCauHoiHangLoat(formData: FormData): Promise<NhapHangLoatResult> {
   const supabase = await createClient();
   const quyen = await kiemTraQuyenNhap(supabase);
   if ("error" in quyen) return quyen;
+
+  // `danh_sach` = JSON mảng CauHoiNhap; ảnh đi kèm theo key `anh:<tên chữ thường>` (mỗi tên 1 lần/lô).
+  let danhSach: CauHoiNhap[];
+  try {
+    danhSach = JSON.parse(String(formData.get("danh_sach") ?? "[]"));
+  } catch {
+    return { error: "Dữ liệu gửi lên không hợp lệ." };
+  }
+  const layTep = (khoa: string) => {
+    const v = formData.get(`anh:${khoa}`);
+    return v instanceof File && v.size > 0 ? v : null;
+  };
 
   if (!Array.isArray(danhSach) || danhSach.length === 0) return { error: "Không có câu hỏi nào để nhập." };
   if (danhSach.length > SO_CAU_MOI_LO) return { error: `Mỗi lần chỉ nhập tối đa ${SO_CAU_MOI_LO} câu.` };
@@ -137,9 +162,26 @@ export async function nhapCauHoiHangLoat(danhSach: CauHoiNhap[]): Promise<NhapHa
       dap_an_text: c.dap_an_text?.trim() || null,
       lua_chon: c.lua_chon.map((l) => ({ noi_dung: l.noi_dung.trim(), la_dap_an: l.la_dap_an })),
     };
+    // Chuẩn bị + kiểm tra ảnh TRƯỚC khi tạo câu hỏi để không để lại câu hỏi thiếu ảnh.
+    const dacTa = await dacTaTuTenAnh(c.hinh, layTep, mimeTheoByte);
+    if ("error" in dacTa) {
+      ketQua.push({ chiSo: i, error: dacTa.error });
+      continue;
+    }
     const kq = await luuCauHoi(supabase, quyen.userId, sach);
-    if ("error" in kq) ketQua.push({ chiSo: i, error: kq.error });
-    else ketQua.push({ chiSo: i, ma_cau_hoi: kq.data.ma_cau_hoi });
+    if ("error" in kq) {
+      ketQua.push({ chiSo: i, error: kq.error });
+      continue;
+    }
+    if (dacTa.moi.length > 0) {
+      const luuAnh = await luuHinhAnh(supabase, quyen.userId, kq.data.id, dacTa);
+      if ("error" in luuAnh) {
+        await donDepCauHoi(supabase, kq.data.id);
+        ketQua.push({ chiSo: i, error: luuAnh.error });
+        continue;
+      }
+    }
+    ketQua.push({ chiSo: i, ma_cau_hoi: kq.data.ma_cau_hoi });
   }
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");

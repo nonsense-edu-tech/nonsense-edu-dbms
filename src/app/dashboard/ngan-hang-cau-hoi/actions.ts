@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau, type LoaiDangCau } from "@/components/dangCauOptions";
 import { TRANG_THAI_LABEL } from "@/components/trangThaiCauHoi";
 import { luuCauHoi, mapDbError } from "./luu-cau-hoi";
+import { coHinhChoLuaChon, docHinhAnh, donDepCauHoi, luuHinhAnh } from "./hinh-anh";
 
 type CauHoi = {
   id: string;
@@ -27,7 +28,12 @@ function docSoNguyen(formData: FormData, key: string, ten: string, min: number, 
   return value;
 }
 
-type DapAnDaXuLy = { dapAnText: string | null; luaChonList: { noi_dung: string; la_dap_an: boolean }[] };
+type DapAnDaXuLy = {
+  dapAnText: string | null;
+  luaChonList: { noi_dung: string; la_dap_an: boolean }[];
+  /** Chỉ số dòng gốc trên form của từng lựa chọn còn lại (để gắn ảnh đúng lựa chọn). */
+  chiSoGoc: number[];
+};
 
 // Đọc + validate phần đáp án theo đúng dạng câu — dùng chung cho tạo mới và
 // sửa câu hỏi (cấu trúc form giống hệt nhau, xem DapAnFields.tsx).
@@ -35,9 +41,12 @@ function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | {
   if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
     const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
     const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
-    const luaChonList = luaChonNoiDung
-      .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)) }))
-      .filter((lc) => lc.noi_dung !== "");
+    // Giữ lại lựa chọn rỗng chữ nếu có ảnh (đáp án dạng hình).
+    const giuLai = luaChonNoiDung
+      .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)), idx }))
+      .filter((lc) => lc.noi_dung !== "" || coHinhChoLuaChon(formData, lc.idx));
+    const luaChonList = giuLai.map(({ noi_dung, la_dap_an }) => ({ noi_dung, la_dap_an }));
+    const chiSoGoc = giuLai.map((lc) => lc.idx);
 
     if (loaiDangCau === "dung_sai") {
       if (luaChonList.length < 1) return { error: "Vui lòng nhập ít nhất 1 mệnh đề." };
@@ -51,7 +60,7 @@ function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | {
         return { error: "Trắc nghiệm nhiều đáp án cần đánh dấu ít nhất 1 lựa chọn đúng." };
       }
     }
-    return { dapAnText: null, luaChonList };
+    return { dapAnText: null, luaChonList, chiSoGoc };
   }
 
   if (loaiDangCau === "dien_khuyet") {
@@ -60,12 +69,12 @@ function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | {
       .map((v) => String(v).trim())
       .filter((v) => v !== "");
     if (dapAnList.length < 1) return { error: "Vui lòng nhập ít nhất 1 đáp án cho chỗ trống." };
-    return { dapAnText: dapAnList.join(" | "), luaChonList: [] };
+    return { dapAnText: dapAnList.join(" | "), luaChonList: [], chiSoGoc: [] };
   }
 
   // "text" (trả lời ngắn/tự luận) — đáp án tuỳ chọn, tự luận có thể để trống.
   const dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
-  return { dapAnText, luaChonList: [] };
+  return { dapAnText, luaChonList: [], chiSoGoc: [] };
 }
 
 export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
@@ -119,7 +128,10 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   const loaiDangCau = layLoaiDangCau(dangCau);
   const dapAn = docDapAn(formData, loaiDangCau);
   if ("error" in dapAn) return dapAn;
-  const { dapAnText, luaChonList } = dapAn;
+  const { dapAnText, luaChonList, chiSoGoc } = dapAn;
+
+  const hinhAnh = docHinhAnh(formData, chiSoGoc);
+  if ("error" in hinhAnh) return hinhAnh;
 
   const ketQua = await luuCauHoi(supabase, user.id, {
     cap_hoc: capHoc,
@@ -137,6 +149,15 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   });
   if ("error" in ketQua) return ketQua;
   const cauHoi = ketQua.data;
+
+  if (hinhAnh.moi.length > 0) {
+    const luuAnh = await luuHinhAnh(supabase, user.id, cauHoi.id, hinhAnh);
+    if ("error" in luuAnh) {
+      // Không để lại câu hỏi dở dang (thiếu ảnh) — người dùng thử lại từ đầu.
+      await donDepCauHoi(supabase, cauHoi.id);
+      return { error: luuAnh.error };
+    }
+  }
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { data: cauHoi as CauHoi };
@@ -194,7 +215,10 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
   const loaiDangCau = layLoaiDangCau(cauHoiHienTai.dang_cau);
   const dapAn = docDapAn(formData, loaiDangCau);
   if ("error" in dapAn) return dapAn;
-  const { dapAnText, luaChonList } = dapAn;
+  const { dapAnText, luaChonList, chiSoGoc } = dapAn;
+
+  const hinhAnh = docHinhAnh(formData, chiSoGoc);
+  if ("error" in hinhAnh) return hinhAnh;
 
   const { error: updateError } = await supabase
     .from("cau_hoi")
@@ -221,6 +245,10 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
     );
     if (themLuaChonError) return { error: mapDbError(themLuaChonError.message) };
   }
+
+  // Ảnh: xoá ảnh cũ không giữ, cập nhật vị trí ảnh giữ lại, tải ảnh mới.
+  const luuAnh = await luuHinhAnh(supabase, user.id, id, hinhAnh);
+  if ("error" in luuAnh) return { error: `Đã lưu nội dung nhưng lưu ảnh thất bại: ${luuAnh.error}` };
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };

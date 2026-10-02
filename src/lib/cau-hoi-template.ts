@@ -60,7 +60,9 @@ const HUONG_DAN: string[] = [
   "   - Dạng 7, 8: văn bản đáp án (tự luận có thể để trống).",
   "5. Lựa chọn A..H: dạng 1, 2, 3 điền các lựa chọn/mệnh đề (tối thiểu 2 lựa chọn với dạng 1, 2). Dạng 4, 7, 8 để trống các cột này.",
   "6. Độ khó: 1 đến 5 (có thể để trống). Lời giải: tuỳ chọn.",
-  "7. Tối đa 500 câu hỏi mỗi file. Sau khi tải lên, hệ thống hiển thị danh sách xem trước; câu hỏi nhập vào luôn ở trạng thái NHÁP, chờ nộp duyệt.",
+  "7. ẢNH (tuỳ chọn): ghi TÊN FILE ảnh vào cột \"Ảnh đề\", \"Ảnh lời giải\" (nhiều ảnh ngăn cách bằng dấu |, tối đa 5) và \"Ảnh lựa chọn\" (dạng A:a.png | C:c.png, mỗi lựa chọn 1 ảnh).",
+  "   Nén tất cả ảnh vào 1 file .zip (JPG/PNG/WebP, mỗi ảnh ≤ 2MB, zip ≤ 20MB, tên ảnh không trùng nhau) rồi tải lên cùng file câu hỏi. Tên ảnh không phân biệt hoa/thường. Chỉ dùng được khi nhập bằng file; lựa chọn có ảnh vẫn phải có chữ.",
+  "8. Tối đa 500 câu hỏi mỗi file. Sau khi tải lên, hệ thống hiển thị danh sách xem trước; câu hỏi nhập vào luôn ở trạng thái NHÁP, chờ nộp duyệt.",
 ];
 
 function themSheetBang(wb: ExcelJS.Workbook, ten: string, tieuDe: string[], dong: (string | number)[][], rong: number[]) {
