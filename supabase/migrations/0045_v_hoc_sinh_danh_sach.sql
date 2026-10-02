@@ -1,3 +1,4 @@
+-- adr004-type: expand
 -- 0045: View danh sách học sinh kèm trạng thái ghi danh HIỆN TẠI (Expand).
 --
 -- Mục đích: phân trang/lọc danh sách học sinh ở phía server. Bộ lọc "trạng thái
