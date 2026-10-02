@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import HocSinhForm from "@/components/HocSinhForm";
+import HocSinhSubNav from "@/components/HocSinhSubNav";
 import HocSinhTable, { type HocSinhRow } from "@/components/HocSinhTable";
 import styles from "./hoc-sinh.module.css";
 
@@ -120,17 +120,7 @@ export default async function HocSinhPage() {
         <h1 className={styles.title}>Học sinh</h1>
       </div>
 
-      <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Tạo ID học sinh</h2>
-        {isAllowed ? (
-          <HocSinhForm lopList={lopListChoForm} />
-        ) : (
-          <p className={styles.noticeBox}>
-            Chỉ Master Admin, Tuyển sinh (admin_ts) hoặc Quản lý chi nhánh được tạo ID học sinh. Tài khoản của bạn:{" "}
-            {isActive ? `vai trò "${profile?.vai_tro ?? "chưa gán"}"` : "tài khoản đang bị khoá (disabled)"}.
-          </p>
-        )}
-      </section>
+      <HocSinhSubNav active="danh-sach" canCreate={isAllowed} />
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Tra cứu &amp; xuất danh sách học sinh ({hocSinhRows.length})</h2>

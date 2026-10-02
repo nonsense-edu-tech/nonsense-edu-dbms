@@ -20,6 +20,24 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Tab Học sinh tách 2 tab con: Tạo học sinh / Danh sách học sinh (PR3a)
+
+**Tóm tắt:** Theo yêu cầu của Hiệu trưởng, trang Học sinh có 2 tab con. `/dashboard/hoc-sinh`
+vẫn là Danh sách học sinh; form tạo học sinh chuyển sang `/dashboard/hoc-sinh/tao-moi`.
+Không có migration DB — chỉ frontend. Xếp chồng trên PR2.
+
+- Tab "Tạo học sinh" chỉ hiện với `master_admin`/`admin_ts`/`quan_ly_chi_nhanh`; vai trò
+  khác vào thẳng `/tao-moi` sẽ bị chuyển về danh sách. `quan_ly_chi_nhanh` chỉ thấy lớp
+  thuộc chi nhánh của mình trong ô chọn lớp.
+- Danh sách học sinh chưa phân trang server-side (vẫn lọc phía client, `limit(1000)`) —
+  làm ở PR3b vì cần view `v_hoc_sinh_danh_sach` (migration 0045) đi trước.
+
+- **Staging**: 🔲 (không có migration; staging đang tạm dừng)
+- **Production**: 🔲 chưa merge
+- **Commit**: (xem git log nhánh `feat/hoc-sinh-tab-con-phan-trang`)
+
+---
+
 ## 2026-10-02 — Phân trang bảng (PR2: Lớp, Buổi học, Câu hỏi, Phiếu thu)
 
 **Tóm tắt:** Tiếp tục phân trang server-side (xem PR1 ở mục 2026-09-29): bỏ các

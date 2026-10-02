@@ -296,3 +296,30 @@
   gap: 10px;
   margin-top: 4px;
 }
+
+/* Tab con của mục Học sinh: "Tạo học sinh" / "Danh sách học sinh". */
+.subNav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.subNavLink {
+  font-size: 13px;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.subNavLink:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.subNavLinkActive {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-wash);
+}
