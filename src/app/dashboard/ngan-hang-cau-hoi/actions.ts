@@ -6,6 +6,7 @@ import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau, type LoaiDangCau } from "@/compon
 import { TRANG_THAI_LABEL } from "@/components/trangThaiCauHoi";
 import { luuCauHoi, mapDbError } from "./luu-cau-hoi";
 import { coHinhChoLuaChon, docHinhAnh, donDepCauHoi, luuHinhAnh } from "./hinh-anh";
+import { htmlRong, lamSachHtml } from "@/lib/van-ban-dinh-dang";
 
 type CauHoi = {
   id: string;
@@ -48,12 +49,12 @@ type DapAnDaXuLy = {
 // sửa câu hỏi (cấu trúc form giống hệt nhau, xem DapAnFields.tsx).
 function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | { error: string } {
   if (loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai") {
-    const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => String(v).trim());
+    const luaChonNoiDung = formData.getAll("lua_chon_noi_dung").map((v) => lamSachHtml(String(v)));
     const luaChonDungIdx = new Set(formData.getAll("lua_chon_dung").map((v) => String(v)));
     // Giữ lại lựa chọn rỗng chữ nếu có ảnh (đáp án dạng hình).
     const giuLai = luaChonNoiDung
       .map((noi_dung, idx) => ({ noi_dung, la_dap_an: luaChonDungIdx.has(String(idx)), idx }))
-      .filter((lc) => lc.noi_dung !== "" || coHinhChoLuaChon(formData, lc.idx));
+      .filter((lc) => !htmlRong(lc.noi_dung) || coHinhChoLuaChon(formData, lc.idx));
     const luaChonList = giuLai.map(({ noi_dung, la_dap_an }) => ({ noi_dung, la_dap_an }));
     const chiSoGoc = giuLai.map((lc) => lc.idx);
 
@@ -75,14 +76,14 @@ function docDapAn(formData: FormData, loaiDangCau: LoaiDangCau): DapAnDaXuLy | {
   if (loaiDangCau === "dien_khuyet") {
     const dapAnList = formData
       .getAll("dien_khuyet_dap_an")
-      .map((v) => String(v).trim())
-      .filter((v) => v !== "");
+      .map((v) => lamSachHtml(String(v)))
+      .filter((v) => !htmlRong(v));
     if (dapAnList.length < 1) return { error: "Vui lòng nhập ít nhất 1 đáp án cho chỗ trống." };
     return { dapAnText: dapAnList.join(" | "), luaChonList: [], chiSoGoc: [] };
   }
 
   // "text" (trả lời ngắn/tự luận) — đáp án tuỳ chọn, tự luận có thể để trống.
-  const dapAnText = String(formData.get("dap_an_text") ?? "").trim() || null;
+  const dapAnText = lamSachHtml(String(formData.get("dap_an_text") ?? "")) || null;
   return { dapAnText, luaChonList: [], chiSoGoc: [] };
 }
 
@@ -119,8 +120,8 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
     return { error: "Dạng câu này chưa được hỗ trợ soạn thảo — vui lòng chọn dạng khác." };
   }
 
-  const noiDung = String(formData.get("noi_dung") ?? "").trim();
-  if (!noiDung) return { error: "Nội dung câu hỏi không được để trống." };
+  const noiDung = lamSachHtml(String(formData.get("noi_dung") ?? ""));
+  if (htmlRong(noiDung)) return { error: "Nội dung câu hỏi không được để trống." };
 
   const doKhoRaw = String(formData.get("do_kho") ?? "").trim();
   const doKho = doKhoRaw ? Number(doKhoRaw) : null;
@@ -128,7 +129,7 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
     return { error: "Độ khó phải từ 1 đến 5." };
   }
 
-  const loiGiai = String(formData.get("loi_giai") ?? "").trim() || null;
+  const loiGiai = lamSachHtml(String(formData.get("loi_giai") ?? "")) || null;
 
   // Cấu trúc đáp án phụ thuộc dạng câu — xem dangCauOptions.ts (dùng chung UI/server).
   const loaiDangCau = layLoaiDangCau(dangCau);
@@ -196,8 +197,8 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return { error: "Thiếu ID câu hỏi." };
 
-  const noiDung = String(formData.get("noi_dung") ?? "").trim();
-  if (!noiDung) return { error: "Nội dung câu hỏi không được để trống." };
+  const noiDung = lamSachHtml(String(formData.get("noi_dung") ?? ""));
+  if (htmlRong(noiDung)) return { error: "Nội dung câu hỏi không được để trống." };
 
   const doKhoRaw = String(formData.get("do_kho") ?? "").trim();
   const doKho = doKhoRaw ? Number(doKhoRaw) : null;
@@ -205,7 +206,7 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
     return { error: "Độ khó phải từ 1 đến 5." };
   }
 
-  const loiGiai = String(formData.get("loi_giai") ?? "").trim() || null;
+  const loiGiai = lamSachHtml(String(formData.get("loi_giai") ?? "")) || null;
 
   // Phân loại câu hỏi (cấp học/môn/học phần/bài học/chủ đề/dạng câu) KHÔNG
   // cho sửa — mã câu hỏi gắn cố định theo phân loại lúc tạo, giống quy ước

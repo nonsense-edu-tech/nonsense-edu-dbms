@@ -6,6 +6,7 @@ import { useToast } from "./ToastProvider";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "./dangCauOptions";
 import DapAnFields from "./DapAnFields";
 import HinhAnhInput from "./HinhAnhInput";
+import RichTextEditor from "./RichTextEditor";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
@@ -223,7 +224,7 @@ export default function CauHoiForm({
 
       <div className={formStyles.field}>
         <label htmlFor="noi_dung" className={formStyles.label}>Nội dung câu hỏi</label>
-        <textarea id="noi_dung" name="noi_dung" required className={formStyles.textarea} disabled={isPending} rows={4} />
+        <RichTextEditor key={`nd-${hinhKey}`} id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" soDong={4} disabled={isPending} />
         <HinhAnhInput key={`de-${hinhKey}`} ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} />
         <p className={formStyles.hint}>Ảnh đề bài (tuỳ chọn, tối đa 5 ảnh JPG/PNG/WebP, mỗi ảnh ≤ 2MB).</p>
       </div>
@@ -244,7 +245,7 @@ export default function CauHoiForm({
 
       <div className={formStyles.field}>
         <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
-        <textarea id="loi_giai" name="loi_giai" className={formStyles.textarea} disabled={isPending} rows={3} />
+        <RichTextEditor key={`lgt-${hinhKey}`} id="loi_giai" name="loi_giai" nhan="Lời giải" soDong={3} disabled={isPending} />
         <HinhAnhInput key={`lg-${hinhKey}`} ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} />
       </div>
 

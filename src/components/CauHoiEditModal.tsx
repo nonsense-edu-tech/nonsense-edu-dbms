@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { suaCauHoi, layLuaChonCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { layLoaiDangCau } from "./dangCauOptions";
+import RichTextEditor from "./RichTextEditor";
 import HinhAnhInput from "./HinhAnhInput";
 import DapAnFields, { type LuaChonInitial } from "./DapAnFields";
 import type { CauHoiRow } from "./CauHoiTable";
@@ -87,15 +88,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
         <form onSubmit={handleSubmit} className={formStyles.form} noValidate>
           <div className={formStyles.field}>
             <label htmlFor="noi_dung" className={formStyles.label}>Nội dung câu hỏi</label>
-            <textarea
-              id="noi_dung"
-              name="noi_dung"
-              required
-              className={formStyles.textarea}
-              disabled={isPending}
-              rows={4}
-              defaultValue={cauHoi.noi_dung}
-            />
+            <RichTextEditor id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" soDong={4} disabled={isPending} defaultValue={cauHoi.noi_dung} />
             <HinhAnhInput ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} anhCu={hinhDe} />
           </div>
 
@@ -123,14 +116,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
 
           <div className={formStyles.field}>
             <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
-            <textarea
-              id="loi_giai"
-              name="loi_giai"
-              className={formStyles.textarea}
-              disabled={isPending}
-              rows={3}
-              defaultValue={cauHoi.loi_giai ?? ""}
-            />
+            <RichTextEditor id="loi_giai" name="loi_giai" nhan="Lời giải" soDong={3} disabled={isPending} defaultValue={cauHoi.loi_giai ?? ""} />
             <HinhAnhInput ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} anhCu={hinhLoiGiai} />
           </div>
 

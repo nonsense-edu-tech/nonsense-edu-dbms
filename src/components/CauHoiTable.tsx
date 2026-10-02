@@ -1,5 +1,6 @@
 "use client";
 
+import NoiDungHtml from "./NoiDungHtml";
 import { useState, useTransition } from "react";
 import { xoaCauHoi, nopDuyetCauHoi, duyetCauHoi, tuChoiDuyetCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import type { NangLucOption } from "@/app/dashboard/ngan-hang-cau-hoi/nangLucActions";
@@ -183,7 +184,7 @@ function CauHoiRowItem({
       <td>{cauHoi.chu_de_ten}</td>
       <td>{cauHoi.dang_cau_ten}</td>
       <td className={styles.noiDungCell}>
-        {cauHoi.noi_dung}
+        <NoiDungHtml html={cauHoi.noi_dung} />
         {cauHoi.hinh_anh.length > 0 && (
           <div className={styles.hinhAnhDong}>
             {cauHoi.hinh_anh.map((h) => (

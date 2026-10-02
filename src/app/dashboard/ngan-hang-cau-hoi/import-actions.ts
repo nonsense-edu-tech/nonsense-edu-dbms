@@ -1,5 +1,6 @@
 "use server";
 
+import { htmlThanhVanBan, vanBanThanhHtml } from "@/lib/van-ban-dinh-dang";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { docFileNhap } from "@/lib/cau-hoi-doc-file";
@@ -61,7 +62,7 @@ async function danhDauTrung(supabase: Awaited<ReturnType<typeof createClient>>, 
           .order("id")
           .range(t * TRANG_DOC, (t + 1) * TRANG_DOC - 1);
         for (const r of data ?? []) {
-          daCo.add(`${khoaViTri(r as CauHoiNhap)}|${khoaTrungNoiDung(r.noi_dung)}`);
+          daCo.add(`${khoaViTri(r as CauHoiNhap)}|${khoaTrungNoiDung(htmlThanhVanBan(r.noi_dung))}`);
         }
         if (!data || data.length < TRANG_DOC) break;
       }
@@ -155,11 +156,11 @@ export async function nhapCauHoiHangLoat(formData: FormData): Promise<NhapHangLo
       bai_hoc: c.bai_hoc,
       chu_de: c.chu_de,
       dang_cau: c.dang_cau,
-      noi_dung: c.noi_dung.trim(),
+      noi_dung: vanBanThanhHtml(c.noi_dung),
       do_kho: c.do_kho,
-      loi_giai: c.loi_giai?.trim() || null,
-      dap_an_text: c.dap_an_text?.trim() || null,
-      lua_chon: c.lua_chon.map((l) => ({ noi_dung: l.noi_dung.trim(), la_dap_an: l.la_dap_an })),
+      loi_giai: vanBanThanhHtml(c.loi_giai) || null,
+      dap_an_text: vanBanThanhHtml(c.dap_an_text) || null,
+      lua_chon: c.lua_chon.map((l) => ({ noi_dung: vanBanThanhHtml(l.noi_dung), la_dap_an: l.la_dap_an })),
     };
     // Chuẩn bị + kiểm tra ảnh TRƯỚC khi tạo câu hỏi để không để lại câu hỏi thiếu ảnh.
     const dacTa = await dacTaTuTenAnh(c.hinh, layTep, mimeTheoByte);

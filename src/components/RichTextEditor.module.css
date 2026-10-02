@@ -1,0 +1,52 @@
+.khung {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.thanhCongCu {
+  display: flex;
+  gap: 4px;
+}
+
+.nut {
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-hi);
+  font-size: 13px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.nut:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.nut:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vung {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  max-height: 320px;
+  line-height: 1.5;
+}
+
+.vung[data-rong]::before {
+  content: attr(data-placeholder);
+  color: var(--text-lo);
+  pointer-events: none;
+}
+
+.khung[data-disabled] .vung {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

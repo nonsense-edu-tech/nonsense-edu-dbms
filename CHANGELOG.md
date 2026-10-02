@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Định dạng văn bản trong câu hỏi (in đậm / in nghiêng / gạch chân)
+
+**Tóm tắt:** Nội dung câu hỏi, lời giải, lựa chọn/mệnh đề và đáp án (điền khuyết, trả lời ngắn) có thanh công cụ **B / I / U** (và phím tắt Ctrl+B/I/U). Lưu dưới dạng HTML tối giản chỉ cho phép `<b> <i> <u> <br>`, làm sạch ở cả client lẫn server; danh sách câu hỏi và màn Trợ giảng hiển thị đúng định dạng. Dữ liệu cũ (văn bản thuần) hiển thị bình thường. Import từ file vẫn là văn bản thuần (được escape an toàn).
+
+**Migration:** không có (cột `text` hiện có đã đủ).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge + deploy (chỉ đổi code).
+
+**Commit:** xem PR `feat/dinh-dang-van-ban-cau-hoi`.
+
+---
+
 ## 2026-10-02 — Rút gọn phân loại câu hỏi: chỉ cần Môn học + Dạng câu (ADR-006)
 
 **Tóm tắt:** Câu hỏi thuộc **môn học**; chương trình giảng dạy chỉ gom các môn và kéo câu hỏi theo môn. Form tạo câu hỏi bỏ ô Cấp học/Chương trình
