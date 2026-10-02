@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { LoaiDangCau } from "./dangCauOptions";
+import RichTextEditor from "./RichTextEditor";
 import HinhAnhInput, { type HinhAnhCu } from "./HinhAnhInput";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
@@ -72,10 +73,10 @@ export default function DapAnFields({
         {luaChonRows.map((row, idx) => (
           <div key={row.key}>
           <div className={styles.luaChonRow}>
-            <input
-              type="text"
+            <RichTextEditor
               name="lua_chon_noi_dung"
-              className={formStyles.input}
+              nhieuDong={false}
+              nhan={loaiDangCau === "dung_sai" ? `Mệnh đề ${idx + 1}` : `Lựa chọn ${idx + 1}`}
               placeholder={loaiDangCau === "dung_sai" ? `Mệnh đề ${idx + 1}` : `Lựa chọn ${idx + 1}`}
               defaultValue={row.initial.noi_dung}
               disabled={disabled}
@@ -120,10 +121,10 @@ export default function DapAnFields({
         </p>
         {dienKhuyetRows.map((row, idx) => (
           <div key={row.key} className={styles.luaChonRow}>
-            <input
-              type="text"
+            <RichTextEditor
               name="dien_khuyet_dap_an"
-              className={formStyles.input}
+              nhieuDong={false}
+              nhan={`Đáp án chỗ trống ${idx + 1}`}
               placeholder={`Đáp án chỗ trống ${idx + 1}`}
               defaultValue={row.initial}
               disabled={disabled}
@@ -146,7 +147,7 @@ export default function DapAnFields({
         <label htmlFor="dap_an_text" className={formStyles.label}>
           Đáp án (tuỳ chọn — tự luận có thể để trống, chấm tay)
         </label>
-        <input id="dap_an_text" name="dap_an_text" type="text" className={formStyles.input} defaultValue={initialDapAnText ?? ""} disabled={disabled} />
+        <RichTextEditor id="dap_an_text" name="dap_an_text" nhieuDong={false} nhan="Đáp án" defaultValue={initialDapAnText ?? ""} disabled={disabled} />
       </div>
     );
   }

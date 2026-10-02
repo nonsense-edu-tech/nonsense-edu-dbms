@@ -1,5 +1,6 @@
 "use client";
 
+import NoiDungHtml from "./NoiDungHtml";
 import { useState, useTransition } from "react";
 import {
   layDanhMucCauHoi,
@@ -152,14 +153,14 @@ export default function TroGiangBrowser({ monHocKhaDung }: { monHocKhaDung: MonH
 
             {chiTiet && (
               <div className={formStyles.form}>
-                <p>{chiTiet.noi_dung}</p>
+                <NoiDungHtml as="p" html={chiTiet.noi_dung} />
 
                 {chiTiet.lua_chon_noi_dung.length > 0 && (
                   <fieldset className={styles.fieldset}>
                     <legend className={styles.fieldsetTitle}>Lựa chọn / mệnh đề</legend>
                     <ul>
                       {chiTiet.lua_chon_noi_dung.map((lc, idx) => (
-                        <li key={idx}>{lc}</li>
+                        <li key={idx}><NoiDungHtml html={lc} /></li>
                       ))}
                     </ul>
                   </fieldset>
@@ -168,7 +169,7 @@ export default function TroGiangBrowser({ monHocKhaDung }: { monHocKhaDung: MonH
                 {chiTiet.dap_an_text !== null ? (
                   <div className={formStyles.field}>
                     <span className={formStyles.label}>Đáp án</span>
-                    <p>{chiTiet.dap_an_text}</p>
+                    <NoiDungHtml as="p" html={chiTiet.dap_an_text} />
                   </div>
                 ) : (
                   <p className={formStyles.hint}>
@@ -179,7 +180,7 @@ export default function TroGiangBrowser({ monHocKhaDung }: { monHocKhaDung: MonH
                 {chiTiet.loi_giai !== null && (
                   <div className={formStyles.field}>
                     <span className={formStyles.label}>Lời giải</span>
-                    <p>{chiTiet.loi_giai}</p>
+                    <NoiDungHtml as="p" html={chiTiet.loi_giai} />
                   </div>
                 )}
               </div>
