@@ -64,7 +64,7 @@ export async function xoaChuongTrinh(id: string, ma: string): Promise<ChuongTrin
   ]);
   if ((lop.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này đã có lớp học." };
   if ((goi.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn gói học phí." };
-  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn môn học được gán (Vận hành → Chương trình - Môn học)." };
+  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn môn học được gán (Học liệu → Chương trình - Môn học)." };
 
   const { error } = await supabase.from("chuong_trinh").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };

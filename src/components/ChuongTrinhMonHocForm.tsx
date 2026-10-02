@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { taoChuongTrinhMonHoc } from "@/app/dashboard/van-hanh/chuong-trinh-mon-hoc/actions";
+import { taoChuongTrinhMonHoc } from "@/app/dashboard/hoc-lieu/chuong-trinh-mon-hoc/actions";
 import styles from "./Form.module.css";
 
 type ChuongTrinh = { ma: string; ten: string };

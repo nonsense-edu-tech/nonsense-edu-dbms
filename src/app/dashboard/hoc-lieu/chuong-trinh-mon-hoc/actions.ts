@@ -25,7 +25,7 @@ export async function taoChuongTrinhMonHoc(formData: FormData): Promise<TaoChuon
 
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/van-hanh/chuong-trinh-mon-hoc");
+  revalidatePath("/dashboard/hoc-lieu/chuong-trinh-mon-hoc");
   return { ok: true };
 }
 
@@ -45,7 +45,7 @@ export async function xoaChuongTrinhMonHoc(
 
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/van-hanh/chuong-trinh-mon-hoc");
+  revalidatePath("/dashboard/hoc-lieu/chuong-trinh-mon-hoc");
   return { ok: true };
 }
 

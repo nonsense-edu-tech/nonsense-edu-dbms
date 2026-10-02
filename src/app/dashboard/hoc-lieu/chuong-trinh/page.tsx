@@ -49,6 +49,7 @@ export default async function ChuongTrinhPage({ searchParams }: { searchParams: 
         <Link href="/dashboard/hoc-lieu/cap-hoc" className={styles.subNavLink}>Cấp học</Link>
         <Link href="/dashboard/hoc-lieu/chuong-trinh" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Chương trình</Link>
         <Link href="/dashboard/hoc-lieu/mon-hoc" className={styles.subNavLink}>Môn học</Link>
+        <Link href="/dashboard/hoc-lieu/chuong-trinh-mon-hoc" className={styles.subNavLink}>Chương trình - Môn học</Link>
         <Link href="/dashboard/hoc-lieu/chu-de" className={styles.subNavLink}>Chủ đề</Link>
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={styles.subNavLink}>Bài học</Link>
@@ -78,7 +79,7 @@ export default async function ChuongTrinhPage({ searchParams }: { searchParams: 
           <p className={styles.empty}>Chưa có chương trình nào.</p>
         )}
         <p className={styles.noticeBox}>
-          Muốn gán môn học vào chương trình: vào <strong>Vận hành → Chương trình - Môn học</strong>.
+          Muốn gán môn học vào chương trình: vào <strong>Học liệu → Chương trình - Môn học</strong>.
         </p>
       </section>
     </main>

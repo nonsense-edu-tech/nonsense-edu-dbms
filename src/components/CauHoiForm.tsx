@@ -188,7 +188,7 @@ export default function CauHoiForm({
             </select>
             {capHocMa && chuongTrinhMa && monHocOptions.length === 0 && (
               <p className={formStyles.hint}>
-                Chưa có môn học nào cho tổ hợp này — vào <strong>Vận hành → Chương trình - Môn học</strong> để thêm.
+                Chưa có môn học nào cho tổ hợp này — vào <strong>Học liệu → Chương trình - Môn học</strong> để thêm.
               </p>
             )}
           </div>

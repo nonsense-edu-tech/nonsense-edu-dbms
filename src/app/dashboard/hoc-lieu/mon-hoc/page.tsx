@@ -62,6 +62,7 @@ export default async function MonHocPage({ searchParams }: { searchParams: Promi
         <Link href="/dashboard/hoc-lieu/cap-hoc" className={styles.subNavLink}>Cấp học</Link>
         <Link href="/dashboard/hoc-lieu/chuong-trinh" className={styles.subNavLink}>Chương trình</Link>
         <Link href="/dashboard/hoc-lieu/mon-hoc" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Môn học</Link>
+        <Link href="/dashboard/hoc-lieu/chuong-trinh-mon-hoc" className={styles.subNavLink}>Chương trình - Môn học</Link>
         <Link href="/dashboard/hoc-lieu/chu-de" className={styles.subNavLink}>Chủ đề</Link>
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={styles.subNavLink}>Bài học</Link>

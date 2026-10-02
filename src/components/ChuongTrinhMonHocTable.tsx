@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { xoaChuongTrinhMonHoc } from "@/app/dashboard/van-hanh/chuong-trinh-mon-hoc/actions";
-import styles from "@/app/dashboard/van-hanh/van-hanh.module.css";
+import { xoaChuongTrinhMonHoc } from "@/app/dashboard/hoc-lieu/chuong-trinh-mon-hoc/actions";
+import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
 export type ChuongTrinhMonHocRow = {
   chuong_trinh_ma: string;

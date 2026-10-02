@@ -61,7 +61,7 @@ export async function xoaMonHoc(id: string, ma: number, capHocMa: number): Promi
   ]);
   if ((hocPhan.count ?? 0) > 0) return { error: "Không thể xoá — môn học này còn học phần bên trong." };
   if ((chuDe.count ?? 0) > 0) return { error: "Không thể xoá — môn học này còn chủ đề bên trong." };
-  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — môn học này còn được gán vào chương trình (Vận hành → Chương trình - Môn học)." };
+  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — môn học này còn được gán vào chương trình (Học liệu → Chương trình - Môn học)." };
 
   const { error } = await supabase.from("mon_hoc").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };
