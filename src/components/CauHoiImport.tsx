@@ -21,6 +21,9 @@ function rutGon(s: string, n: number): string {
 export default function CauHoiImport() {
   const showToast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
+  const zipRef = useRef<HTMLInputElement>(null);
+  const zipDaDungRef = useRef<File | null>(null); // zip đã dùng ở bước xem trước — giải nén lại khi nhập
+  const [canhBaoZip, setCanhBaoZip] = useState<string[]>([]);
   const [isDoc, startDoc] = useTransition();
   const [buoc, setBuoc] = useState<Buoc>("chon");
   const [tenFile, setTenFile] = useState("");
@@ -59,6 +62,9 @@ export default function CauHoiImport() {
     setTrang(1);
     setKetQua(null);
     if (inputRef.current) inputRef.current.value = "";
+    if (zipRef.current) zipRef.current.value = "";
+    zipDaDungRef.current = null;
+    setCanhBaoZip([]);
   }
 
   function handleXemTruoc() {
@@ -70,6 +76,8 @@ export default function CauHoiImport() {
     setLoi(null);
     const formData = new FormData();
     formData.set("file", file);
+    const zip = zipRef.current?.files?.[0] ?? null;
+    if (zip) formData.set("zip_anh", zip);
     startDoc(async () => {
       const result = await xemTruocNhapCauHoi(formData);
       if ("error" in result) {
@@ -78,6 +86,8 @@ export default function CauHoiImport() {
         return;
       }
       setTenFile(result.tenFile);
+      zipDaDungRef.current = zip;
+      setCanhBaoZip(result.canhBaoZip);
       setDong(result.dong);
       // Mặc định chọn các dòng hợp lệ và KHÔNG nghi trùng — dòng nghi trùng để người dùng tự quyết.
       setChon(new Set(result.dong.filter((d) => d.hopLe && !d.trung).map((d) => d.soDong)));
@@ -117,11 +127,58 @@ export default function CauHoiImport() {
     const thatBai: KetQuaCuoi["thatBai"] = [];
     let dungSom: string | null = null;
 
-    for (let i = 0; i < dsDong.length; i += SO_CAU_MOI_LO) {
-      const lo = dsDong.slice(i, i + SO_CAU_MOI_LO);
+    // Giải nén zip ảnh ngay trên trình duyệt (chỉ khi có dòng được chọn dùng ảnh) rồi chỉ gửi
+    // đúng các ảnh cần cho từng lô — không gửi lại cả file zip ở mỗi lô.
+    let anhTheoTen = new Map<string, File>();
+    if (dsDong.some((d) => d.cauHoi?.hinh) && zipDaDungRef.current) {
+      try {
+        const JSZip = (await import("jszip")).default;
+        const zip = await JSZip.loadAsync(await zipDaDungRef.current.arrayBuffer());
+        for (const f of Object.values(zip.files)) {
+          if (f.dir || f.name.startsWith("__MACOSX/")) continue;
+          const ten = f.name.split("/").pop() ?? "";
+          anhTheoTen.set(ten.trim().toLowerCase(), new File([await f.async("blob")], ten));
+        }
+      } catch {
+        anhTheoTen = new Map();
+      }
+    }
+
+    const tenAnhCuaDong = (d: DongXemTruoc): string[] => {
+      const h = d.cauHoi?.hinh;
+      if (!h) return [];
+      return [...new Set([...h.de, ...h.loi_giai, ...h.lua_chon.map((l) => l.ten)].map((t) => t.trim().toLowerCase()))];
+    };
+
+    // Chia lô theo số câu VÀ dung lượng ảnh (≤ 20MB/lô) để không vượt giới hạn body của server.
+    const cacLo: DongXemTruoc[][] = [];
+    let loHienTai: DongXemTruoc[] = [];
+    let byteLo = 0;
+    for (const d of dsDong) {
+      const byteDong = tenAnhCuaDong(d).reduce((t, ten) => t + (anhTheoTen.get(ten)?.size ?? 0), 0);
+      if (loHienTai.length > 0 && (loHienTai.length >= SO_CAU_MOI_LO || byteLo + byteDong > 20 * 1024 * 1024)) {
+        cacLo.push(loHienTai);
+        loHienTai = [];
+        byteLo = 0;
+      }
+      loHienTai.push(d);
+      byteLo += byteDong;
+    }
+    if (loHienTai.length > 0) cacLo.push(loHienTai);
+
+    let daXong = 0;
+    for (const lo of cacLo) {
+      const formData = new FormData();
+      formData.set("danh_sach", JSON.stringify(lo.map((d) => d.cauHoi!)));
+      for (const d of lo) {
+        for (const ten of tenAnhCuaDong(d)) {
+          const tep = anhTheoTen.get(ten);
+          if (tep && !formData.has(`anh:${ten}`)) formData.set(`anh:${ten}`, tep);
+        }
+      }
       let result;
       try {
-        result = await nhapCauHoiHangLoat(lo.map((d) => d.cauHoi!));
+        result = await nhapCauHoiHangLoat(formData);
       } catch {
         result = { error: "Mất kết nối tới máy chủ." };
       }
@@ -135,7 +192,8 @@ export default function CauHoiImport() {
         if (r.error) thatBai.push({ soDong: lo[r.chiSo].soDong, ly_do: r.error });
         else thanhCong++;
       }
-      setDaNhap(Math.min(i + lo.length, dsDong.length));
+      daXong += lo.length;
+      setDaNhap(daXong);
     }
 
     setKetQua({ thanhCong, thatBai, dungSom });
@@ -172,7 +230,16 @@ export default function CauHoiImport() {
         </p>
 
         <div className={styles.importBar}>
-          <input ref={inputRef} type="file" accept=".xlsx,.csv" className={styles.fileInput} disabled={isDoc} />
+          <label className={formStyles.label} htmlFor="zip-anh-import">Ảnh đính kèm (tuỳ chọn, file .zip)</label>
+          <input id="zip-anh-import" ref={zipRef} type="file" accept=".zip" className={styles.fileInput} disabled={isDoc} />
+        </div>
+        <p className={formStyles.hint}>
+          Nếu câu hỏi có ảnh: ghi tên file ảnh vào cột <strong>Ảnh đề</strong> / <strong>Ảnh lời giải</strong> (nhiều ảnh
+          ngăn cách bằng <code>|</code>) / <strong>Ảnh lựa chọn</strong> (dạng <code>A:a.png | C:c.png</code>), rồi nén
+          toàn bộ ảnh vào 1 file zip. Mỗi ảnh JPG/PNG/WebP ≤ 2MB, zip ≤ 20MB, tên ảnh không trùng nhau.
+        </p>
+        <div className={styles.importBar}>
+          <input ref={inputRef} type="file" accept=".xlsx,.csv" className={styles.fileInput} disabled={isDoc} aria-label="File câu hỏi" />
           <button type="button" className={formStyles.btnPrimary} onClick={handleXemTruoc} disabled={isDoc}>
             {isDoc ? "Đang đọc file…" : "Đọc file & xem trước"}
           </button>
@@ -235,6 +302,18 @@ export default function CauHoiImport() {
         <span style={{ color: soLoi > 0 ? "#F08080" : undefined }}><strong>{soLoi}</strong> lỗi (không nhập được)</span>
         {soTrung > 0 && <span style={{ color: "var(--accent)" }}><strong>{soTrung}</strong> nghi trùng (mặc định không chọn)</span>}
       </div>
+
+      {canhBaoZip.length > 0 && (
+        <div className={styles.noticeBox}>
+          <strong>Về file zip ảnh:</strong>
+          <ul>
+            {canhBaoZip.slice(0, 10).map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+            {canhBaoZip.length > 10 && <li>… và {canhBaoZip.length - 10} cảnh báo khác.</li>}
+          </ul>
+        </div>
+      )}
 
       <div className={styles.importBar}>
         <select className={styles.rowSelect} value={loc} onChange={(e) => { setLoc(e.target.value as LocHien); setTrang(1); }}>

@@ -191,3 +191,40 @@ export async function donDepCauHoi(supabase: SupabaseClient, cauHoiId: string): 
   }
   await supabase.from("cau_hoi").delete().eq("id", cauHoiId);
 }
+
+/**
+ * Dựng đặc tả ảnh từ tên file (đường nhập từ file): `layTep(tenChuThuong)` lấy file client gửi kèm.
+ * Kiểm tra lại mime theo byte thật + dung lượng, vì không tin dữ liệu client.
+ */
+export async function dacTaTuTenAnh(
+  hinh: { de: string[]; loi_giai: string[]; lua_chon: { thu_tu: number; ten: string }[] } | undefined,
+  layTep: (khoa: string) => File | null,
+  mimeTheoByte: (b: Uint8Array) => string | null
+): Promise<DacTaHinhAnh | { error: string }> {
+  const moi: HinhMoi[] = [];
+  if (!hinh) return { moi, giu: [] };
+
+  const danhSach: { ten: string; viTri: ViTriHinh; thuTuLuaChon: number | null }[] = [
+    ...hinh.de.map((ten) => ({ ten, viTri: "de" as const, thuTuLuaChon: null })),
+    ...hinh.loi_giai.map((ten) => ({ ten, viTri: "loi_giai" as const, thuTuLuaChon: null })),
+    ...hinh.lua_chon.map((l) => ({ ten: l.ten, viTri: "lua_chon" as const, thuTuLuaChon: l.thu_tu })),
+  ];
+  const demViTri = new Map<string, number>();
+  let tong = 0;
+  for (const d of danhSach) {
+    const tep = layTep(d.ten.trim().toLowerCase());
+    if (!tep) return { error: `Thiếu file ảnh "${d.ten}" trong lô gửi lên.` };
+    if (tep.size > HINH_TOI_DA_BYTE) return { error: `Ảnh "${d.ten}" vượt quá 2MB.` };
+    const bytes = new Uint8Array(await tep.arrayBuffer());
+    const mime = mimeTheoByte(bytes);
+    if (!mime) return { error: `"${d.ten}" không phải ảnh JPG/PNG/WebP.` };
+    tong += tep.size;
+    const khoaViTri = `${d.viTri}-${d.thuTuLuaChon ?? ""}`;
+    const thuTu = (demViTri.get(khoaViTri) ?? 0) + 1;
+    demViTri.set(khoaViTri, thuTu);
+    // Dựng lại File với mime thật (không tin type client khai).
+    moi.push({ tep: new File([bytes], d.ten, { type: mime }), viTri: d.viTri, thuTuLuaChon: d.thuTuLuaChon, thuTu });
+  }
+  if (tong > 20 * 1024 * 1024) return { error: "Tổng dung lượng ảnh của câu vượt giới hạn." };
+  return { moi, giu: [] };
+}
