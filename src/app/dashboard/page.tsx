@@ -1,7 +1,21 @@
+import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ADMIN_TIER, GV_TIER, TRO_GIANG_TIER } from "@/lib/vai-tro";
+import {
+  LOC_TOAN_THOI_GIAN,
+  nThangGanNhat,
+  thucThuTheoThang,
+  tinhConPhaiThu,
+  tinhDoanhThuThuan,
+  tinhThucThu,
+  type HopDongTinh,
+  type PhieuThuTinh,
+} from "@/lib/tai-chinh";
+import BieuDoDuong from "@/components/BieuDoDuong";
+import BieuDoCot, { type MucCot } from "@/components/BieuDoCot";
 import styles from "./dashboard.module.css";
+import bieuDoStyles from "@/components/BieuDo.module.css";
 
 // Dashboard theo vai trò — 3 nhóm giao diện, khớp phân quyền RLS thật của
 // từng bảng (không chỉ khớp tên vai trò):
@@ -67,29 +81,79 @@ async function demSoLuong(
   return count ?? 0;
 }
 
-async function tongSoTienPhieuThu(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  choPhep: boolean,
-  dauNgay: string,
-  dauNgayKe: string
-): Promise<number | null> {
-  if (!choPhep) return null;
-  const { data, error } = await supabase.from("phieu_thu").select("so_tien").gte("ngay_thu", dauNgay).lt("ngay_thu", dauNgayKe);
-  if (error || !data) return null;
-  return data.reduce((s: number, r: { so_tien: number }) => s + (r.so_tien ?? 0), 0);
-}
-
-async function tongConNoKyDong(
+// Dữ liệu thô cho các số tài chính — CÙNG nguồn với trang Học phí (hop_dong_hoc_phi chưa xoá
+// mềm + phieu_thu), tính bằng hàm dùng chung ở src/lib/tai-chinh.ts để hai trang không lệch số.
+async function taiDuLieuTaiChinh(
   supabase: Awaited<ReturnType<typeof createClient>>,
   choPhep: boolean
-): Promise<number | null> {
+): Promise<{ hopDong: HopDongTinh[]; phieuThu: PhieuThuTinh[] } | null> {
   if (!choPhep) return null;
-  const { data, error } = await supabase
-    .from("ky_dong_hoc_phi")
-    .select("so_tien_du_kien")
-    .in("trang_thai", ["cho_thu", "dong_mot_phan", "qua_han"]);
-  if (error || !data) return null;
-  return data.reduce((s: number, r: { so_tien_du_kien: number }) => s + (r.so_tien_du_kien ?? 0), 0);
+  const [hd, pt] = await Promise.all([
+    supabase.from("hop_dong_hoc_phi").select("trang_thai, doanh_thu_thuan, kich_hoat_luc, created_at").is("deleted_at", null),
+    supabase.from("phieu_thu").select("so_tien, ngay_thu, la_phieu_dao"),
+  ]);
+  if (hd.error || pt.error || !hd.data || !pt.data) return null;
+  return {
+    hopDong: hd.data.map((h) => ({
+      trang_thai: h.trang_thai,
+      doanh_thu_thuan: h.doanh_thu_thuan,
+      ngay_moc: (h.kich_hoat_luc ?? h.created_at).slice(0, 10), // cùng mốc ngày với trang Học phí
+    })),
+    phieuThu: pt.data.map((p) => ({ so_tien: p.so_tien, ngay_thu: p.ngay_thu, la_phieu_dao: p.la_phieu_dao })),
+  };
+}
+
+// Học sinh đang học theo chi nhánh — mỗi học sinh tính 1 lần trong mỗi chi nhánh.
+// Lớp chưa gán chi nhánh gom vào nhóm riêng (làm mờ) để lộ ra phần dữ liệu còn thiếu.
+async function hocSinhTheoChiNhanh(supabase: Awaited<ReturnType<typeof createClient>>): Promise<MucCot[] | null> {
+  const [gd, lop, cn] = await Promise.all([
+    supabase.from("ghi_danh").select("hoc_sinh_id, lop_id").eq("trang_thai", "dang_hoc").is("deleted_at", null),
+    supabase.from("lop").select("id, chi_nhanh_id").is("deleted_at", null),
+    supabase.from("chi_nhanh").select("id, ten").is("deleted_at", null),
+  ]);
+  if (gd.error || lop.error || cn.error || !gd.data || !lop.data || !cn.data) return null;
+
+  const lopChiNhanh = new Map(lop.data.map((l) => [l.id, l.chi_nhanh_id as string | null]));
+  const theoChiNhanh = new Map<string, Set<string>>();
+  const chuaGan = new Set<string>();
+  for (const g of gd.data) {
+    if (!lopChiNhanh.has(g.lop_id)) continue; // lớp đã xoá mềm
+    const cnId = lopChiNhanh.get(g.lop_id);
+    if (!cnId) {
+      chuaGan.add(g.hoc_sinh_id);
+      continue;
+    }
+    if (!theoChiNhanh.has(cnId)) theoChiNhanh.set(cnId, new Set());
+    theoChiNhanh.get(cnId)!.add(g.hoc_sinh_id);
+  }
+
+  const muc: MucCot[] = cn.data
+    .map((c) => ({ nhan: c.ten, giaTri: theoChiNhanh.get(c.id)?.size ?? 0 }))
+    .sort((a, b) => b.giaTri - a.giaTri || a.nhan.localeCompare(b.nhan, "vi"));
+  if (chuaGan.size > 0) muc.push({ nhan: "Chưa gán chi nhánh", giaTri: chuaGan.size, lamMo: true });
+  return muc;
+}
+
+// Học sinh đang học theo từng lớp mà GV đang dạy (cùng phạm vi `lopIds` với thẻ "Tổng học sinh phụ trách").
+async function hocSinhTheoLopCuaGv(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  lopIds: string[]
+): Promise<MucCot[] | null> {
+  if (lopIds.length === 0) return [];
+  const [gd, lop] = await Promise.all([
+    supabase.from("ghi_danh").select("hoc_sinh_id, lop_id").in("lop_id", lopIds).eq("trang_thai", "dang_hoc").is("deleted_at", null),
+    supabase.from("lop").select("id, ma_lop, ten_lop").in("id", lopIds).is("deleted_at", null),
+  ]);
+  if (gd.error || lop.error || !gd.data || !lop.data) return null;
+
+  const theoLop = new Map<string, Set<string>>();
+  for (const g of gd.data) {
+    if (!theoLop.has(g.lop_id)) theoLop.set(g.lop_id, new Set());
+    theoLop.get(g.lop_id)!.add(g.hoc_sinh_id);
+  }
+  return lop.data
+    .map((l) => ({ nhan: l.ten_lop?.trim() || l.ma_lop, giaTri: theoLop.get(l.id)?.size ?? 0 }))
+    .sort((a, b) => b.giaTri - a.giaTri || a.nhan.localeCompare(b.nhan, "vi"));
 }
 
 async function soPhongDangSuDung(
@@ -159,32 +223,36 @@ async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienT
   const { dauNgay, dauNgayMai, dauThang, dauThangSau, homNay } = bienNgayVN();
 
   const [
-    doanhThuThang,
+    duLieuTaiChinh,
     phieuThuHomNay,
-    congNoChuaThu,
     hopDongHoatDong,
     hopDongChoDuyet,
-    kyDongQuaHan,
+    hopDongQuaHan,
     buoiHocHomNay,
     soPhongDangDung,
     chiNhanhHoatDong,
     tongCauHoi,
     cauHoiChoDuyet,
     cauHoiDaDuyetThang,
+    hocSinhChiNhanh,
   ] = await Promise.all([
-    tongSoTienPhieuThu(supabase, quyen.taiChinh, dauThang, dauThangSau),
+    taiDuLieuTaiChinh(supabase, quyen.taiChinh),
     quyen.taiChinh
       ? demSoLuong(supabase.from("phieu_thu").select("id", { count: "exact", head: true }).gte("ngay_thu", dauNgay).lt("ngay_thu", dauNgayMai))
       : Promise.resolve(null),
-    tongConNoKyDong(supabase, quyen.taiChinh),
     quyen.hopDong
-      ? demSoLuong(supabase.from("hop_dong_hoc_phi").select("id", { count: "exact", head: true }).eq("trang_thai", "dang_hoat_dong"))
+      ? demSoLuong(
+          supabase.from("hop_dong_hoc_phi").select("id", { count: "exact", head: true }).eq("trang_thai", "dang_hoat_dong").is("deleted_at", null)
+        )
       : Promise.resolve(null),
     quyen.hopDong
-      ? demSoLuong(supabase.from("hop_dong_hoc_phi").select("id", { count: "exact", head: true }).eq("trang_thai", "cho_duyet"))
+      ? demSoLuong(
+          supabase.from("hop_dong_hoc_phi").select("id", { count: "exact", head: true }).eq("trang_thai", "cho_duyet").is("deleted_at", null)
+        )
       : Promise.resolve(null),
+    // Cùng view với bảng "Đóng thiếu / chậm thu" ở trang Học phí → cùng con số (đếm hợp đồng, không phải kỳ).
     quyen.taiChinh
-      ? demSoLuong(supabase.from("ky_dong_hoc_phi").select("id", { count: "exact", head: true }).eq("trang_thai", "qua_han"))
+      ? demSoLuong(supabase.from("v_hop_dong_qua_han").select("hop_dong_id", { count: "exact", head: true }))
       : Promise.resolve(null),
     demSoLuong(supabase.from("buoi_hoc").select("id", { count: "exact", head: true }).eq("ngay", homNay).neq("trang_thai", "huy")),
     soPhongDangSuDung(supabase, homNay),
@@ -205,7 +273,28 @@ async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienT
             .lt("ngay_duyet", dauThangSau)
         )
       : Promise.resolve(null),
+    hocSinhTheoChiNhanh(supabase),
   ]);
+
+  // Số tài chính: cùng công thức với trang Học phí (src/lib/tai-chinh.ts).
+  //  - Thực thu tháng này: phiếu thu từ mùng 1 đến hôm nay, phiếu đảo trừ đi.
+  //  - Còn phải thu: toàn bộ thời gian (số dư công nợ hiện tại, không cắt theo kỳ lọc).
+  const locThang = { tuNgay: `${homNay.slice(0, 8)}01`, denNgay: homNay, chuongTrinhChon: [] as string[] };
+  const thucThuThang = duLieuTaiChinh ? tinhThucThu(duLieuTaiChinh.phieuThu, locThang) : null;
+  const conPhaiThu = duLieuTaiChinh
+    ? tinhConPhaiThu(
+        tinhDoanhThuThuan(duLieuTaiChinh.hopDong, LOC_TOAN_THOI_GIAN),
+        tinhThucThu(duLieuTaiChinh.phieuThu, LOC_TOAN_THOI_GIAN)
+      )
+    : null;
+
+  // Biểu đồ thực thu 6 tháng gần nhất (tháng hiện tại tính đến hôm nay).
+  const thucThuMoiThang = duLieuTaiChinh ? thucThuTheoThang(duLieuTaiChinh.phieuThu) : null;
+  const diemThucThu = nThangGanNhat(homNay, 6).map((t) => ({
+    nhan: `T${Number(t.slice(5, 7))}`,
+    chiTiet: `Tháng ${Number(t.slice(5, 7))}/${t.slice(0, 4)}`,
+    giaTri: thucThuMoiThang?.get(t) ?? 0,
+  }));
 
   const coNhomTaiChinhHoacHocPhi = quyen.taiChinh || quyen.hopDong;
 
@@ -230,8 +319,8 @@ async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienT
                   <span className={styles.groupHint}>Chỉ kế toán / thu ngân / admin_ts / master_admin</span>
                 </div>
                 <div className={styles.statGrid}>
-                  <StatCard label="Doanh thu tháng này" value={formatTien(doanhThuThang)} />
-                  <StatCard label="Công nợ chưa thu" value={formatTien(congNoChuaThu)} />
+                  <StatCard label="Thực thu tháng này" value={formatTien(thucThuThang)} />
+                  <StatCard label="Còn phải thu" value={formatTien(conPhaiThu)} />
                   <StatCard label="Phiếu thu hôm nay" value={formatSo(phieuThuHomNay)} />
                 </div>
               </div>
@@ -247,7 +336,7 @@ async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienT
                   <StatCard label="Hợp đồng đang hoạt động" value={formatSo(hopDongHoatDong)} />
                   <StatCard label="Chờ duyệt" value={formatSo(hopDongChoDuyet)} tag={hopDongChoDuyet && hopDongChoDuyet > 0 ? { text: "cần xử lý", kind: "warn" } : undefined} />
                   {quyen.taiChinh && (
-                    <StatCard label="Kỳ đóng quá hạn" value={formatSo(kyDongQuaHan)} tag={kyDongQuaHan && kyDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
+                    <StatCard label="Hợp đồng đóng thiếu / chậm" value={formatSo(hopDongQuaHan)} tag={hopDongQuaHan && hopDongQuaHan > 0 ? { text: "trễ hạn", kind: "danger" } : undefined} />
                   )}
                 </div>
               </div>
@@ -282,12 +371,37 @@ async function AdminDashboard({ vaiTro, tenHienThi }: { vaiTro: string; tenHienT
         )}
       </div>
 
-      <ChartsPlaceholder
-        items={[
-          { title: "Doanh thu 6 tháng gần nhất", kind: "Biểu đồ đường" },
-          { title: "Học sinh theo chi nhánh", kind: "Biểu đồ cột" },
-        ]}
-      />
+      <ChartsRow>
+        {/* Chỉ vai trò đọc được phieu_thu mới thấy biểu đồ thực thu — vai trò khác ẩn hẳn, không hiện dạng khoá. */}
+        {quyen.taiChinh && (
+          <ChartCard
+            title="Thực thu 6 tháng gần nhất"
+            kind="Biểu đồ đường"
+            ghiChu="Tính theo ngày thu tiền, đã trừ phiếu đảo. Tháng hiện tại tính đến hôm nay."
+          >
+            <BieuDoDuong
+              diem={diemThucThu}
+              tenChuoi="Thực thu"
+              trongText={
+                duLieuTaiChinh
+                  ? "Chưa có phiếu thu nào trong 6 tháng gần nhất."
+                  : "Không tải được dữ liệu phiếu thu."
+              }
+            />
+          </ChartCard>
+        )}
+        <ChartCard
+          title="Học sinh theo chi nhánh"
+          kind="Biểu đồ cột"
+          ghiChu="Học sinh đang học (ghi danh trạng thái đang học), mỗi học sinh tính một lần. “Chưa gán chi nhánh” là các lớp chưa có chi nhánh."
+        >
+          <BieuDoCot
+            muc={hocSinhChiNhanh ?? []}
+            donVi="học sinh"
+            trongText={hocSinhChiNhanh ? "Chưa có học sinh đang học." : "Không tải được dữ liệu học sinh."}
+          />
+        </ChartCard>
+      </ChartsRow>
     </div>
   );
 }
@@ -308,7 +422,7 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
     .neq("trang_thai", "huy");
   const lopIds = Array.from(new Set((buoiHocRows ?? []).map((r: { lop_id: string }) => r.lop_id)));
 
-  const [buoiHocTuanNay, hocSinhPhuTrach, cauHoiDaTao, cauHoiChoDuyet, cauHoiDaDuyet] = await Promise.all([
+  const [buoiHocTuanNay, hocSinhPhuTrach, cauHoiDaTao, cauHoiChoDuyet, cauHoiDaDuyet, hocSinhTheoLop] = await Promise.all([
     demSoLuong(
       supabase
         .from("buoi_hoc")
@@ -330,7 +444,12 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
     demSoLuong(supabase.from("cau_hoi").select("id", { count: "exact", head: true }).eq("nguoi_tao", userId).is("deleted_at", null)),
     demSoLuong(supabase.from("cau_hoi").select("id", { count: "exact", head: true }).eq("nguoi_tao", userId).eq("trang_thai", "cho_duyet")),
     demSoLuong(supabase.from("cau_hoi").select("id", { count: "exact", head: true }).eq("nguoi_tao", userId).eq("trang_thai", "da_duyet")),
+    hocSinhTheoLopCuaGv(supabase, lopIds),
   ]);
+
+  const SO_LOP_TOI_DA = 12; // biểu đồ cột dài quá khó đọc — GV dạy nhiều lớp hơn thì ghi chú phần bị ẩn
+  const lopHienThi = (hocSinhTheoLop ?? []).slice(0, SO_LOP_TOI_DA);
+  const soLopBiAn = Math.max((hocSinhTheoLop ?? []).length - SO_LOP_TOI_DA, 0);
 
   return (
     <div className={styles.content}>
@@ -368,7 +487,19 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
         </div>
       </div>
 
-      <ChartsPlaceholder items={[{ title: "Học sinh theo lớp tôi đang dạy", kind: "Biểu đồ cột" }]} />
+      <ChartsRow>
+        <ChartCard
+          title="Học sinh theo lớp tôi đang dạy"
+          kind="Biểu đồ cột"
+          ghiChu={soLopBiAn > 0 ? `Hiển thị ${SO_LOP_TOI_DA} lớp đông nhất, còn ${soLopBiAn} lớp nữa chưa hiện.` : undefined}
+        >
+          <BieuDoCot
+            muc={lopHienThi}
+            donVi="học sinh"
+            trongText={hocSinhTheoLop ? "Chưa có học sinh đang học trong các lớp bạn dạy." : "Không tải được dữ liệu lớp học."}
+          />
+        </ChartCard>
+      </ChartsRow>
     </div>
   );
 }
@@ -430,26 +561,36 @@ function StatCard({
   );
 }
 
-function ChartsPlaceholder({ items }: { items: { title: string; kind: string }[] }) {
+// Hàng biểu đồ: 1 biểu đồ → 1 cột, từ 2 biểu đồ trở lên → lưới 2 cột (theo .chartsRow).
+// Vai trò không được thấy một biểu đồ thì biểu đồ đó không được truyền vào (ẩn hẳn).
+function ChartsRow({ children }: { children: React.ReactNode }) {
+  const soCon = React.Children.toArray(children).length;
   return (
-    <div className={styles.chartsRow} style={items.length === 1 ? { gridTemplateColumns: "1fr" } : undefined}>
-      {items.map((it) => (
-        <div className={styles.chartCard} key={it.title}>
-          <div className={styles.chartCardHead}>
-            <span className={styles.chartCardTitle}>{it.title}</span>
-            <span className={styles.chartCardKind}>{it.kind}</span>
-          </div>
-          <div className={styles.chartPlaceholder}>
-            <svg width="28" height="28" viewBox="0 0 24 24" style={{ stroke: "var(--text-lo)", fill: "none", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" }}>
-              <path d="M4 20V10" />
-              <path d="M11 20V4" />
-              <path d="M18 20v-7" />
-              <path d="M2 20h20" />
-            </svg>
-            <span className={styles.chartPlaceholderText}>Biểu đồ sẽ hiển thị tại đây</span>
-          </div>
-        </div>
-      ))}
+    <div className={styles.chartsRow} style={soCon === 1 ? { gridTemplateColumns: "1fr" } : undefined}>
+      {children}
+    </div>
+  );
+}
+
+function ChartCard({
+  title,
+  kind,
+  ghiChu,
+  children,
+}: {
+  title: string;
+  kind: string;
+  ghiChu?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={styles.chartCard}>
+      <div className={styles.chartCardHead}>
+        <span className={styles.chartCardTitle}>{title}</span>
+        <span className={styles.chartCardKind}>{kind}</span>
+      </div>
+      {children}
+      {ghiChu && <p className={bieuDoStyles.ghiChu}>{ghiChu}</p>}
     </div>
   );
 }

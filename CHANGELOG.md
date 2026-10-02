@@ -20,6 +20,32 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Dashboard Trang chủ khớp số liệu trang Học phí + biểu đồ thật
+
+**Tóm tắt:** Trang chủ và trang Học phí từng cho hai con số công nợ khác nhau (385.000.000đ so với
+1.727.750.000đ) vì mỗi nơi tự tính một kiểu. Nay công thức nằm ở `src/lib/tai-chinh.ts`, tách nguyên
+văn từ `HocPhiDashboardClient` (trang Học phí là nguồn gốc, hành vi không đổi) và cả hai trang cùng gọi.
+Hai khung biểu đồ chờ ở Trang chủ được thay bằng biểu đồ thật. Không có migration DB — chỉ frontend.
+
+- "Công nợ chưa thu" → **"Còn phải thu"** = max(doanh thu thuần − thực thu, 0), toàn thời gian. Trước đây
+  cộng `so_tien_du_kien` của các kỳ chưa đóng, bỏ sót 51/73 hợp đồng chưa có lịch kỳ đóng.
+- "Doanh thu tháng này" → **"Thực thu tháng này"**: đổi tên cho đúng bản chất (đang cộng phiếu thu) và
+  nay trừ phiếu đảo (`la_phieu_dao`) như trang Học phí; trước đây phiếu đảo bị cộng nhầm.
+- "Kỳ đóng quá hạn" (đếm kỳ trạng thái `qua_han`) → **"Hợp đồng đóng thiếu / chậm"** đếm từ view
+  `v_hop_dong_qua_han`, cùng nguồn với bảng "Đóng thiếu / chậm thu" ở trang Học phí.
+- Thẻ đếm hợp đồng thêm điều kiện `deleted_at is null` cho khớp trang Học phí.
+- Biểu đồ **Thực thu 6 tháng gần nhất** (đường; chỉ `master_admin`/`ke_toan`/`thu_ngan`/`admin_ts`, vai
+  trò khác ẩn hẳn) và **Học sinh theo chi nhánh** (cột); dashboard GV có **Học sinh theo lớp tôi đang
+  dạy**. SVG/HTML viết tay, không thêm thư viện; có crosshair + tooltip, điều hướng phím mũi tên, bảng
+  ẩn cho trình đọc màn hình, trạng thái rỗng, xếp 1 cột trên màn hình hẹp.
+- Biểu đồ chi nhánh lộ ra dữ liệu thiếu: 6/14 lớp chưa có `chi_nhanh_id` (86/153 học sinh đang học) —
+  hiện thành nhóm "Chưa gán chi nhánh". Cần gán chi nhánh cho các lớp này (việc dữ liệu, không thuộc PR).
+- Giới hạn đã biết (có sẵn từ trước, chưa xử lý): PostgREST cắt 1000 dòng/request — cả trang Học phí lẫn
+  dashboard đều đọc thẳng `hop_dong_hoc_phi` + `phieu_thu`; hiện 154 hợp đồng, 177 phiếu thu, chưa vướng.
+- **Production**: 🔲 chưa merge. **Commit**: (xem git log nhánh `feat/dashboard-khop-hoc-phi-bieu-do`)
+
+---
+
 ## 2026-10-02 — Phân trang bảng Hợp đồng học phí (PR4)
 
 **Tóm tắt:** Trang `hoc-phi/hop-dong` phân trang phía server (`?page&size`). Bỏ kiểu tải TOÀN BỘ
