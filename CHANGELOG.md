@@ -37,7 +37,11 @@ lọc lớp/chi nhánh/trạng thái ghi danh và phân trang chạy ở server 
 - Đã kiểm: truy vấn của view chạy chỉ-đọc trên production → 160 học sinh, mỗi người đúng 1
   ghi danh (153 `dang_hoc`, 7 `da_nghi`), không nhân dòng. CHƯA chạy `get_advisors` sau khi
   view tồn tại (view chưa được tạo) — chạy sau khi pipeline áp migration.
-- **Production**: 🔲 chưa merge/áp dụng
+- **Production**: migration `0045` ✅ đã áp dụng 02/10/2026 qua pipeline (PR #33 + sửa tag `adr004-type: expand`
+  ở `fix/migration-0045-tag-expand`); view có `security_invoker=true`, `anon` không có quyền, `authenticated` đọc
+  được 160 dòng. `get_advisors` (security + performance) sau khi áp: không có cảnh báo nào về view này. Ghi chú:
+  `authenticated` còn giữ quyền ghi mặc định của Supabase trên view — vô hại vì view có join/lateral nên không
+  ghi được; có thể thu hẹp bằng migration Expand sau. Code danh sách học sinh: 🔲 chưa merge.
 - **Commit**: (xem git log hai nhánh trên)
 
 ---
