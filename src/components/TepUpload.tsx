@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type RefObject } from "react";
+import { useId, useState, type RefObject } from "react";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 function dinhDangDungLuong(byte: number): string {
@@ -29,7 +29,7 @@ export default function TepUpload({
   const [tep, setTep] = useState<File | null>(null);
   const [keoVao, setKeoVao] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  const idRef = useRef(`tep-${Math.random().toString(36).slice(2)}`);
+  const inputId = useId();
 
   const duoiHopLe = accept.split(",").map((d) => d.trim().toLowerCase());
 
@@ -71,7 +71,7 @@ export default function TepUpload({
   return (
     <div className={styles.tepUploadWrap}>
       <input
-        id={idRef.current}
+        id={inputId}
         ref={inputRef}
         type="file"
         accept={accept}
@@ -84,14 +84,14 @@ export default function TepUpload({
           <span aria-hidden="true">📄</span>
           <span className={styles.tepUploadTen}>{tep.name}</span>
           <span className={styles.tepUploadDungLuong}>{dinhDangDungLuong(tep.size)}</span>
-          <label htmlFor={idRef.current} className={styles.tepUploadDoi}>Đổi file</label>
+          <label htmlFor={inputId} className={styles.tepUploadDoi}>Đổi file</label>
           <button type="button" className={styles.tepUploadBo} onClick={handleBo} disabled={disabled} aria-label="Bỏ file đã chọn">
             ✕
           </button>
         </div>
       ) : (
         <label
-          htmlFor={idRef.current}
+          htmlFor={inputId}
           className={`${styles.tepUploadKhung} ${keoVao ? styles.tepUploadKeoVao : ""} ${disabled ? styles.tepUploadTat : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
