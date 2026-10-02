@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import HopDongForm, { type GhiDanhOption, type GoiOption } from "@/components/HopDongForm";
 import HopDongTable, { type HopDongRow } from "@/components/HopDongTable";
 import PhanTrang from "@/components/PhanTrang";
+import OTimKiem from "@/components/OTimKiem";
+import { layTuKhoa, timHopDongTheoTuKhoa, UUID_RONG } from "@/lib/tim-kiem-hoc-phi";
 import { motBanGhi } from "@/lib/embed";
 import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import styles from "../hoc-phi.module.css";
@@ -18,6 +20,7 @@ export default async function HopDongPage({
 }) {
   const raw = await searchParams;
   const pp = parsePhanTrang(raw);
+  const q = layTuKhoa(raw);
 
   const supabase = await createClient();
   const {
@@ -25,6 +28,25 @@ export default async function HopDongPage({
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  // Tìm kiếm: tên/mã học sinh, lớp, tên gói → tra ra id hợp đồng khớp rồi lọc theo id.
+  let quaRong = false;
+  let idKhop: string[] | null = null;
+  if (q) {
+    const kq = await timHopDongTheoTuKhoa(supabase, q, { gomLopVaGoi: true, boDaXoa: true });
+    quaRong = kq.quaRong;
+    idKhop = kq.ids;
+  }
+
+  let truyVanHopDong = supabase
+    .from("hop_dong_hoc_phi")
+    .select(
+      "id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, so_tien_giam, doanh_thu_thuan, trang_thai, goi_hoc_phi(ten), ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh), lop(chuong_trinh_ma))",
+      { count: "exact" }
+    )
+    .is("deleted_at", null);
+  if (idKhop) truyVanHopDong = truyVanHopDong.in("id", idKhop.length > 0 ? idKhop : [UUID_RONG]);
+  truyVanHopDong = truyVanHopDong.order("created_at", { ascending: false }).order("id").range(pp.from, pp.to);
 
   const [
     { data: profile },
@@ -37,16 +59,7 @@ export default async function HopDongPage({
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
     // Chỉ lấy đúng 1 trang hợp đồng; tên học sinh / lớp / gói lấy bằng embed
     // (thay cho việc tải toàn bộ ghi_danh/hoc_sinh/lop rồi join bằng Map).
-    supabase
-      .from("hop_dong_hoc_phi")
-      .select(
-        "id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, so_tien_giam, doanh_thu_thuan, trang_thai, goi_hoc_phi(ten), ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh), lop(chuong_trinh_ma))",
-        { count: "exact" }
-      )
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .order("id")
-      .range(pp.from, pp.to),
+    truyVanHopDong,
     supabase.from("goi_hoc_phi").select("id, ten, chuong_trinh_ma, gia_niem_yet, dang_ap_dung, hieu_luc_den").is("deleted_at", null),
     // Dropdown "Tạo hợp đồng": ghi danh đang học CHƯA có hợp đồng. `hop_dong_hoc_phi(id)`
     // cho biết đã có hợp đồng chưa (ghi_danh_id là UNIQUE nên tối đa 1).
@@ -150,13 +163,19 @@ export default async function HopDongPage({
 
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Danh sách hợp đồng ({total})</h2>
+            {(total > 0 || q) && (
+              <OTimKiem q={q} placeholder="Tìm theo tên/mã học sinh, lớp, gói học phí..." ketQua={total} />
+            )}
+            {quaRong && (
+              <p className={styles.noticeBox}>Từ khoá khớp quá nhiều kết quả nên danh sách có thể thiếu — hãy nhập cụ thể hơn.</p>
+            )}
             {hopDongRows.length > 0 ? (
               <>
                 <HopDongTable list={hopDongRows} canEdit={canEdit} />
                 <PhanTrang total={total} page={pp.page} size={pp.size} />
               </>
             ) : (
-              <p className={styles.empty}>Chưa có hợp đồng nào.</p>
+              <p className={styles.empty}>{q ? `Không có hợp đồng nào khớp "${q}".` : "Chưa có hợp đồng nào."}</p>
             )}
           </section>
         </>

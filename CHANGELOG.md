@@ -20,6 +20,19 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Thêm ô tìm kiếm cho bảng Hợp đồng và bảng Phiếu thu (module Học phí)
+
+**Tóm tắt:** Hai bảng có ô tìm kiếm phía server (`?q=`, gõ xong ~300ms mới truy vấn, đổi từ khoá về trang 1, giữ `?size`).
+Hợp đồng: tên/mã học sinh, tên/mã lớp, tên gói. Phiếu thu: mã phiếu, tên/mã học sinh, người thu, ghi chú, số tiền (gõ toàn số).
+Chỉ đổi code frontend/server, không đổi CSDL. Lưu ý: tìm theo ILIKE nên chưa bỏ dấu tiếng Việt (gõ "Nguyễn" mới ra "Nguyễn").
+
+- **Migration:** không có.
+- **Staging:** ✅ không cần (chỉ code).
+- **Production:** 🔲 chờ merge `main` → Vercel deploy.
+- **Commit:** (xem PR `feat/hoc-phi-tim-kiem`).
+
+---
+
 ## 2026-10-02 — Sửa lỗi không ghi được phiếu thu mới (`tao_ma_phieu_thu`)
 
 **Tóm tắt:** Sau khi chèn tay phiếu đảo mã `PT-2026-000187-DAO`, mọi lần ghi phiếu thu mới đều lỗi
