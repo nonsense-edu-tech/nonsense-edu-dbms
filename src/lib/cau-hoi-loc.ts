@@ -71,6 +71,8 @@ export function dangLocCauHoi(bo: BoLocCauHoi): boolean {
 }
 
 export type CtxLocCauHoi = {
+  /** Chương trình gom những môn nào (bảng nối) — dùng cho bộ lọc chương trình (ADR-006). */
+  chuongTrinhMonHocList: { chuong_trinh_ma: string; cap_hoc_ma: number; mon_hoc_ma: number }[];
   monHocList: { id: string; ma: number; cap_hoc_ma: number }[];
   hocPhanList: { id: string; ma: number; mon_hoc_id: string }[];
   baiHocList: { id: string; ma: number; hoc_phan_id: string }[];
@@ -97,9 +99,17 @@ export function apDungBoLocCauHoi<Q>(query: Q, bo: BoLocCauHoi, ctx: CtxLocCauHo
     qb = qb.or(`ma_cau_hoi.ilike.%${bo.q}%,noi_dung.ilike.%${bo.q}%`);
   }
   if (bo.cap) qb = qb.eq("cap_hoc", Number(bo.cap));
-  if (bo.ct) qb = qb.eq("chuong_trinh", Number(bo.ct));
 
   const khongKhop = () => (qb = qb.eq("id", UUID_RONG));
+
+  // Chương trình KHÔNG phải thuộc tính của câu hỏi (mã chương trình trong mã câu hỏi luôn 000):
+  // lọc theo chương trình = lọc theo các môn được gán vào chương trình đó.
+  if (bo.ct) {
+    const cacMon = ctx.chuongTrinhMonHocList.filter((x) => x.chuong_trinh_ma === bo.ct);
+    if (cacMon.length === 0) khongKhop();
+    else qb = qb.or(cacMon.map((x) => `and(cap_hoc.eq.${x.cap_hoc_ma},mon_hoc.eq.${x.mon_hoc_ma})`).join(","));
+  }
+
   const locTheoMon = (monId: string): boolean => {
     const mon = ctx.monHocList.find((m) => m.id === monId);
     if (!mon) return false;

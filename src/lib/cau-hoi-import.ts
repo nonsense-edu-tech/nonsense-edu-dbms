@@ -45,11 +45,10 @@ export type KhoaCot =
 
 export const COT_TEMPLATE: { khoa: KhoaCot; nhan: string; batBuoc: boolean; rong: number }[] = [
   { khoa: "cap_hoc", nhan: "Cấp học (mã)", batBuoc: true, rong: 12 },
-  { khoa: "chuong_trinh", nhan: "Chương trình (mã)", batBuoc: true, rong: 16 },
   { khoa: "mon_hoc", nhan: "Môn học (mã)", batBuoc: true, rong: 12 },
-  { khoa: "hoc_phan", nhan: "Học phần (mã)", batBuoc: true, rong: 13 },
-  { khoa: "bai_hoc", nhan: "Bài học (mã)", batBuoc: true, rong: 12 },
-  { khoa: "chu_de", nhan: "Chủ đề (mã)", batBuoc: true, rong: 12 },
+  { khoa: "hoc_phan", nhan: "Học phần (mã)", batBuoc: false, rong: 13 },
+  { khoa: "bai_hoc", nhan: "Bài học (mã)", batBuoc: false, rong: 12 },
+  { khoa: "chu_de", nhan: "Chủ đề (mã)", batBuoc: false, rong: 12 },
   { khoa: "dang_cau", nhan: "Dạng câu (mã)", batBuoc: true, rong: 13 },
   { khoa: "noi_dung", nhan: "Nội dung", batBuoc: true, rong: 60 },
   ...CHU_LUA_CHON.map((c) => ({
@@ -200,6 +199,12 @@ function docMaSo(raw: string, ten: string, min: number, max: number, loi: string
   return n;
 }
 
+/** Ô mã tuỳ chọn: để trống = 0 ("Chung", ADR-006); có giá trị thì phải là mã số hợp lệ (1..max). */
+function docMaSoTuyChon(raw: string, ten: string, max: number, loi: string[]): number | null {
+  if (chuoi(raw) === "") return 0;
+  return docMaSo(raw, ten, 1, max, loi);
+}
+
 function demChoTrong(noiDung: string): number {
   return (noiDung.match(/_{3,}/g) ?? []).length;
 }
@@ -321,47 +326,42 @@ export function kiemTraDong(
   const viTri: HienThiViTri = { cap_hoc: "", chuong_trinh: "", mon_hoc: "", hoc_phan: "", bai_hoc: "", chu_de: "", dang_cau: "" };
 
   const cap = docMaSo(o.cap_hoc ?? "", "Cấp học", 1, 9, loi);
-  const ct = docMaSo(o.chuong_trinh ?? "", "Chương trình", 0, 999, loi);
+  // Chương trình KHÔNG thuộc câu hỏi (ADR-006): luôn 000. Cột "Chương trình" trong file cũ (nếu có) bị bỏ qua.
+  const ct = 0;
   const mon = docMaSo(o.mon_hoc ?? "", "Môn học", 1, 99, loi);
-  const hp = docMaSo(o.hoc_phan ?? "", "Học phần", 1, 99, loi);
-  const bh = docMaSo(o.bai_hoc ?? "", "Bài học", 1, 99, loi);
-  const cd = docMaSo(o.chu_de ?? "", "Chủ đề", 1, 99, loi);
+  const hp = docMaSoTuyChon(o.hoc_phan ?? "", "Học phần", 99, loi);
+  const bh = docMaSoTuyChon(o.bai_hoc ?? "", "Bài học", 99, loi);
+  const cd = docMaSoTuyChon(o.chu_de ?? "", "Chủ đề", 99, loi);
   const dang = docMaSo(o.dang_cau ?? "", "Dạng câu", 1, 9, loi);
+  if (bh != null && bh !== 0 && hp === 0) loi.push("Có Bài học thì phải điền Học phần chứa nó.");
 
-  // --- Vị trí giáo án: đối chiếu từng cấp với danh mục (chỉ khi các mã đều đọc được)
+  // --- Vị trí: đối chiếu từng cấp với danh mục (chỉ khi các mã đều đọc được)
   const capHoc = cap != null ? dm.capHoc.find((c) => c.ma === cap) : undefined;
   if (cap != null) {
     if (capHoc) viTri.cap_hoc = capHoc.ten;
     else loi.push(`Không có cấp học mã ${cap}.`);
   }
-  const chuongTrinh = ct != null ? dm.chuongTrinh.find((c) => Number(c.ma) === ct) : undefined;
-  if (ct != null) {
-    if (chuongTrinh) viTri.chuong_trinh = chuongTrinh.ten;
-    else loi.push(`Không có chương trình mã ${String(ct).padStart(3, "0")}.`);
-  }
   let monHoc: DanhMucNhap["monHoc"][number] | undefined;
   if (mon != null && cap != null && capHoc) {
     monHoc = dm.monHoc.find((m) => m.cap_hoc_ma === cap && m.ma === mon);
     if (!monHoc) loi.push(`Không có môn học mã ${mon} ở cấp ${capHoc.ten}.`);
-    else {
-      viTri.mon_hoc = monHoc.ten;
-      if (chuongTrinh && !dm.chuongTrinhMonHoc.some((x) => Number(x.chuong_trinh_ma) === ct && x.cap_hoc_ma === cap && x.mon_hoc_ma === mon)) {
-        loi.push(`Môn "${monHoc.ten}" chưa được gán vào chương trình "${chuongTrinh.ten}" (tab Chương trình trong Học liệu).`);
-      }
-    }
+    else viTri.mon_hoc = monHoc.ten;
   }
   let hocPhan: DanhMucNhap["hocPhan"][number] | undefined;
-  if (monHoc && hp != null) {
+  if (hp === 0) viTri.hoc_phan = "Chung";
+  else if (monHoc && hp != null) {
     hocPhan = dm.hocPhan.find((h) => h.mon_hoc_id === monHoc!.id && h.ma === hp);
     if (!hocPhan) loi.push(`Không có học phần mã ${hp} trong môn "${monHoc.ten}".`);
     else viTri.hoc_phan = hocPhan.ten;
   }
-  if (hocPhan && bh != null) {
+  if (bh === 0) viTri.bai_hoc = "Chung";
+  else if (hocPhan && bh != null) {
     const baiHoc = dm.baiHoc.find((b) => b.hoc_phan_id === hocPhan!.id && b.ma === bh);
     if (!baiHoc) loi.push(`Không có bài học mã ${bh} trong học phần "${hocPhan.ten}".`);
     else viTri.bai_hoc = baiHoc.ten;
   }
-  if (monHoc && cd != null) {
+  if (cd === 0) viTri.chu_de = "Chung";
+  else if (monHoc && cd != null) {
     const chuDe = dm.chuDe.find((c) => c.mon_hoc_id === monHoc!.id && c.ma === cd);
     if (!chuDe) loi.push(`Không có chủ đề mã ${cd} trong môn "${monHoc.ten}".`);
     else viTri.chu_de = chuDe.ten;
@@ -482,11 +482,12 @@ function kiemTraCauTrucHinh(c: CauHoiNhap): string | null {
 export function kiemTraCauTruc(c: CauHoiNhap): string | null {
   const so = (v: unknown, min: number, max: number) => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max;
   if (!so(c.cap_hoc, 1, 9)) return "Cấp học không hợp lệ.";
-  if (!so(c.chuong_trinh, 0, 999)) return "Chương trình không hợp lệ.";
+  if (c.chuong_trinh !== 0) return "Chương trình không hợp lệ (câu hỏi không gắn chương trình — ADR-006).";
   if (!so(c.mon_hoc, 1, 99)) return "Môn học không hợp lệ.";
-  if (!so(c.hoc_phan, 1, 99)) return "Học phần không hợp lệ.";
-  if (!so(c.bai_hoc, 1, 99)) return "Bài học không hợp lệ.";
-  if (!so(c.chu_de, 1, 99)) return "Chủ đề không hợp lệ.";
+  if (!so(c.hoc_phan, 0, 99)) return "Học phần không hợp lệ.";
+  if (!so(c.bai_hoc, 0, 99)) return "Bài học không hợp lệ.";
+  if (c.bai_hoc !== 0 && c.hoc_phan === 0) return "Có bài học thì phải có học phần.";
+  if (!so(c.chu_de, 0, 99)) return "Chủ đề không hợp lệ.";
   if (!so(c.dang_cau, 1, 9)) return "Dạng câu không hợp lệ.";
   if (DANG_CAU_CHUA_HO_TRO.includes(c.dang_cau)) return "Dạng câu này chưa hỗ trợ nhập.";
   if (typeof c.noi_dung !== "string" || c.noi_dung.trim() === "") return "Nội dung câu hỏi không được để trống.";
@@ -516,5 +517,6 @@ export function khoaTrungNoiDung(noiDung: string): string {
 
 /** Khoá vị trí (7 mã) — dùng gom nhóm khi kiểm tra trùng. */
 export function khoaViTri(c: Pick<CauHoiNhap, "cap_hoc" | "chuong_trinh" | "mon_hoc" | "hoc_phan" | "bai_hoc" | "chu_de" | "dang_cau">): string {
-  return [c.cap_hoc, c.chuong_trinh, c.mon_hoc, c.hoc_phan, c.bai_hoc, c.chu_de, c.dang_cau].join("-");
+  // Không đưa chương trình vào khoá: câu hỏi không thuộc chương trình (ADR-006).
+  return [c.cap_hoc, c.mon_hoc, c.hoc_phan, c.bai_hoc, c.chu_de, c.dang_cau].join("-");
 }

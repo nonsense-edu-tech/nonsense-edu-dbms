@@ -22,7 +22,7 @@ export type KetQuaNhapDong = { chiSo: number; ma_cau_hoi?: string; error?: strin
 export type NhapHangLoatResult = { error: string } | { ketQua: KetQuaNhapDong[] };
 
 const TRANG_DOC = 1000;
-const SO_TRANG_DOC_TOI_DA = 5; // kiểm tra trùng tối đa 5.000 câu/tổ hợp (cấp, chương trình, môn)
+const SO_TRANG_DOC_TOI_DA = 5; // kiểm tra trùng tối đa 5.000 câu/tổ hợp (cấp, môn)
 
 /**
  * Đánh dấu dòng có khả năng trùng: (a) trùng dòng trước đó trong cùng file,
@@ -42,21 +42,20 @@ async function danhDauTrung(supabase: Awaited<ReturnType<typeof createClient>>, 
     } else daThay.set(khoa, d.soDong);
   }
 
-  const nhom = new Map<string, { cap: number; ct: number; mon: number }>();
+  const nhom = new Map<string, { cap: number; mon: number }>();
   for (const d of hopLe) {
     const c = d.cauHoi!;
-    nhom.set(`${c.cap_hoc}-${c.chuong_trinh}-${c.mon_hoc}`, { cap: c.cap_hoc, ct: c.chuong_trinh, mon: c.mon_hoc });
+    nhom.set(`${c.cap_hoc}-${c.mon_hoc}`, { cap: c.cap_hoc, mon: c.mon_hoc });
   }
 
   const daCo = new Set<string>();
   await Promise.all(
-    [...nhom.values()].map(async ({ cap, ct, mon }) => {
+    [...nhom.values()].map(async ({ cap, mon }) => {
       for (let t = 0; t < SO_TRANG_DOC_TOI_DA; t++) {
         const { data } = await supabase
           .from("cau_hoi")
           .select("cap_hoc, chuong_trinh, mon_hoc, hoc_phan, bai_hoc, chu_de, dang_cau, noi_dung")
           .eq("cap_hoc", cap)
-          .eq("chuong_trinh", ct)
           .eq("mon_hoc", mon)
           .is("deleted_at", null)
           .order("id")
@@ -150,7 +149,7 @@ export async function nhapCauHoiHangLoat(formData: FormData): Promise<NhapHangLo
     // Chỉ lấy đúng các trường đã kiểm — bỏ mọi trường lạ client có thể gửi kèm.
     const sach: CauHoiNhap = {
       cap_hoc: c.cap_hoc,
-      chuong_trinh: c.chuong_trinh,
+      chuong_trinh: 0, // ADR-006: câu hỏi không gắn chương trình
       mon_hoc: c.mon_hoc,
       hoc_phan: c.hoc_phan,
       bai_hoc: c.bai_hoc,

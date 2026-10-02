@@ -19,8 +19,6 @@ export default async function TaoCauHoiPage() {
   const [
     { data: profile },
     { data: capHocList },
-    { data: chuongTrinhList },
-    { data: chuongTrinhMonHocList },
     { data: monHocList },
     { data: hocPhanList },
     { data: baiHocList },
@@ -29,8 +27,6 @@ export default async function TaoCauHoiPage() {
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
-    supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
-    supabase.from("chuong_trinh_mon_hoc").select("chuong_trinh_ma, cap_hoc_ma, mon_hoc_ma"),
     supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("hoc_phan").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("bai_hoc").select("id, hoc_phan_id, ma, ten").is("deleted_at", null).order("ten"),
@@ -60,8 +56,6 @@ export default async function TaoCauHoiPage() {
               <h2 className={styles.cardTitle}>Tạo câu hỏi mới</h2>
               <CauHoiForm
                 capHocList={capHocList ?? []}
-                chuongTrinhList={chuongTrinhList ?? []}
-                chuongTrinhMonHocList={chuongTrinhMonHocList ?? []}
                 monHocList={monHocList ?? []}
                 hocPhanList={hocPhanList ?? []}
                 baiHocList={baiHocList ?? []}
