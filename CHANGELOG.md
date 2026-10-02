@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Sửa lỗi không ghi được phiếu thu mới (`tao_ma_phieu_thu`)
+
+**Tóm tắt:** Sau khi chèn tay phiếu đảo mã `PT-2026-000187-DAO`, mọi lần ghi phiếu thu mới đều lỗi
+`invalid input syntax for type integer: "000187-DAO"`: hàm `tao_ma_phieu_thu()` ép phần sau tiền tố của MỌI
+mã `PT-<năm>-%` sang số nguyên. Hàm nay chỉ xét mã đúng dạng `PT-<năm>-<chữ số>` nên bỏ qua mã có hậu tố.
+Phiếu thu append-only (không sửa/xoá được mã lỗi) nên phải sửa hàm.
+
+- **Migration:** `0046_fix_tao_ma_phieu_thu_bo_qua_ma_khong_thuan_so.sql` (tag `expand`, CI tự áp sau khi duyệt).
+- Mã kế tiếp sau sửa (kiểm bằng SELECT chỉ đọc trên production): `PT-2026-000190`.
+- Bài học: phiếu đảo nên lấy mã từ `tao_ma_phieu_thu()` (cùng dãy số), không tự đặt hậu tố.
+- **Production**: 🔲 chưa merge. **Commit**: (xem git log nhánh `fix/tao-ma-phieu-thu-bo-qua-ma-dao`)
+
+---
+
 ## 2026-10-02 — Dashboard Trang chủ khớp số liệu trang Học phí + biểu đồ thật
 
 **Tóm tắt:** Trang chủ và trang Học phí từng cho hai con số công nợ khác nhau (385.000.000đ so với
