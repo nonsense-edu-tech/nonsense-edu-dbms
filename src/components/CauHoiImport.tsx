@@ -5,6 +5,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { nhapCauHoiHangLoat, xemTruocNhapCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/import-actions";
 import { CHU_LUA_CHON, SO_CAU_MOI_LO, SO_DONG_TOI_DA, type DongXemTruoc } from "@/lib/cau-hoi-import";
 import { PAGE_SIZES } from "@/lib/phan-trang";
+import TepUpload from "./TepUpload";
 import { useToast } from "./ToastProvider";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
@@ -229,17 +230,29 @@ export default function CauHoiImport() {
           chủ đề, dạng câu) luôn khớp dữ liệu hiện có. File CSV cần lưu dạng UTF-8.
         </p>
 
-        <div className={styles.importBar}>
-          <label className={formStyles.label} htmlFor="zip-anh-import">Ảnh đính kèm (tuỳ chọn, file .zip)</label>
-          <input id="zip-anh-import" ref={zipRef} type="file" accept=".zip" className={styles.fileInput} disabled={isDoc} />
+        <div className={styles.uploadHang}>
+          <TepUpload
+            inputRef={inputRef}
+            accept=".xlsx,.csv"
+            tieuDe="Chọn hoặc kéo thả file câu hỏi vào đây"
+            moTa="Excel (.xlsx) hoặc CSV, tối đa 5MB"
+            disabled={isDoc}
+          />
+          <TepUpload
+            inputRef={zipRef}
+            accept=".zip"
+            tieuDe="Chọn hoặc kéo thả file ảnh (.zip)"
+            moTa="Chỉ cần khi câu hỏi có ảnh — tối đa 20MB"
+            disabled={isDoc}
+            tuyChon
+          />
         </div>
         <p className={formStyles.hint}>
           Nếu câu hỏi có ảnh: ghi tên file ảnh vào cột <strong>Ảnh đề</strong> / <strong>Ảnh lời giải</strong> (nhiều ảnh
           ngăn cách bằng <code>|</code>) / <strong>Ảnh lựa chọn</strong> (dạng <code>A:a.png | C:c.png</code>), rồi nén
-          toàn bộ ảnh vào 1 file zip. Mỗi ảnh JPG/PNG/WebP ≤ 2MB, zip ≤ 20MB, tên ảnh không trùng nhau.
+          toàn bộ ảnh vào 1 file zip. Mỗi ảnh JPG/PNG/WebP ≤ 2MB, tên ảnh không trùng nhau.
         </p>
         <div className={styles.importBar}>
-          <input ref={inputRef} type="file" accept=".xlsx,.csv" className={styles.fileInput} disabled={isDoc} aria-label="File câu hỏi" />
           <button type="button" className={formStyles.btnPrimary} onClick={handleXemTruoc} disabled={isDoc}>
             {isDoc ? "Đang đọc file…" : "Đọc file & xem trước"}
           </button>

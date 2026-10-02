@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Ngân hàng câu hỏi: nhập từ file CSV/Excel + đính kèm hình ảnh
+
+**Tóm tắt:** (1) Nhập câu hỏi hàng loạt từ file (tải template → điền → upload → xem trước → xác nhận; câu mới ở trạng thái Nháp,
+tối đa 500 dòng/file, cảnh báo nghi trùng). (2) Đính kèm ảnh cho câu hỏi (đề bài, lời giải, từng lựa chọn; JPG/PNG/WebP ≤ 2MB) ở form
+tạo/sửa và khi nhập từ file kèm zip ảnh; danh sách hiện ảnh đề. (3) Ô tải file kéo-thả thay nút "Choose File". Ảnh lưu ở Storage bucket private
+`hinh-cau-hoi`, xem qua signed URL. Migration là Expand (chỉ thêm bảng/bucket/policy) nên code cũ trên production không bị ảnh hưởng.
+
+- **Migration:** `0047_cau_hoi_hinh_anh.sql` (tag `expand` → CI tự áp sau khi duyệt Environment `production-db`, ADR-005).
+- **Staging:** ✅ không áp dụng (môi trường staging đã đóng).
+- **Production:** 🔲 chờ merge `main` → Vercel deploy + CI áp `0047` (cập nhật mục này sau khi áp xong).
+- **Commit:** (xem PR `feat/cau-hoi-hinh-anh`, gồm cả `feat/import-cau-hoi`).
+
+---
+
 ## 2026-10-02 — Thêm ô tìm kiếm cho bảng Hợp đồng và bảng Phiếu thu (module Học phí)
 
 **Tóm tắt:** Hai bảng có ô tìm kiếm phía server (`?q=`, gõ xong ~300ms mới truy vấn, đổi từ khoá về trang 1, giữ `?size`).
