@@ -36,6 +36,8 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
         label: "Học thuật",
         items: [
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
+          { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
+          { href: "/dashboard/hoc-lieu/cau-hoi", icon: <IconCauHoi />, label: "Câu hỏi" },
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },
@@ -59,6 +61,8 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
         label: "Học thuật",
         items: [
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
+          { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
+          { href: "/dashboard/hoc-lieu/cau-hoi", icon: <IconCauHoi />, label: "Câu hỏi" },
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },
@@ -101,6 +105,7 @@ export default function Sidebar({ vaiTro }: { vaiTro: string }) {
 
   const nhom = nhomGiaoDien(vaiTro);
   const groups = navGroupsForNhom(nhom, vaiTro);
+  const tatCaItems = groups.flatMap((g) => g.items);
   // Tránh nhấp nháy layout khi chưa đọc xong localStorage: giữ trạng thái mở
   // rộng cho tới khi hydrate xong rồi mới áp trạng thái đã lưu.
   const isCollapsed = hydrated && collapsed;
@@ -121,7 +126,9 @@ export default function Sidebar({ vaiTro }: { vaiTro: string }) {
           {!isCollapsed && <span className={styles.groupLabel}>{g.label}</span>}
           {isCollapsed && <div className={styles.groupDivider} />}
           {g.items.map((it) => {
-            const active = pathname === it.href || pathname.startsWith(it.href + "/");
+            const khop = (href: string) => pathname === href || pathname.startsWith(href + "/");
+            // Mục con (shortcut) thắng mục cha: vào /hoc-lieu/bai-hoc chỉ sáng "Bài học", không sáng cả "Học liệu".
+            const active = khop(it.href) && !tatCaItems.some((o) => o.href.length > it.href.length && khop(o.href));
             return (
               <Link
                 key={it.href}
@@ -195,6 +202,25 @@ function IconHocLieu() {
     <svg viewBox="0 0 24 24">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+    </svg>
+  );
+}
+function IconBaiHoc() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+      <path d="M9 16h3" />
+    </svg>
+  );
+}
+function IconCauHoi() {
+  return (
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7" />
+      <path d="M12 17h.01" />
     </svg>
   );
 }

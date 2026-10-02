@@ -50,7 +50,6 @@ export default async function LoaiPhongPage({ searchParams }: { searchParams: Pr
         <Link href="/dashboard/van-hanh" className={styles.subNavLink}>Tổng quan</Link>
         <Link href="/dashboard/van-hanh/loai-phong" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Loại phòng</Link>
         <Link href="/dashboard/van-hanh/phong-hoc" className={styles.subNavLink}>Phòng học</Link>
-        <Link href="/dashboard/van-hanh/chuong-trinh-mon-hoc" className={styles.subNavLink}>Chương trình - Môn học</Link>
         <Link href="/dashboard/van-hanh/buoi-hoc" className={styles.subNavLink}>Buổi học</Link>
       </nav>
 

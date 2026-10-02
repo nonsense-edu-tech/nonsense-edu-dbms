@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { taoChuongTrinhMonHoc } from "@/app/dashboard/van-hanh/chuong-trinh-mon-hoc/actions";
+import { ganMonVaoChuongTrinh } from "@/app/dashboard/hoc-lieu/chuong-trinh/actions";
+import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
 type ChuongTrinh = { ma: string; ten: string };
@@ -21,6 +22,7 @@ export default function ChuongTrinhMonHocForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [capHocMa, setCapHocMa] = useState("");
+  const showToast = useToast();
 
   const monHocKhaDung = useMemo(
     () => monHocList.filter((m) => String(m.cap_hoc_ma) === capHocMa),
@@ -35,11 +37,13 @@ export default function ChuongTrinhMonHocForm({
     const formData = new FormData(form);
 
     startTransition(async () => {
-      const result = await taoChuongTrinhMonHoc(formData);
+      const result = await ganMonVaoChuongTrinh(formData);
       if ("error" in result) {
         setError(result.error);
+        showToast({ type: "error", message: `Gán môn học thất bại: ${result.error}` });
       } else {
-        setSuccess("Đã thêm môn học vào chương trình.");
+        setSuccess("Đã gán môn học vào chương trình.");
+        showToast({ type: "success", message: "Đã gán môn học vào chương trình thành công." });
         form.reset();
         setCapHocMa("");
       }
@@ -49,7 +53,7 @@ export default function ChuongTrinhMonHocForm({
   if (chuongTrinhList.length === 0 || capHocList.length === 0 || monHocList.length === 0) {
     return (
       <p className={styles.hint}>
-        Cần có dữ liệu <strong>chương trình</strong>, <strong>cấp học</strong>, <strong>môn học</strong> trước.
+        Cần có dữ liệu <strong>chương trình</strong>, <strong>cấp học</strong>, <strong>môn học</strong> trước (tạo ở các tab Chương trình / Cấp học / Môn học).
       </p>
     );
   }
@@ -98,7 +102,7 @@ export default function ChuongTrinhMonHocForm({
       {success && <div className={styles.successBox} role="status">{success}</div>}
 
       <button type="submit" className={styles.btnPrimary} disabled={isPending}>
-        {isPending ? "Đang thêm…" : "Thêm vào chương trình"}
+        {isPending ? "Đang gán…" : "Gán vào chương trình"}
       </button>
     </form>
   );
