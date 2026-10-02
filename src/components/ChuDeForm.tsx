@@ -36,7 +36,7 @@ export default function ChuDeForm({ monHocList }: { monHocList: MonHocOption[] }
   if (monHocList.length === 0) {
     return (
       <p className={styles.hint}>
-        Chưa có môn học nào. Vào mục <strong>Học liệu → Chương trình - Môn học</strong> để tạo môn học trước.
+        Chưa có môn học nào. Vào mục <strong>Học liệu → Môn học</strong> để tạo môn học trước.
       </p>
     );
   }

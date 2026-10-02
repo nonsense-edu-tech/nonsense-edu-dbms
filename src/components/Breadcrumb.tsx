@@ -24,7 +24,6 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard/hoc-lieu/cap-hoc": "Cấp học",
   "/dashboard/hoc-lieu/chuong-trinh": "Chương trình",
   "/dashboard/hoc-lieu/mon-hoc": "Môn học",
-  "/dashboard/hoc-lieu/chuong-trinh-mon-hoc": "Chương trình - Môn học",
   "/dashboard/hoc-lieu/chu-de": "Chủ đề",
   "/dashboard/hoc-lieu/hoc-phan": "Học phần",
   "/dashboard/hoc-lieu/bai-hoc": "Bài học",

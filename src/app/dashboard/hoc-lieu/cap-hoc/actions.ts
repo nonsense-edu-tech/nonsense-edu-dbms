@@ -57,7 +57,7 @@ export async function xoaCapHoc(id: string, ma: number): Promise<CapHocResult> {
   ]);
   if ((mon.count ?? 0) > 0) return { error: "Không thể xoá — cấp học này còn môn học bên trong." };
   if ((lop.count ?? 0) > 0) return { error: "Không thể xoá — cấp học này đã có lớp học." };
-  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — cấp học này còn được gán trong Chương trình - Môn học." };
+  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — cấp học này còn được gán vào chương trình (tab Chương trình)." };
 
   const { error } = await supabase.from("cap_hoc").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };

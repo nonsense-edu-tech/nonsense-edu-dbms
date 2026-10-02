@@ -64,11 +64,57 @@ export async function xoaChuongTrinh(id: string, ma: string): Promise<ChuongTrin
   ]);
   if ((lop.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này đã có lớp học." };
   if ((goi.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn gói học phí." };
-  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn môn học được gán (Học liệu → Chương trình - Môn học)." };
+  if ((mapping.count ?? 0) > 0) return { error: "Không thể xoá — chương trình này còn môn học được gán — hãy gỡ hết môn học khỏi chương trình trước." };
 
   const { error } = await supabase.from("chuong_trinh").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };
 
   revalidatePath(PATH);
   return { ok: true, ten: "" };
+}
+
+// ---- Gán môn học vào chương trình (bảng chuong_trinh_mon_hoc, trục Model C) ----
+
+export type GanMonResult = { error: string } | { ok: true };
+
+function mapGanMonError(msg: string): string {
+  if (msg.includes("permission denied") || msg.includes("row-level security"))
+    return "Chỉ Master Admin được gán/gỡ môn học khỏi chương trình.";
+  if (msg.includes("duplicate key")) return "Môn học này đã được gán vào chương trình này rồi.";
+  return msg;
+}
+
+export async function ganMonVaoChuongTrinh(formData: FormData): Promise<GanMonResult> {
+  const supabase = await createClient();
+
+  const chuongTrinhMa = String(formData.get("chuong_trinh_ma") ?? "").trim();
+  const capHocMa = Number(formData.get("cap_hoc_ma"));
+  const monHocMa = Number(formData.get("mon_hoc_ma"));
+
+  if (!chuongTrinhMa) return { error: "Vui lòng chọn chương trình." };
+  if (!Number.isInteger(capHocMa) || capHocMa < 1 || capHocMa > 9) return { error: "Vui lòng chọn cấp học." };
+  if (!Number.isInteger(monHocMa) || monHocMa < 1 || monHocMa > 99) return { error: "Vui lòng chọn môn học." };
+
+  const { error } = await supabase
+    .from("chuong_trinh_mon_hoc")
+    .insert({ chuong_trinh_ma: chuongTrinhMa, cap_hoc_ma: capHocMa, mon_hoc_ma: monHocMa });
+  if (error) return { error: mapGanMonError(error.message) };
+
+  revalidatePath(PATH);
+  return { ok: true };
+}
+
+export async function goMonKhoiChuongTrinh(chuongTrinhMa: string, capHocMa: number, monHocMa: number): Promise<GanMonResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("chuong_trinh_mon_hoc")
+    .delete()
+    .eq("chuong_trinh_ma", chuongTrinhMa)
+    .eq("cap_hoc_ma", capHocMa)
+    .eq("mon_hoc_ma", monHocMa);
+  if (error) return { error: mapGanMonError(error.message) };
+
+  revalidatePath(PATH);
+  return { ok: true };
 }

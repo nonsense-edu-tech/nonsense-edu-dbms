@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { suaChuongTrinh, xoaChuongTrinh } from "@/app/dashboard/hoc-lieu/chuong-trinh/actions";
+import { goMonKhoiChuongTrinh, suaChuongTrinh, xoaChuongTrinh } from "@/app/dashboard/hoc-lieu/chuong-trinh/actions";
 import { useToast } from "./ToastProvider";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
-export type ChuongTrinhRow = { id: string; ma: string; ten: string };
+export type MonDaGan = { cap_hoc_ma: number; cap_hoc_ten: string; mon_hoc_ma: number; mon_hoc_ten: string };
+export type ChuongTrinhRow = { id: string; ma: string; ten: string; mon_hoc: MonDaGan[] };
 
 export default function ChuongTrinhTable({ list, canWrite }: { list: ChuongTrinhRow[]; canWrite: boolean }) {
   const [editingRow, setEditingRow] = useState<ChuongTrinhRow | null>(null);
@@ -18,6 +19,7 @@ export default function ChuongTrinhTable({ list, canWrite }: { list: ChuongTrinh
           <tr>
             <th>Mã</th>
             <th>Tên chương trình</th>
+            <th>Môn học đã gán</th>
             {canWrite && <th></th>}
           </tr>
         </thead>
@@ -55,6 +57,17 @@ function RowItem({ row, canWrite, onEdit }: { row: ChuongTrinhRow; canWrite: boo
     <tr>
       <td className={styles.mono}>{row.ma}</td>
       <td>{row.ten}</td>
+      <td>
+        {row.mon_hoc.length === 0 ? (
+          "—"
+        ) : (
+          <div className={styles.rowActions} style={{ flexWrap: "wrap" }}>
+            {row.mon_hoc.map((m) => (
+              <MonChip key={`${m.cap_hoc_ma}-${m.mon_hoc_ma}`} chuongTrinh={row} mon={m} canWrite={canWrite} />
+            ))}
+          </div>
+        )}
+      </td>
       {canWrite && (
         <td>
           <div className={styles.rowActions}>
@@ -115,5 +128,33 @@ function EditModal({ row, onClose }: { row: ChuongTrinhRow; onClose: () => void 
         </form>
       </div>
     </div>
+  );
+}
+
+function MonChip({ chuongTrinh, mon, canWrite }: { chuongTrinh: ChuongTrinhRow; mon: MonDaGan; canWrite: boolean }) {
+  const [isPending, startTransition] = useTransition();
+  const showToast = useToast();
+
+  function handleRemove() {
+    if (!window.confirm(`Gỡ môn "${mon.mon_hoc_ten}" (${mon.cap_hoc_ten}) khỏi chương trình "${chuongTrinh.ten}"?`)) return;
+    startTransition(async () => {
+      const result = await goMonKhoiChuongTrinh(chuongTrinh.ma, mon.cap_hoc_ma, mon.mon_hoc_ma);
+      if ("error" in result) {
+        showToast({ type: "error", message: `Gỡ môn học thất bại: ${result.error}` });
+      } else {
+        showToast({ type: "success", message: `Đã gỡ môn "${mon.mon_hoc_ten}" khỏi chương trình "${chuongTrinh.ten}".` });
+      }
+    });
+  }
+
+  return (
+    <span className={styles.mono} style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+      {mon.cap_hoc_ten} · {mon.mon_hoc_ten}
+      {canWrite && (
+        <button type="button" className={styles.btnDelete} onClick={handleRemove} disabled={isPending} title="Gỡ môn học" aria-label={`Gỡ ${mon.mon_hoc_ten}`}>
+          ✕
+        </button>
+      )}
+    </span>
   );
 }
