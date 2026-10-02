@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { xoaCauHoi, nopDuyetCauHoi, duyetCauHoi, tuChoiDuyetCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import type { NangLucOption } from "@/app/dashboard/ngan-hang-cau-hoi/nangLucActions";
+import type { HinhAnhCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/hinh-anh";
 import { useToast } from "./ToastProvider";
 import CauHoiEditModal from "./CauHoiEditModal";
 import CauHoiNangLucModal, { type TienTrinhOption } from "./CauHoiNangLucModal";
@@ -10,6 +11,7 @@ import { TRANG_THAI_LABEL, TRANG_THAI_BADGE } from "./trangThaiCauHoi";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 export type CauHoiRow = {
+  hinh_anh: HinhAnhCauHoi[];
   id: string;
   ma_cau_hoi: string;
   noi_dung: string;
@@ -180,7 +182,17 @@ function CauHoiRowItem({
       <td>{cauHoi.bai_hoc_ten}</td>
       <td>{cauHoi.chu_de_ten}</td>
       <td>{cauHoi.dang_cau_ten}</td>
-      <td className={styles.noiDungCell}>{cauHoi.noi_dung}</td>
+      <td className={styles.noiDungCell}>
+        {cauHoi.noi_dung}
+        {cauHoi.hinh_anh.length > 0 && (
+          <div className={styles.hinhAnhDong}>
+            {cauHoi.hinh_anh.map((h) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={h.id} src={h.url} alt="Hình đính kèm" className={styles.hinhAnhNho} />
+            ))}
+          </div>
+        )}
+      </td>
       <td>
         <span className={`${styles.badge} ${badgeClass}`}>{TRANG_THAI_LABEL[cauHoi.trang_thai] ?? cauHoi.trang_thai}</span>
       </td>

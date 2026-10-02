@@ -5,6 +5,7 @@ import { taoCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "./dangCauOptions";
 import DapAnFields from "./DapAnFields";
+import HinhAnhInput from "./HinhAnhInput";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
@@ -48,6 +49,7 @@ export default function CauHoiForm({
   const [baiHocId, setBaiHocId] = useState("");
   const [chuDeId, setChuDeId] = useState("");
   const [dangCauMa, setDangCauMa] = useState("");
+  const [hinhKey, setHinhKey] = useState(0); // đổi key để xoá ảnh đã chọn sau khi tạo xong
 
   const dangCauKhaDung = useMemo(() => dangCauList.filter((dc) => !DANG_CAU_CHUA_HO_TRO.includes(dc.ma)), [dangCauList]);
   const loaiDangCau = layLoaiDangCau(dangCauMa ? Number(dangCauMa) : null);
@@ -100,6 +102,7 @@ export default function CauHoiForm({
         showToast({ type: "success", message: `Đã tạo câu hỏi (mã ${result.data.ma_cau_hoi}) thành công.` });
         form.reset();
         resetTat();
+        setHinhKey((k) => k + 1);
       }
     });
   }
@@ -290,6 +293,8 @@ export default function CauHoiForm({
       <div className={formStyles.field}>
         <label htmlFor="noi_dung" className={formStyles.label}>Nội dung câu hỏi</label>
         <textarea id="noi_dung" name="noi_dung" required className={formStyles.textarea} disabled={isPending} rows={4} />
+        <HinhAnhInput key={`de-${hinhKey}`} ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} />
+        <p className={formStyles.hint}>Ảnh đề bài (tuỳ chọn, tối đa 5 ảnh JPG/PNG/WebP, mỗi ảnh ≤ 2MB).</p>
       </div>
 
       <div className={formStyles.row}>
@@ -304,11 +309,12 @@ export default function CauHoiForm({
         </div>
       </div>
 
-      <DapAnFields key={dangCauMa} loaiDangCau={loaiDangCau} disabled={isPending} />
+      <DapAnFields key={`${dangCauMa}-${hinhKey}`} loaiDangCau={loaiDangCau} disabled={isPending} />
 
       <div className={formStyles.field}>
         <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
         <textarea id="loi_giai" name="loi_giai" className={formStyles.textarea} disabled={isPending} rows={3} />
+        <HinhAnhInput key={`lg-${hinhKey}`} ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} />
       </div>
 
       {error && <div className={formStyles.errorBox} role="alert">{error}</div>}

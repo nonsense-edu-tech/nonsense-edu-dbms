@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { suaCauHoi, layLuaChonCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { layLoaiDangCau } from "./dangCauOptions";
+import HinhAnhInput from "./HinhAnhInput";
 import DapAnFields, { type LuaChonInitial } from "./DapAnFields";
 import type { CauHoiRow } from "./CauHoiTable";
 import formStyles from "./Form.module.css";
@@ -15,6 +16,9 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
   const showToast = useToast();
 
   const loaiDangCau = layLoaiDangCau(cauHoi.dang_cau_ma);
+  const hinhTheoViTri = cauHoi.hinh_anh;
+  const hinhDe = hinhTheoViTri.filter((h) => h.vi_tri === "de");
+  const hinhLoiGiai = hinhTheoViTri.filter((h) => h.vi_tri === "loi_giai");
 
   const canLuaChon = loaiDangCau === "single" || loaiDangCau === "multi" || loaiDangCau === "dung_sai";
   const [dangTaiLuaChon, setDangTaiLuaChon] = useState(canLuaChon);
@@ -29,7 +33,13 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
       if ("error" in result) {
         setLoiTaiLuaChon(result.error);
       } else {
-        setLuaChonBanDau(result.data.map((lc) => ({ noi_dung: lc.noi_dung, la_dap_an: lc.la_dap_an })));
+        setLuaChonBanDau(
+          result.data.map((lc) => ({
+            noi_dung: lc.noi_dung,
+            la_dap_an: lc.la_dap_an,
+            hinh: hinhTheoViTri.filter((h) => h.vi_tri === "lua_chon" && h.thu_tu_lua_chon === lc.thu_tu),
+          }))
+        );
       }
       setDangTaiLuaChon(false);
     });
@@ -86,6 +96,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
               rows={4}
               defaultValue={cauHoi.noi_dung}
             />
+            <HinhAnhInput ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} anhCu={hinhDe} />
           </div>
 
           <div className={formStyles.field}>
@@ -120,6 +131,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
               rows={3}
               defaultValue={cauHoi.loi_giai ?? ""}
             />
+            <HinhAnhInput ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} anhCu={hinhLoiGiai} />
           </div>
 
           {error && <div className={formStyles.errorBox} role="alert">{error}</div>}

@@ -513,3 +513,14 @@
   font-size: 13px;
   color: var(--text-mid);
 }
+
+/* ---- Hình ảnh đính kèm câu hỏi ---- */
+.hinhAnhBox { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.hinhAnhLuoi { display: flex; flex-wrap: wrap; gap: 8px; }
+.hinhAnhOCu { position: relative; }
+.hinhAnhThumb { display: block; height: 72px; max-width: 140px; object-fit: contain; border: 1px solid #d9dde3; border-radius: 6px; background: #fff; }
+.hinhAnhXoa { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: none; background: #c0392b; color: #fff; font-size: 11px; line-height: 20px; cursor: pointer; padding: 0; }
+.hinhAnhXoa:disabled { opacity: 0.5; cursor: not-allowed; }
+.hinhAnhNhan { font-size: 13px; font-weight: 600; margin-top: 4px; }
+.hinhAnhDong { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.hinhAnhNho { height: 40px; max-width: 80px; object-fit: contain; border: 1px solid #d9dde3; border-radius: 4px; background: #fff; }
