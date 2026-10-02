@@ -224,7 +224,7 @@ export default function CauHoiForm({
 
       <div className={formStyles.field}>
         <label htmlFor="noi_dung" className={formStyles.label}>Nội dung câu hỏi</label>
-        <RichTextEditor key={`nd-${hinhKey}`} id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" soDong={4} disabled={isPending} />
+        <RichTextEditor key={`nd-${hinhKey}`} id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" thutLe soDong={4} disabled={isPending} />
         <HinhAnhInput key={`de-${hinhKey}`} ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} />
         <p className={formStyles.hint}>Ảnh đề bài (tuỳ chọn, tối đa 5 ảnh JPG/PNG/WebP, mỗi ảnh ≤ 2MB).</p>
       </div>
@@ -245,7 +245,7 @@ export default function CauHoiForm({
 
       <div className={formStyles.field}>
         <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
-        <RichTextEditor key={`lgt-${hinhKey}`} id="loi_giai" name="loi_giai" nhan="Lời giải" soDong={3} disabled={isPending} />
+        <RichTextEditor key={`lgt-${hinhKey}`} id="loi_giai" name="loi_giai" nhan="Lời giải" thutLe soDong={3} disabled={isPending} />
         <HinhAnhInput key={`lg-${hinhKey}`} ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} />
       </div>
 

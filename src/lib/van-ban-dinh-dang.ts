@@ -1,8 +1,12 @@
 // Văn bản có định dạng (in đậm/nghiêng/gạch chân) cho câu hỏi — lưu dưới dạng
 // HTML tối giản, CHỈ cho phép <b> <i> <u> <br>. Mọi thứ khác bị escape/loại bỏ,
 // nên chuỗi qua `lamSachHtml` an toàn để render bằng dangerouslySetInnerHTML.
+// Thụt lề đầu dòng = 2 ký tự em-space (U+2003, hằng THUT_LE) ở đầu dòng: là văn bản
+// thuần nên sống sót qua mọi bước làm sạch/sao chép, không cần thẻ riêng.
 // Dữ liệu cũ (văn bản thuần, có thể có xuống dòng "\n") cũng đi qua cùng hàm này
 // và hiển thị đúng — không cần migration.
+
+export const THUT_LE = "\u2003\u2003";
 
 const THE_CHO_PHEP = new Set(["b", "i", "u"]);
 const THE_DOI_TEN: Record<string, string> = { strong: "b", em: "i" };
@@ -83,7 +87,8 @@ export function lamSachHtml(raw: string | null | undefined): string {
     .replace(/<(b|i|u)><\/\1>/g, "")
     .replace(/^(?:<br>)+|(?:<br>)+$/g, "")
     .replace(/ /g, " ")
-    .trim();
+    // Chỉ cắt khoảng trắng ASCII — KHÔNG dùng trim(): nó xoá luôn em-space thụt lề đầu dòng.
+    .replace(/^[ \t\n]+|[ \t\n]+$/g, "");
 }
 
 /** Văn bản thuần → HTML an toàn (escape + xuống dòng thành <br>). */
@@ -92,7 +97,7 @@ export function vanBanThanhHtml(plain: string | null | undefined): string {
     .replace(/\r\n?/g, "\n")
     .replace(/[<>&]/g, escapeKyTu)
     .replace(/\n/g, "<br>")
-    .trim();
+    .replace(/^[ \t\n]+|[ \t\n]+$/g, "");
 }
 
 /** HTML (đã hoặc chưa làm sạch) → văn bản thuần; dùng để kiểm tra rỗng/so trùng/tìm kiếm. */

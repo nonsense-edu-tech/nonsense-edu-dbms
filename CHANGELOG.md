@@ -22,7 +22,7 @@ Mỗi mục ghi rõ:
 
 ## 2026-10-02 — Định dạng văn bản trong câu hỏi (in đậm / in nghiêng / gạch chân)
 
-**Tóm tắt:** Nội dung câu hỏi, lời giải, lựa chọn/mệnh đề và đáp án (điền khuyết, trả lời ngắn) có thanh công cụ **B / I / U** (và phím tắt Ctrl+B/I/U). Lưu dưới dạng HTML tối giản chỉ cho phép `<b> <i> <u> <br>`, làm sạch ở cả client lẫn server; danh sách câu hỏi và màn Trợ giảng hiển thị đúng định dạng. Dữ liệu cũ (văn bản thuần) hiển thị bình thường. Import từ file vẫn là văn bản thuần (được escape an toàn).
+**Tóm tắt:** Nội dung câu hỏi, lời giải, lựa chọn/mệnh đề và đáp án (điền khuyết, trả lời ngắn) có thanh công cụ **B / I / U** (và phím tắt Ctrl+B/I/U). Lưu dưới dạng HTML tối giản chỉ cho phép `<b> <i> <u> <br>`, làm sạch ở cả client lẫn server; danh sách câu hỏi và màn Trợ giảng hiển thị đúng định dạng. Dữ liệu cũ (văn bản thuần) hiển thị bình thường. Riêng nội dung câu hỏi và lời giải có thêm nút **thụt lề đầu dòng** (→ / Tab, giảm bằng ← / Shift+Tab; lưu bằng 2 ký tự em-space). Import từ file vẫn là văn bản thuần (được escape an toàn).
 
 **Migration:** không có (cột `text` hiện có đã đủ).
 
@@ -43,7 +43,7 @@ học phần/bài học/chủ đề tuỳ chọn. Môn chưa có học phần/ch
 
 - **Migration:** `0048_cap_ma_cau_hoi_phan_loai_rut_gon.sql` (Expand, tag `expand`; `CREATE OR REPLACE` hàm `cap_ma_cau_hoi` giữ nguyên chữ ký, code cũ chạy bình thường).
 - **Staging:** ✅ không áp dụng (môi trường staging đã đóng).
-- **Production:** 🔲 chờ merge `main` → Vercel deploy + CI áp `0048` (cập nhật mục này sau khi áp xong). Cần duyệt Environment `production-db`.
+- **Production:** ✅ đã merge `main` + CI áp `0048` (xác nhận qua lịch sử migration production, 02/10/2026).
 - **Commit:** (xem PR `feat/phan-loai-cau-hoi-rut-gon`). Quyết định: `docs/adr/ADR-006-phan-loai-cau-hoi-rut-gon.md`.
 
 ---
@@ -57,7 +57,7 @@ tạo/sửa và khi nhập từ file kèm zip ảnh; danh sách hiện ảnh đ�
 
 - **Migration:** `0047_cau_hoi_hinh_anh.sql` (tag `expand` → CI tự áp sau khi duyệt Environment `production-db`, ADR-005).
 - **Staging:** ✅ không áp dụng (môi trường staging đã đóng).
-- **Production:** 🔲 chờ merge `main` → Vercel deploy + CI áp `0047` (cập nhật mục này sau khi áp xong).
+- **Production:** ✅ đã merge `main` + CI áp `0047` (xác nhận qua lịch sử migration production, 02/10/2026).
 - **Commit:** (xem PR `feat/cau-hoi-hinh-anh`, gồm cả `feat/import-cau-hoi`).
 
 ---
@@ -70,7 +70,7 @@ Chỉ đổi code frontend/server, không đổi CSDL. Lưu ý: tìm theo ILIKE 
 
 - **Migration:** không có.
 - **Staging:** ✅ không cần (chỉ code).
-- **Production:** 🔲 chờ merge `main` → Vercel deploy.
+- **Production:** ✅ đã merge `main` → Vercel deploy (02/10/2026).
 - **Commit:** (xem PR `feat/hoc-phi-tim-kiem`).
 
 ---

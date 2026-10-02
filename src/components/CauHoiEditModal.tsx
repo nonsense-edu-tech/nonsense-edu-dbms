@@ -88,7 +88,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
         <form onSubmit={handleSubmit} className={formStyles.form} noValidate>
           <div className={formStyles.field}>
             <label htmlFor="noi_dung" className={formStyles.label}>Nội dung câu hỏi</label>
-            <RichTextEditor id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" soDong={4} disabled={isPending} defaultValue={cauHoi.noi_dung} />
+            <RichTextEditor id="noi_dung" name="noi_dung" nhan="Nội dung câu hỏi" thutLe soDong={4} disabled={isPending} defaultValue={cauHoi.noi_dung} />
             <HinhAnhInput ten="hinh_de" nhan="đề bài" toiDa={5} disabled={isPending} anhCu={hinhDe} />
           </div>
 
@@ -116,7 +116,7 @@ export default function CauHoiEditModal({ cauHoi, onClose }: { cauHoi: CauHoiRow
 
           <div className={formStyles.field}>
             <label htmlFor="loi_giai" className={formStyles.label}>Lời giải (tuỳ chọn)</label>
-            <RichTextEditor id="loi_giai" name="loi_giai" nhan="Lời giải" soDong={3} disabled={isPending} defaultValue={cauHoi.loi_giai ?? ""} />
+            <RichTextEditor id="loi_giai" name="loi_giai" nhan="Lời giải" thutLe soDong={3} disabled={isPending} defaultValue={cauHoi.loi_giai ?? ""} />
             <HinhAnhInput ten="hinh_loi_giai" nhan="lời giải" toiDa={5} disabled={isPending} anhCu={hinhLoiGiai} />
           </div>
 
