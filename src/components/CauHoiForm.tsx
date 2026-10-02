@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { taoCauHoi } from "@/app/dashboard/hoc-lieu/cau-hoi/actions";
+import { taoCauHoi } from "@/app/dashboard/ngan-hang-cau-hoi/actions";
 import { useToast } from "./ToastProvider";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau } from "./dangCauOptions";
 import DapAnFields from "./DapAnFields";
 import formStyles from "./Form.module.css";
-import styles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
+import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 type CapHoc = { ma: number; ten: string };
 type ChuongTrinh = { ma: string; ten: string };

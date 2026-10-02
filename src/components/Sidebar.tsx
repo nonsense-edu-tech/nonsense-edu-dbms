@@ -37,7 +37,7 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
         items: [
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
           { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
-          { href: "/dashboard/hoc-lieu/cau-hoi", icon: <IconCauHoi />, label: "Câu hỏi" },
+          { href: "/dashboard/ngan-hang-cau-hoi", icon: <IconCauHoi />, label: "Ngân hàng câu hỏi" },
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },
@@ -62,7 +62,7 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
         items: [
           { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
           { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
-          { href: "/dashboard/hoc-lieu/cau-hoi", icon: <IconCauHoi />, label: "Câu hỏi" },
+          { href: "/dashboard/ngan-hang-cau-hoi", icon: <IconCauHoi />, label: "Ngân hàng câu hỏi" },
           { href: "/dashboard/tro-giang", icon: <IconTroGiang />, label: "Trợ giảng" },
         ],
       },

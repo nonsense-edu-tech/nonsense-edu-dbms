@@ -1,5 +1,5 @@
 // Mã dạng câu (bảng `dang_cau`, cột `ma`) — cố định theo seed data, dùng chung
-// giữa CauHoiForm.tsx (client) và cau-hoi/actions.ts (server) để 2 bên luôn
+// giữa CauHoiForm.tsx (client) và ngan-hang-cau-hoi/actions.ts (server) để 2 bên luôn
 // khớp logic UI ↔ validate.
 //
 // 5 (Nối/ghép cặp) và 6 (Sắp xếp thứ tự/kéo thả) CHƯA có UI soạn thảo riêng —

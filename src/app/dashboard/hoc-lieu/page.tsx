@@ -25,15 +25,15 @@ export default async function HocLieuPage() {
         <Link href="/dashboard/hoc-lieu/chu-de" className={styles.subNavLink}>Chủ đề</Link>
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={styles.subNavLink}>Bài học</Link>
-        <Link href="/dashboard/hoc-lieu/cau-hoi" className={styles.subNavLink}>Câu hỏi</Link>
       </nav>
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Ngân hàng câu hỏi (GĐ3)</h2>
+        <h2 className={styles.cardTitle}>Học liệu</h2>
         <p className={styles.noticeBox}>
-          Bước 5.2: trang <strong>tạo câu hỏi</strong> (cascading chọn cấp học → chương trình → môn → học phần →
-          bài học → chủ đề → dạng câu, tự cấp mã 17 số) đã có ở mục <strong>Câu hỏi</strong>. Sửa/duyệt câu hỏi sẽ
-          được thêm ở bước kế tiếp (5.3-5.4).
+          Bảng mã gốc của học thuật, tạo theo thứ tự: <strong>Cấp học</strong> → <strong>Chương trình</strong>{" "}
+          (gán môn học vào chương trình ngay trong tab này) → <strong>Môn học</strong> → <strong>Chủ đề</strong> /{" "}
+          <strong>Học phần</strong> → <strong>Bài học</strong>. Việc tạo và tra cứu câu hỏi nằm ở mục{" "}
+          <Link href="/dashboard/ngan-hang-cau-hoi">Ngân hàng câu hỏi</Link>.
         </p>
       </section>
     </main>

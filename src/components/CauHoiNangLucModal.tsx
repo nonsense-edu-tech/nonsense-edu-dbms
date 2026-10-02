@@ -8,10 +8,10 @@ import {
   xoaGanNangLuc,
   type NangLucOption,
   type NangLucCauHoiRow,
-} from "@/app/dashboard/hoc-lieu/cau-hoi/nangLucActions";
+} from "@/app/dashboard/ngan-hang-cau-hoi/nangLucActions";
 import { useToast } from "./ToastProvider";
 import formStyles from "./Form.module.css";
-import modalStyles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
+import modalStyles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.css";
 
 export type TienTrinhOption = { ma: string; ten: string };
 

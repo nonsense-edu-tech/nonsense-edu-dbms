@@ -88,7 +88,7 @@ export async function capNhatTienTrinh(cauHoiId: string, tienTrinhMa: string | n
 
   if (error) return { error: mapDbErrorNangLuc(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -128,7 +128,7 @@ export async function ganNangLucCauHoi(
 
   if (error) return { error: mapDbErrorNangLuc(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -139,7 +139,7 @@ export async function xoaGanNangLuc(id: string): Promise<GanNangLucResult> {
   const { error } = await supabase.from("cau_hoi_nang_luc").delete().eq("id", id);
   if (error) return { error: mapDbErrorNangLuc(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 

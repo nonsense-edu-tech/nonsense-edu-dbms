@@ -176,7 +176,7 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
     }
   }
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { data: cauHoi as CauHoi };
 }
 
@@ -260,7 +260,7 @@ export async function suaCauHoi(formData: FormData): Promise<SuaCauHoiResult> {
     if (themLuaChonError) return { error: mapDbError(themLuaChonError.message) };
   }
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -296,7 +296,7 @@ export async function nopDuyetCauHoi(id: string): Promise<XoaCauHoiResult> {
   const { error } = await supabase.from("cau_hoi").update({ trang_thai: "cho_duyet" }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -325,7 +325,7 @@ export async function duyetCauHoi(id: string): Promise<XoaCauHoiResult> {
     .eq("id", id);
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -348,7 +348,7 @@ export async function tuChoiDuyetCauHoi(id: string): Promise<XoaCauHoiResult> {
   const { error } = await supabase.from("cau_hoi").update({ trang_thai: "nhap" }).eq("id", id);
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
@@ -361,7 +361,7 @@ export async function xoaCauHoi(id: string): Promise<XoaCauHoiResult> {
 
   if (error) return { error: mapDbError(error.message) };
 
-  revalidatePath("/dashboard/hoc-lieu/cau-hoi");
+  revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
 }
 
