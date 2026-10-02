@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { DANG_CAU_CHUA_HO_TRO, layLoaiDangCau, type LoaiDangCau } from "@/components/dangCauOptions";
 import { TRANG_THAI_LABEL } from "@/components/trangThaiCauHoi";
+import { luuCauHoi, mapDbError } from "./luu-cau-hoi";
 
 type CauHoi = {
   id: string;
@@ -120,61 +121,22 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   if ("error" in dapAn) return dapAn;
   const { dapAnText, luaChonList } = dapAn;
 
-  // Cấp mã câu hỏi qua RPC — hàm này cũng xác nhận học phần/bài học/chủ đề/dạng câu
-  // thật sự thuộc đúng môn học/cấp học đã chọn (chặn dữ liệu rác ngay ở tầng DB).
-  const { data: maCauHoi, error: rpcError } = await supabase.rpc("cap_ma_cau_hoi", {
-    p_cap_hoc: capHoc,
-    p_chuong_trinh: chuongTrinh,
-    p_mon_hoc: monHoc,
-    p_hoc_phan: hocPhan,
-    p_bai_hoc: baiHoc,
-    p_chu_de: chuDe,
-    p_dang_cau: dangCau,
+  const ketQua = await luuCauHoi(supabase, user.id, {
+    cap_hoc: capHoc,
+    chuong_trinh: chuongTrinh,
+    mon_hoc: monHoc,
+    hoc_phan: hocPhan,
+    bai_hoc: baiHoc,
+    chu_de: chuDe,
+    dang_cau: dangCau,
+    noi_dung: noiDung,
+    do_kho: doKho,
+    loi_giai: loiGiai,
+    dap_an_text: dapAnText,
+    lua_chon: luaChonList,
   });
-
-  if (rpcError || !maCauHoi) return { error: mapDbError(rpcError?.message ?? "Không cấp được mã câu hỏi.") };
-
-  const sttCau = Number(String(maCauHoi).slice(-4));
-
-  const { data: cauHoi, error: insertError } = await supabase
-    .from("cau_hoi")
-    .insert({
-      ma_cau_hoi: maCauHoi,
-      cap_hoc: capHoc,
-      chuong_trinh: chuongTrinh,
-      mon_hoc: monHoc,
-      hoc_phan: hocPhan,
-      bai_hoc: baiHoc,
-      chu_de: chuDe,
-      dang_cau: dangCau,
-      stt_cau: sttCau,
-      noi_dung: noiDung,
-      do_kho: doKho,
-      loi_giai: loiGiai,
-      dap_an_text: dapAnText,
-      nguoi_tao: user.id,
-    })
-    .select("id, ma_cau_hoi")
-    .single();
-
-  if (insertError) return { error: mapDbError(insertError.message) };
-
-  if (luaChonList.length > 0) {
-    const { error: luaChonError } = await supabase.from("lua_chon").insert(
-      luaChonList.map((lc, idx) => ({
-        cau_hoi_id: cauHoi.id,
-        thu_tu: idx + 1,
-        noi_dung: lc.noi_dung,
-        la_dap_an: lc.la_dap_an,
-      }))
-    );
-
-    if (luaChonError) {
-      // Dọn lại câu hỏi vừa tạo — tránh để lại câu hỏi rỗng lựa chọn do lỗi giữa chừng.
-      await supabase.from("cau_hoi").delete().eq("id", cauHoi.id);
-      return { error: mapDbError(luaChonError.message) };
-    }
-  }
+  if ("error" in ketQua) return ketQua;
+  const cauHoi = ketQua.data;
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { data: cauHoi as CauHoi };
@@ -363,16 +325,4 @@ export async function xoaCauHoi(id: string): Promise<XoaCauHoiResult> {
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");
   return { ok: true };
-}
-
-function mapDbError(msg: string): string {
-  if (msg.includes("permission denied") || msg.includes("row-level security"))
-    return "Bạn không có quyền tạo/sửa câu hỏi (chỉ Master Admin, Admin học thuật, Trưởng bộ môn, hoặc Giáo viên trong phạm vi môn được phân công).";
-  if (msg.includes("cau_hoi_ma_cau_hoi_key")) return "Mã câu hỏi này đã tồn tại (trùng lặp hiếm gặp) — thử lưu lại.";
-  if (msg.includes("cau_hoi_do_kho_check")) return "Độ khó phải từ 1 đến 5.";
-  if (msg.includes("cau_hoi_ma_cau_hoi_check")) return "Mã câu hỏi sinh ra không hợp lệ (phải đủ 17 chữ số).";
-  if (msg.includes("uq_lua_chon_thu_tu")) return "Danh sách lựa chọn bị trùng thứ tự.";
-  if (msg.includes("update or delete")) return "Không thể xoá — câu hỏi này còn dữ liệu liên quan (đã nằm trong đề).";
-  // Các lỗi do RPC cap_ma_cau_hoi() raise exception đã là tiếng Việt sẵn (vd "Học phần % không thuộc môn %").
-  return msg;
 }

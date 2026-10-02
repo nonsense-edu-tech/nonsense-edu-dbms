@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CauHoiForm from "@/components/CauHoiForm";
+import CauHoiImport from "@/components/CauHoiImport";
 import CauHoiSubNav from "@/components/CauHoiSubNav";
+import TaoCauHoiTabs from "@/components/TaoCauHoiTabs";
 import styles from "../ngan-hang-cau-hoi.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm", "gv"];
@@ -52,16 +54,28 @@ export default async function TaoCauHoiPage() {
       <CauHoiSubNav active="tao" canCreate />
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Tạo câu hỏi mới</h2>
-        <CauHoiForm
-          capHocList={capHocList ?? []}
-          chuongTrinhList={chuongTrinhList ?? []}
-          chuongTrinhMonHocList={chuongTrinhMonHocList ?? []}
-          monHocList={monHocList ?? []}
-          hocPhanList={hocPhanList ?? []}
-          baiHocList={baiHocList ?? []}
-          chuDeList={chuDeList ?? []}
-          dangCauList={dangCauList ?? []}
+        <TaoCauHoiTabs
+          thuCong={
+            <>
+              <h2 className={styles.cardTitle}>Tạo câu hỏi mới</h2>
+              <CauHoiForm
+                capHocList={capHocList ?? []}
+                chuongTrinhList={chuongTrinhList ?? []}
+                chuongTrinhMonHocList={chuongTrinhMonHocList ?? []}
+                monHocList={monHocList ?? []}
+                hocPhanList={hocPhanList ?? []}
+                baiHocList={baiHocList ?? []}
+                chuDeList={chuDeList ?? []}
+                dangCauList={dangCauList ?? []}
+              />
+            </>
+          }
+          tuFile={
+            <>
+              <h2 className={styles.cardTitle}>Nhập câu hỏi từ file</h2>
+              <CauHoiImport />
+            </>
+          }
         />
       </section>
     </main>
