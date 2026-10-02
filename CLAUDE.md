@@ -78,7 +78,7 @@ ID là **chuỗi chữ số ghép liền**, padding `0` ở đầu. **Luôn lưu
 - **ID Học sinh — 12 số** = ID Lớp học + STT(3). Gắn theo **lớp nhập học đầu
   tiên**, **cố định vĩnh viễn** (trigger `forbid_hoc_sinh_id_change` chặn sửa).
 - **ID Câu hỏi — 17 số** = Cấp học(1) + Chương trình(3) + **Môn học(2)** +
-  Học phần(2) + Bài học(2) + Chủ đề(2) + Dạng câu(1) + STT câu(4). Xác nhận
+  Học phần(2) + Bài học(2) + Chủ đề(2) + Dạng câu(1) + STT câu(4). **Từ ADR-006: chương trình luôn `000`, học phần/bài học/chủ đề = `00` ("Chung") khi không phân loại — câu hỏi thuộc môn, chương trình gom các môn.** Xác nhận
   chính xác qua cột `GENERATED` thật trên `cau_hoi` (22/07/2026) — khác
   `docs/dac-ta-he-thong.md` bản cũ (ghi 16 số, môn học chỉ 1 số).
 

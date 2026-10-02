@@ -28,6 +28,15 @@ function docSoNguyen(formData: FormData, key: string, ten: string, min: number, 
   return value;
 }
 
+// Ô tuỳ chọn: trống = 0 ("Chung"); có giá trị thì phải là số 1-99.
+function docSoNguyenTuyChon(formData: FormData, key: string, ten: string): number | { error: string } {
+  const raw = formData.get(key);
+  if (raw === null || raw === "") return 0;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > 99) return { error: `${ten} không hợp lệ.` };
+  return value;
+}
+
 type DapAnDaXuLy = {
   dapAnText: string | null;
   luaChonList: { noi_dung: string; la_dap_an: boolean }[];
@@ -84,26 +93,23 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Chưa đăng nhập." };
 
+  // Cấp học suy ra từ môn ở form (hidden input). Chương trình KHÔNG thuộc câu hỏi (ADR-006): luôn 000.
   const capHoc = docSoNguyen(formData, "cap_hoc", "cấp học", 1, 9);
   if (typeof capHoc !== "number") return capHoc;
-
-  const chuongTrinhMaRaw = String(formData.get("chuong_trinh_ma") ?? "").trim();
-  if (!chuongTrinhMaRaw) return { error: "Vui lòng chọn chương trình." };
-  const chuongTrinh = Number(chuongTrinhMaRaw);
-  if (!Number.isInteger(chuongTrinh) || chuongTrinh < 0 || chuongTrinh > 999) {
-    return { error: "Mã chương trình không hợp lệ." };
-  }
+  const chuongTrinh = 0;
 
   const monHoc = docSoNguyen(formData, "mon_hoc_ma", "môn học", 1, 99);
   if (typeof monHoc !== "number") return monHoc;
 
-  const hocPhan = docSoNguyen(formData, "hoc_phan_ma", "học phần", 1, 99);
+  // Học phần / bài học / chủ đề tuỳ chọn: để trống = 0 ("Chung"). RPC kiểm tra đúng môn nếu khác 0.
+  const hocPhan = docSoNguyenTuyChon(formData, "hoc_phan_ma", "học phần");
   if (typeof hocPhan !== "number") return hocPhan;
 
-  const baiHoc = docSoNguyen(formData, "bai_hoc_ma", "bài học", 1, 99);
+  const baiHoc = docSoNguyenTuyChon(formData, "bai_hoc_ma", "bài học");
   if (typeof baiHoc !== "number") return baiHoc;
+  if (baiHoc !== 0 && hocPhan === 0) return { error: "Chọn bài học thì phải chọn học phần chứa nó." };
 
-  const chuDe = docSoNguyen(formData, "chu_de_ma", "chủ đề", 1, 99);
+  const chuDe = docSoNguyenTuyChon(formData, "chu_de_ma", "chủ đề");
   if (typeof chuDe !== "number") return chuDe;
 
   const dangCau = docSoNguyen(formData, "dang_cau_ma", "dạng câu", 1, 9);

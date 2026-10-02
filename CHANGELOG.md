@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-02 — Rút gọn phân loại câu hỏi: chỉ cần Môn học + Dạng câu (ADR-006)
+
+**Tóm tắt:** Câu hỏi thuộc **môn học**; chương trình giảng dạy chỉ gom các môn và kéo câu hỏi theo môn. Form tạo câu hỏi bỏ ô Cấp học/Chương trình
+(cấp học tự suy ra từ môn); Học phần, Bài học, Chủ đề thành tuỳ chọn (để trống = "Chung"). Mã câu hỏi **giữ nguyên 17 số**: chương trình luôn `000`,
+học phần/bài học/chủ đề = `00` khi để trống. Bộ lọc chương trình trong danh sách đi qua `chuong_trinh_mon_hoc`. Template/import bỏ cột Chương trình,
+học phần/bài học/chủ đề tuỳ chọn. Môn chưa có học phần/chủ đề (vd Tiếng Anh) tạo được câu hỏi ngay.
+
+- **Migration:** `0048_cap_ma_cau_hoi_phan_loai_rut_gon.sql` (Expand, tag `expand`; `CREATE OR REPLACE` hàm `cap_ma_cau_hoi` giữ nguyên chữ ký, code cũ chạy bình thường).
+- **Staging:** ✅ không áp dụng (môi trường staging đã đóng).
+- **Production:** 🔲 chờ merge `main` → Vercel deploy + CI áp `0048` (cập nhật mục này sau khi áp xong). Cần duyệt Environment `production-db`.
+- **Commit:** (xem PR `feat/phan-loai-cau-hoi-rut-gon`). Quyết định: `docs/adr/ADR-006-phan-loai-cau-hoi-rut-gon.md`.
+
+---
+
 ## 2026-10-02 — Ngân hàng câu hỏi: nhập từ file CSV/Excel + đính kèm hình ảnh
 
 **Tóm tắt:** (1) Nhập câu hỏi hàng loạt từ file (tải template → điền → upload → xem trước → xác nhận; câu mới ở trạng thái Nháp,

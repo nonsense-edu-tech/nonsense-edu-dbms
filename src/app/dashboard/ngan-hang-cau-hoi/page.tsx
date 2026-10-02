@@ -27,6 +27,7 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
     { data: profile },
     { data: capHocList },
     { data: chuongTrinhList },
+    { data: chuongTrinhMonHocList },
     { data: monHocList },
     { data: hocPhanList },
     { data: baiHocList },
@@ -38,6 +39,7 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
     supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null).order("ma"),
+    supabase.from("chuong_trinh_mon_hoc").select("chuong_trinh_ma, cap_hoc_ma, mon_hoc_ma"),
     supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("hoc_phan").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
     supabase.from("bai_hoc").select("id, hoc_phan_id, ma, ten").is("deleted_at", null).order("ten"),
@@ -60,6 +62,7 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
       .is("deleted_at", null),
     boLoc,
     {
+      chuongTrinhMonHocList: chuongTrinhMonHocList ?? [],
       monHocList: monHocList ?? [],
       hocPhanList: hocPhanList ?? [],
       baiHocList: baiHocList ?? [],
@@ -91,9 +94,11 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
 
   const cauHoiRows: CauHoiRow[] = (cauHoiList ?? []).map((ch) => {
     const monHoc = ch.cap_hoc != null && ch.mon_hoc != null ? monHocByCode.get(`${ch.cap_hoc}-${ch.mon_hoc}`) : undefined;
-    const hocPhan = monHoc && ch.hoc_phan != null ? hocPhanByCode.get(`${monHoc.id}-${ch.hoc_phan}`) : undefined;
-    const baiHoc = hocPhan && ch.bai_hoc != null ? baiHocByCode.get(`${hocPhan.id}-${ch.bai_hoc}`) : undefined;
-    const chuDe = monHoc && ch.chu_de != null ? chuDeByCode.get(`${monHoc.id}-${ch.chu_de}`) : undefined;
+    // Mã 00 = "Chung" (không phân loại ở cấp đó, ADR-006).
+    const hocPhan = monHoc && ch.hoc_phan ? hocPhanByCode.get(`${monHoc.id}-${ch.hoc_phan}`) : undefined;
+    const baiHoc = hocPhan && ch.bai_hoc ? baiHocByCode.get(`${hocPhan.id}-${ch.bai_hoc}`) : undefined;
+    const chuDe = monHoc && ch.chu_de ? chuDeByCode.get(`${monHoc.id}-${ch.chu_de}`) : undefined;
+    const tenHoacChung = (ma: number | null, ten: string | undefined) => (ma === 0 ? "Chung" : ten ?? "—");
 
     return {
       hinh_anh: hinhAnhMap.get(ch.id) ?? [],
@@ -107,9 +112,9 @@ export default async function CauHoiPage({ searchParams }: { searchParams: Promi
       nguoi_tao: ch.nguoi_tao,
       cap_hoc_ten: ch.cap_hoc != null ? capHocMap.get(ch.cap_hoc) ?? String(ch.cap_hoc) : "—",
       mon_hoc_ten: monHoc?.ten ?? "—",
-      hoc_phan_ten: hocPhan?.ten ?? "—",
-      bai_hoc_ten: baiHoc?.ten ?? "—",
-      chu_de_ten: chuDe?.ten ?? "—",
+      hoc_phan_ten: tenHoacChung(ch.hoc_phan, hocPhan?.ten),
+      bai_hoc_ten: tenHoacChung(ch.bai_hoc, baiHoc?.ten),
+      chu_de_ten: tenHoacChung(ch.chu_de, chuDe?.ten),
       dang_cau_ma: ch.dang_cau ?? 0,
       dang_cau_ten: ch.dang_cau != null ? dangCauMap.get(ch.dang_cau) ?? String(ch.dang_cau) : "—",
     };

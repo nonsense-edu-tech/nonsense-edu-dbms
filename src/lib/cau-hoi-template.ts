@@ -11,25 +11,17 @@ const DANG_CAU_HO_TRO_NHAP = [1, 2, 3, 4, 7, 8];
 
 type DongViDu = Partial<Record<KhoaCot, string>>;
 
-/** Chọn bộ mã có thật (chương trình → môn → học phần → bài học + chủ đề) để làm ví dụ. */
-function chonViTriViDu(dm: DanhMucNhap): Record<"cap_hoc" | "chuong_trinh" | "mon_hoc" | "hoc_phan" | "bai_hoc" | "chu_de", string> {
-  for (const x of dm.chuongTrinhMonHoc) {
-    const mon = dm.monHoc.find((m) => m.cap_hoc_ma === x.cap_hoc_ma && m.ma === x.mon_hoc_ma);
-    if (!mon) continue;
+/** Chọn bộ mã có thật (môn có học phần → bài học + chủ đề) để làm ví dụ; không có thì chỉ điền môn, phần còn lại để trống ("Chung"). */
+function chonViTriViDu(dm: DanhMucNhap): Record<"cap_hoc" | "mon_hoc" | "hoc_phan" | "bai_hoc" | "chu_de", string> {
+  for (const mon of dm.monHoc) {
     const hp = dm.hocPhan.find((h) => h.mon_hoc_id === mon.id && dm.baiHoc.some((b) => b.hoc_phan_id === h.id));
     const cd = dm.chuDe.find((c) => c.mon_hoc_id === mon.id);
     if (!hp || !cd) continue;
     const bh = dm.baiHoc.find((b) => b.hoc_phan_id === hp.id)!;
-    return {
-      cap_hoc: String(x.cap_hoc_ma),
-      chuong_trinh: x.chuong_trinh_ma,
-      mon_hoc: String(mon.ma),
-      hoc_phan: String(hp.ma),
-      bai_hoc: String(bh.ma),
-      chu_de: String(cd.ma),
-    };
+    return { cap_hoc: String(mon.cap_hoc_ma), mon_hoc: String(mon.ma), hoc_phan: String(hp.ma), bai_hoc: String(bh.ma), chu_de: String(cd.ma) };
   }
-  return { cap_hoc: "1", chuong_trinh: "001", mon_hoc: "1", hoc_phan: "1", bai_hoc: "1", chu_de: "1" };
+  const mon = dm.monHoc[0];
+  return { cap_hoc: String(mon?.cap_hoc_ma ?? 1), mon_hoc: String(mon?.ma ?? 1), hoc_phan: "", bai_hoc: "", chu_de: "" };
 }
 
 export function dongViDu(dm: DanhMucNhap): DongViDu[] {
@@ -48,9 +40,9 @@ const HUONG_DAN: string[] = [
   "HƯỚNG DẪN NHẬP CÂU HỎI TỪ FILE",
   "",
   "1. Mỗi DÒNG = 1 CÂU HỎI. Điền ở sheet \"Câu hỏi\", giữ nguyên dòng tiêu đề (dòng 1). Xoá 5 dòng ví dụ (bắt đầu bằng \"[Ví dụ]\") trước khi nhập — dòng ví dụ bị chặn khi import.",
-  "2. Vị trí giáo án nhập bằng MÃ SỐ: Cấp học, Chương trình, Môn học, Học phần, Bài học, Chủ đề. Tra mã ở các sheet \"Mã ...\" (có thể gõ 1 hoặc 001 đều được).",
-  "   - Môn học phải đã được gán vào chương trình (tab Chương trình trong Học liệu).",
-  "   - Học phần/Chủ đề phải thuộc đúng môn; Bài học phải thuộc đúng học phần.",
+  "2. Phân loại nhập bằng MÃ SỐ: Cấp học + Môn học là BẮT BUỘC; Học phần, Bài học, Chủ đề là TUỲ CHỌN (để trống = \"Chung\"). Tra mã ở các sheet \"Mã ...\".",
+  "   - Câu hỏi thuộc môn học; chương trình giảng dạy tự kéo câu hỏi theo môn nên KHÔNG cần cột Chương trình.",
+  "   - Học phần/Chủ đề phải thuộc đúng môn; Bài học phải thuộc đúng học phần (có Bài học thì phải điền Học phần).",
   "3. Dạng câu (mã): 1 = Trắc nghiệm 1 đáp án, 2 = Trắc nghiệm nhiều đáp án, 3 = Đúng/Sai (từng ý), 4 = Điền khuyết, 7 = Trả lời ngắn, 8 = Tự luận.",
   "   (Dạng 5 Nối cặp và 6 Sắp xếp chưa hỗ trợ nhập.)",
   "4. Cột \"Đáp án\" tuỳ theo dạng câu:",
@@ -110,18 +102,14 @@ export async function taoTemplateXlsx(dm: DanhMucNhap): Promise<Buffer> {
 
   // --- Danh mục mã
   const capTen = new Map(dm.capHoc.map((c) => [c.ma, c.ten]));
-  const ctTen = new Map(dm.chuongTrinh.map((c) => [c.ma, c.ten]));
   themSheetBang(
     wb,
-    "Mã cấp-chương trình-môn",
-    ["Cấp học (mã)", "Tên cấp học", "Chương trình (mã)", "Tên chương trình", "Môn học (mã)", "Tên môn học"],
-    dm.chuongTrinhMonHoc
-      .map((x) => {
-        const mon = dm.monHoc.find((m) => m.cap_hoc_ma === x.cap_hoc_ma && m.ma === x.mon_hoc_ma);
-        return [x.cap_hoc_ma, capTen.get(x.cap_hoc_ma) ?? "", x.chuong_trinh_ma, ctTen.get(x.chuong_trinh_ma) ?? "", x.mon_hoc_ma, mon?.ten ?? ""] as (string | number)[];
-      })
-      .sort((a, b) => String(a[2]).localeCompare(String(b[2])) || Number(a[0]) - Number(b[0]) || Number(a[4]) - Number(b[4])),
-    [14, 18, 18, 24, 14, 28]
+    "Mã cấp-môn",
+    ["Cấp học (mã)", "Tên cấp học", "Môn học (mã)", "Tên môn học"],
+    dm.monHoc
+      .map((m) => [m.cap_hoc_ma, capTen.get(m.cap_hoc_ma) ?? "", m.ma, m.ten] as (string | number)[])
+      .sort((a, b) => Number(a[0]) - Number(b[0]) || Number(a[2]) - Number(b[2])),
+    [14, 18, 14, 32]
   );
 
   const monDe = (id: string) => dm.monHoc.find((m) => m.id === id);
