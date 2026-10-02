@@ -36,7 +36,7 @@ export function dongViDu(dm: DanhMucNhap): DongViDu[] {
   const vt = chonViTriViDu(dm);
   const p = TIEN_TO_DONG_VI_DU;
   return [
-    { ...vt, dang_cau: "1", noi_dung: `${p} 2 + 3 bằng bao nhiêu?`, lua_chon_a: "4", lua_chon_b: "5", lua_chon_c: "6", lua_chon_d: "7", dap_an: "B", do_kho: "1", loi_giai: "2 + 3 = 5" },
+    { ...vt, dang_cau: "1", noi_dung: `${p} 2 + 3 bằng bao nhiêu?`, lua_chon_a: "4", lua_chon_b: "5", lua_chon_c: "6", lua_chon_d: "7", dap_an: "B", do_kho: "1", loi_giai: "2 + 3 = 5", anh_de: "vi-du-de.png", anh_loi_giai: "vi-du-loi-giai.png", anh_lua_chon: "A:vi-du-a.png | B:vi-du-b.png" },
     { ...vt, dang_cau: "2", noi_dung: `${p} Những số nào là số nguyên tố?`, lua_chon_a: "2", lua_chon_b: "4", lua_chon_c: "7", lua_chon_d: "9", dap_an: "A,C", do_kho: "2" },
     { ...vt, dang_cau: "3", noi_dung: `${p} Xét các mệnh đề sau:`, lua_chon_a: "5 là số lẻ", lua_chon_b: "6 là số nguyên tố", dap_an: "A", do_kho: "2" },
     { ...vt, dang_cau: "4", noi_dung: `${p} 3 + ___ = 10 và 4 x ___ = 20`, dap_an: "7 | 5", do_kho: "3" },
