@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Giao diện ngữ liệu: tạo nằm trong "Tạo câu hỏi", danh sách ngữ liệu có tìm kiếm + bộ lọc
+
+**Tóm tắt:** Tab "Tạo câu hỏi" có thêm mục **Tạo ngữ liệu** (từng ngữ liệu / nhập từ file). Tab "Ngữ liệu" đổi thành **Danh sách ngữ liệu**, có ô tìm kiếm (số hiệu, tiêu đề, nội dung) và bộ lọc cấp học, môn, học phần, bài học, chủ đề, loại, giống Danh sách câu hỏi. Trang `/ngu-lieu/tao-moi` cũ tự chuyển hướng. Chỉ đổi code giao diện.
+
+**Migration:** không có.
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chưa — chờ merge PR.
+
+---
+
 ## 2026-10-03 — Đề thi × ngữ liệu: câu con đúng thứ tự soạn + "Bỏ câu này" trong đề nháp
 
 **Tóm tắt:** Trong đề sinh từ ma trận, các câu con của một ngữ liệu nay xếp theo thứ tự đã soạn ở tab Ngữ liệu (trước đây theo mã câu hỏi nên đổi ↑/↓ không có tác dụng), vẫn liền nhau ở mọi mã đề. Ở xem trước đề nháp thêm nút **Bỏ câu này** để GV bỏ bớt câu con (cụm còn ≥ 1 câu).

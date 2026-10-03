@@ -29,7 +29,7 @@ export default function CauHoiSubNav({ active, canCreate }: { active: "tao" | "d
         className={`${styles.subNavLink} ${active === "ngu-lieu" ? styles.subNavLinkActive : ""}`}
         aria-current={active === "ngu-lieu" ? "page" : undefined}
       >
-        Ngữ liệu
+        Danh sách ngữ liệu
       </Link>
     </nav>
   );

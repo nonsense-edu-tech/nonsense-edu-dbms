@@ -122,7 +122,7 @@ Câu hỏi là **nhánh ID thứ 4**, rẽ thẳng từ gốc (không nối vào
 - **Xoá:** chỉ xoá mềm cả nhóm qua RPC `xoa_mem_ngu_lieu` (kiểm vai trò + phạm vi môn); bị chặn nếu có câu con đã nằm trong đề. FK `ON DELETE RESTRICT`.
 - **Đề thi:** ngữ liệu vào đề qua **ma trận đề** (dòng loại ngữ liệu, `cau_moi_cum` null = lấy trọn cụm) — cả n câu con vào đề **liền nhau, đúng thứ tự soạn** (`thu_tu_trong_ngu_lieu`; mọi mã đề giữ thứ tự này). Ở xem trước đề nháp, GV bấm **"Bỏ câu này"** để bỏ bớt câu con (cụm còn ≥ 1 câu; muốn bỏ cả cụm dùng "Đổi cụm"); đề đã chốt thì khoá. Migration `0051`. Chưa có đường "thêm tay một ngữ liệu bất kỳ vào đề" ngoài ma trận.
 - **Vòng đời:** trạng thái tính từ các câu con (`cau_hoi.trang_thai`: nhap → cho_duyet → da_duyet → luu_tru), không lưu cột trạng thái riêng cho ngữ liệu.
-- **Giao diện:** Ngân hàng câu hỏi → tab **Ngữ liệu** (danh sách phân trang, tạo, trang chi tiết thêm/sắp xếp/xoá câu con).
+- **Giao diện:** Ngân hàng câu hỏi có 3 tab — **Tạo câu hỏi** (gồm "Nhập từng câu", "Nhập từ file", **"Tạo ngữ liệu"** với 2 cách: từng ngữ liệu / từ file ngữ liệu + câu con), **Danh sách câu hỏi**, **Danh sách ngữ liệu** (phân trang, tìm theo số hiệu/tiêu đề/nội dung, lọc cấp học → môn → học phần → bài học, chủ đề, loại). Trang chi tiết ngữ liệu: thêm/sắp xếp/xoá câu con. Đường cũ `/ngu-lieu/tao-moi` chuyển hướng về `/tao-moi?tab=ngu-lieu`.
 - **Nhập từ file (riêng, tách khỏi import câu hỏi thường):** `.xlsx` 2 sheet "Ngữ liệu" + "Câu hỏi con" nối bằng cột *Nhóm*; tải file mẫu tại `/dashboard/ngan-hang-cau-hoi/ngu-lieu/template`; xem trước toàn bộ rồi nhập từng nhóm (nhóm lỗi không chặn nhóm khác; một nhóm lỗi giữa chừng sẽ được hoàn tác). Tối đa 100 ngữ liệu / 500 câu con mỗi file; không nhận CSV, chưa hỗ trợ ảnh.
 
 ---
