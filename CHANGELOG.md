@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Đề thi × ngữ liệu: câu con đúng thứ tự soạn + "Bỏ câu này" trong đề nháp
+
+**Tóm tắt:** Trong đề sinh từ ma trận, các câu con của một ngữ liệu nay xếp theo thứ tự đã soạn ở tab Ngữ liệu (trước đây theo mã câu hỏi nên đổi ↑/↓ không có tác dụng), vẫn liền nhau ở mọi mã đề. Ở xem trước đề nháp thêm nút **Bỏ câu này** để GV bỏ bớt câu con (cụm còn ≥ 1 câu).
+
+**Migration:** `0051_de_thi_nhom_ngu_lieu.sql` (Expand: `create or replace danh_so_lai_de`, hàm mới `bo_cau_con_khoi_de`). Test PGlite: `npm run test:de-ngu-lieu`.
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chưa — chờ merge PR, rồi duyệt job `apply-migration-expand`.
+
+---
+
 ## 2026-10-03 — Sửa form đổi mật khẩu bắt buộc: thêm ô "Mật khẩu hiện tại"
 
 **Tóm tắt:** Supabase Auth đang bật "yêu cầu mật khẩu hiện tại khi đổi mật khẩu" nên form đổi mật khẩu lần đầu (thiếu ô này) luôn báo `Current password required when setting new password`, người dùng mới bị kẹt ở trang đổi mật khẩu. Thêm ô "Mật khẩu hiện tại" (gửi `current_password`), dịch lỗi Auth sang tiếng Việt, và nếu bước đánh dấu `phai_doi_mat_khau` lỗi thì bấm lại chỉ gọi lại bước đó. Đăng nhập không đổi.

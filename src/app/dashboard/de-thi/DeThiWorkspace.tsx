@@ -8,6 +8,7 @@ import type { DeThiTai, DonViXemTruoc, PhanXemTruoc } from "@/lib/de-thi/tai-de"
 import {
   capNhatCauHinhDe,
   chotDe,
+  boCauCon,
   doiCum,
   goiYCum,
   khoaDonVi,
@@ -333,6 +334,19 @@ export default function DeThiWorkspace({ data, canEdit }: { data: DeThiTai; canE
                         <div className={styles.cauHead}>
                           <strong>Câu {c.stt}.</strong> <Html html={c.noiDungHtml} />
                         </div>
+                        {u.laCum && u.cau.length > 1 && canEdit && !daChot && (
+                          <button
+                            type="button"
+                            className={styles.btnMini}
+                            disabled={pending}
+                            onClick={() => {
+                              if (window.confirm(`Bỏ câu ${c.stt} khỏi cụm trong đề này? (Câu vẫn còn trong ngân hàng)`))
+                                chay(() => boCauCon(de.id, c.deCauHoiId), "Đã bỏ câu khỏi đề.");
+                            }}
+                          >
+                            Bỏ câu này
+                          </button>
+                        )}
                         <div className={styles.cauMeta}>
                           <span className={styles.mono}>{c.maCauHoi}</span>
                           {c.doKho != null && <span className={styles.muted}>Khó {c.doKho}/5</span>}
