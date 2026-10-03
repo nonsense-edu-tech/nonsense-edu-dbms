@@ -1,3 +1,4 @@
+-- adr004-type: expand
 -- 0050: Ngữ liệu dùng chung — nhóm câu hỏi con (1 ngữ liệu : N câu hỏi).
 -- Loại migration: EXPAND (ADR-004). Code cũ không biết các cột mới vẫn chạy bình thường:
 --   * cột mới đều nullable / có default;
