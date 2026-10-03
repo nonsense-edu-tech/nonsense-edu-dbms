@@ -175,6 +175,14 @@ export async function doiCum(deId: string, dongId: string, cu: string, moi: stri
   return { ok: true };
 }
 
+export async function boCauCon(deId: string, deCauHoiId: string): Promise<KqOk> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("bo_cau_con_khoi_de", { p_de_id: deId, p_de_cau_hoi_id: deCauHoiId });
+  if (error) return { error: loiDb(error.message) };
+  revalidatePath(`/dashboard/de-thi/${deId}`);
+  return { ok: true };
+}
+
 export async function chotDe(deId: string, soMa: number): Promise<{ error: string } | { maDe: string }> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("chot_de", { p_de_id: deId, p_so_ma: soMa });
