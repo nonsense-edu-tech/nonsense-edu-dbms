@@ -75,7 +75,7 @@ công. Từ nay:
    báo lỗi "migration chưa áp dụng lên production" sau khi merge (đã xảy ra
    với 0050, 03/10/2026, và nhiều lần trước đó). Checklist trước khi mở PR có
    migration: `head -n 15 supabase/migrations/NNNN_*.sql | grep -- "-- adr004-type: expand"`
-   phải ra đúng 1 dòng. Sau merge, vào GitHub Actions duyệt job
+   phải ra đúng 1 dòng (CI `ci.yml` cũng chặn PR thiếu tag, và chạy lint + tsc + test PGlite). Sau merge, vào GitHub Actions duyệt job
    `apply-migration-expand` (Environment `production-db`) thì migration mới được áp.
 
 Lớp chặn thật (không dựa vào ai nhớ luật trên): GitHub Action
