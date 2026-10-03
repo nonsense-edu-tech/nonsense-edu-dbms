@@ -19,7 +19,7 @@ export default async function DoiMatKhauPage() {
 
       <section className={styles.card}>
         <p className={styles.noticeBox} style={{ marginBottom: 20 }}>
-          Tài khoản của bạn đang dùng mật khẩu mặc định — bắt buộc đổi trước khi tiếp tục sử dụng hệ thống.
+          Tài khoản của bạn đang dùng mật khẩu mặc định — bắt buộc đổi trước khi tiếp tục sử dụng hệ thống. Nhập mật khẩu hiện tại (mật khẩu Admin đã cấp cho bạn) rồi đặt mật khẩu mới.
         </p>
         <DoiMatKhauForm />
       </section>
