@@ -28,7 +28,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng; kiểm bằng PGlite)
 
-**Production:** 🔲 chưa — chờ merge PR → CI áp migration.
+**Production:** 🔲 chưa — PR #49 đã merge nhưng 0050 thiếu tag `-- adr004-type: expand` nên CI xếp là contract và báo lỗi parity; đã bổ sung tag ở PR sửa tiếp theo, chờ CI áp sau khi duyệt Environment `production-db`.
 
 ---
 
