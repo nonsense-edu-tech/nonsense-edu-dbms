@@ -163,7 +163,7 @@ export default async function BuoiHocPage({ searchParams }: { searchParams: Prom
               />
             ) : (
               <p className={styles.noticeBox}>
-                Vai trò của bạn ("{vaiTro || "chưa gán"}") không được tạo buổi học.
+                Vai trò của bạn (&quot;{vaiTro || "chưa gán"}&quot;) không được tạo buổi học.
               </p>
             )}
           </section>

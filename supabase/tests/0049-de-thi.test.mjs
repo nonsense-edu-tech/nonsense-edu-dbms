@@ -68,10 +68,6 @@ insert into public.users values ('${U.gv}','gv'),('${U.gv2}','gv'),('${U.tg}','t
 insert into public.user_pham_vi(user_id,cap_hoc_ma,mon_hoc_ma) values ('${U.gv}',1,10),('${U.gv2}',1,11);
 `);
 // ma_cau_hoi: cap(1) ctr(3) mon(2) hp(2) bai(2) cd(2) dang(1) stt(4) = 17
-let n = 0;
-const ma = (mon, dang, stt) => `1000${String(mon).padStart(2, "0")}00000${dang}${String(stt).padStart(4, "0")}`.slice(0, 17);
-// build: 1 + 000 + mon(2) + 00 + 00 + 00 + dang + stt(4) = 1+3+2+2+2+2+1+4 = 17
-const mk = (mon, dang, stt) => `1000${String(mon).padStart(2,"0")}000000${dang}${String(stt).padStart(4,"0")}`;
 // positions used by stub generated columns are offsets 1,5,7,9,11,13: cap=1,mon=5-6,hp=7-8,bai=9-10,cd=11-12,dang=13
 const mk2 = (mon, dang, stt) => `1000${String(mon).padStart(2,"0")}${"00"}${"00"}${"00"}${dang}${String(stt).padStart(4,"0")}`;
 async function q(sql, uid) {
@@ -122,7 +118,7 @@ const r1 = await ok("sinh_de", async () => (await q(`select public.sinh_de('${de
 console.log(JSON.stringify(r1));
 const cnt = await q(`select count(*)::int c, count(distinct cau_hoi_id)::int d, count(distinct cum_id)::int cum from public.de_cau_hoi where de_id='${de}'`, U.gv);
 console.log(cnt.rows[0]);
-const r1b = (await q(`select public.sinh_de('${de}','seed-1') as j`, U.gv)).rows[0].j;
+await q(`select public.sinh_de('${de}','seed-1') as j`, U.gv);
 const same = JSON.stringify((await q(`select cau_hoi_id from public.de_cau_hoi where de_id='${de}' order by thu_tu`, U.gv)).rows);
 await q(`select public.sinh_de('${de}','seed-1')`, U.gv);
 const same2 = JSON.stringify((await q(`select cau_hoi_id from public.de_cau_hoi where de_id='${de}' order by thu_tu`, U.gv)).rows);

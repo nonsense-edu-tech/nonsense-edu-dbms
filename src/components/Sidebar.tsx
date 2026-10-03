@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { nhomGiaoDien, tenVaiTro, NGUOI_DUNG_TIER, type NhomGiaoDien } from "@/lib/vai-tro";
 import styles from "./Sidebar.module.css";
 
@@ -83,36 +83,52 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
 
 const STORAGE_KEY = "nonsense-edu:sidebar-collapsed";
 
+// Kho nhỏ cho trạng thái thu gọn. Có bản sao trong bộ nhớ để vẫn chạy khi
+// localStorage bị chặn (private mode) — khi đó chỉ mất ghi nhớ giữa các lần mở.
+let thuGonTrongBoNho: boolean | null = null;
+const nguoiNgheThuGon = new Set<() => void>();
+
+function docThuGon(): boolean {
+  if (thuGonTrongBoNho !== null) return thuGonTrongBoNho;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function ghiThuGon(giaTri: boolean) {
+  thuGonTrongBoNho = giaTri;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, giaTri ? "1" : "0");
+  } catch {
+    // best-effort, không chặn UI nếu ghi thất bại
+  }
+  nguoiNgheThuGon.forEach((f) => f());
+}
+
+function dangKyThuGon(cb: () => void) {
+  nguoiNgheThuGon.add(cb);
+  return () => {
+    nguoiNgheThuGon.delete(cb);
+  };
+}
+
 export default function Sidebar({ vaiTro }: { vaiTro: string }) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-    try {
-      setCollapsed(window.localStorage.getItem(STORAGE_KEY) === "1");
-    } catch {
-      // localStorage không khả dụng (ví dụ private mode chặn) — giữ mặc định mở rộng.
-    }
-  }, []);
+  // Đọc trạng thái thu gọn từ localStorage qua useSyncExternalStore: server và
+  // lần hydrate đầu luôn là "mở rộng" (tránh lệch HTML/nhấp nháy), sau đó React
+  // tự áp giá trị đã lưu — không cần effect + setState.
+  const collapsed = useSyncExternalStore(dangKyThuGon, docThuGon, () => false);
 
   function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      // best-effort, không chặn UI nếu ghi thất bại
-    }
+    ghiThuGon(!collapsed);
   }
 
   const nhom = nhomGiaoDien(vaiTro);
   const groups = navGroupsForNhom(nhom, vaiTro);
   const tatCaItems = groups.flatMap((g) => g.items);
-  // Tránh nhấp nháy layout khi chưa đọc xong localStorage: giữ trạng thái mở
-  // rộng cho tới khi hydrate xong rồi mới áp trạng thái đã lưu.
-  const isCollapsed = hydrated && collapsed;
+  const isCollapsed = collapsed;
 
   return (
     <nav className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""}`} aria-label="Điều hướng chính">

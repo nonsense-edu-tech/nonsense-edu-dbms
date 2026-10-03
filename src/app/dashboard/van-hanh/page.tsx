@@ -35,7 +35,7 @@ export default async function VanHanhPage() {
         </section>
       ) : (
         <section className={styles.card}>
-          <h2 className={styles.cardTitle}>Các khối trong "Vận hành"</h2>
+          <h2 className={styles.cardTitle}>Các khối trong &quot;Vận hành&quot;</h2>
           <p className={styles.empty}>
             <strong>Loại phòng</strong> — đơn giá thuê/điện nước/khấu hao theo loại phòng. Chỉ Master Admin/Kế toán
             xem được (dữ liệu chi phí).
