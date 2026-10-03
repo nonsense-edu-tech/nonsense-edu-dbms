@@ -1,0 +1,56 @@
+name: CI (PR checks)
+
+# Chặn lỗi lặp lại TRƯỚC khi merge:
+#  1) migration mới/sửa thiếu tag "-- adr004-type: expand|contract" ở 15 dòng đầu
+#     (thiếu tag → db-parity-check xếp là contract, không tự áp, parity fail sau merge);
+#  2) lỗi eslint, lỗi TypeScript;
+#  3) test migration PGlite (đề thi, ngữ liệu).
+# Không đụng production DB, không cần secrets.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  migration-tag:
+    name: "Migration có tag adr004-type"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Kiểm tra tag cho migration thêm/sửa trong PR
+        run: |
+          set -e
+          base="origin/${{ github.base_ref }}"
+          files=$(git diff --name-only --diff-filter=AM "$base"...HEAD -- 'supabase/migrations/*.sql')
+          if [ -z "$files" ]; then echo "PR không đổi migration."; exit 0; fi
+          fail=0
+          for f in $files; do
+            if head -n 15 "$f" | grep -qE -- '^-- adr004-type: (expand|contract)[[:space:]]*$'; then
+              echo "OK   $f: $(head -n 15 "$f" | grep -oE -- 'adr004-type: (expand|contract)')"
+            else
+              echo "::error file=$f,line=1::Thiếu dòng '-- adr004-type: expand' (hoặc contract) trong 15 dòng đầu. Xem CLAUDE.md, luật 4 mục migration & deploy."
+              fail=1
+            fi
+          done
+          exit $fail
+
+  lint-type-test:
+    name: "Lint + TypeScript + test migration"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ESLint (lỗi làm fail, cảnh báo thì không)
+        run: npm run lint -- .
+      - name: TypeScript
+        run: npx tsc --noEmit
+      - name: Test migration (PGlite)
+        run: |
+          npm run test:de-thi
+          npm run test:ngu-lieu
