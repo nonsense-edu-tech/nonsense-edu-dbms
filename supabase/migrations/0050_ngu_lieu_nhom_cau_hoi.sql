@@ -178,3 +178,80 @@ as $$
       from public.cau_hoi
      where ngu_lieu_id = p_ngu_lieu_id and deleted_at is null;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- 7) Đổi thứ tự câu con (lên/xuống) — hoán đổi nguyên tử trong 1 giao dịch.
+--    SECURITY INVOKER: RLS của cau_hoi vẫn áp dụng cho người gọi.
+--    Dùng giá trị tạm 32767 vì unique index kiểm tra từng dòng ngay lập tức.
+-- ---------------------------------------------------------------------------
+create or replace function public.doi_thu_tu_cau_con(p_cau_hoi_id uuid, p_huong text)
+returns void language plpgsql security invoker set search_path = public
+as $$
+declare
+    a_id uuid; a_nl uuid; a_t smallint;
+    b_id uuid; b_t smallint;
+begin
+    if p_huong not in ('len', 'xuong') then
+        raise exception 'Hướng đổi thứ tự không hợp lệ';
+    end if;
+
+    select id, ngu_lieu_id, thu_tu_trong_ngu_lieu into a_id, a_nl, a_t
+      from public.cau_hoi where id = p_cau_hoi_id and deleted_at is null;
+    if a_id is null or a_nl is null then
+        raise exception 'Câu hỏi không thuộc ngữ liệu nào';
+    end if;
+
+    if p_huong = 'len' then
+        select id, thu_tu_trong_ngu_lieu into b_id, b_t from public.cau_hoi
+         where ngu_lieu_id = a_nl and deleted_at is null and thu_tu_trong_ngu_lieu < a_t
+         order by thu_tu_trong_ngu_lieu desc limit 1;
+    else
+        select id, thu_tu_trong_ngu_lieu into b_id, b_t from public.cau_hoi
+         where ngu_lieu_id = a_nl and deleted_at is null and thu_tu_trong_ngu_lieu > a_t
+         order by thu_tu_trong_ngu_lieu asc limit 1;
+    end if;
+    if b_id is null then return; end if; -- đã ở đầu/cuối
+
+    update public.cau_hoi set thu_tu_trong_ngu_lieu = 32767 where id = a_id;
+    update public.cau_hoi set thu_tu_trong_ngu_lieu = a_t   where id = b_id;
+    update public.cau_hoi set thu_tu_trong_ngu_lieu = b_t   where id = a_id;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 8) Xóa mềm ngữ liệu kèm TOÀN BỘ câu con (câu con không tồn tại độc lập).
+--    SECURITY DEFINER vì phải thấy de_cau_hoi bất kể RLS của người gọi → tự kiểm vai trò + phạm vi môn.
+--    Chặn nếu có câu con đã nằm trong bất kỳ đề nào.
+-- ---------------------------------------------------------------------------
+create or replace function public.xoa_mem_ngu_lieu(p_id uuid)
+returns void language plpgsql security definer set search_path = public
+as $$
+declare
+    v_mon smallint; v_cap smallint;
+begin
+    if coalesce(auth_role(), '') not in ('master_admin', 'admin_ht', 'truong_bm', 'gv') then
+        raise exception 'Bạn không có quyền xóa ngữ liệu';
+    end if;
+
+    select cap_hoc_ma, mon_hoc_ma into v_cap, v_mon from public.ngu_lieu where id = p_id and deleted_at is null;
+    if not found then
+        raise exception 'Không tìm thấy ngữ liệu';
+    end if;
+    if auth_role() = 'gv' and v_mon is not null and not public.co_quyen_mon(v_mon, v_cap) then
+        raise exception 'Bạn không có quyền với môn học của ngữ liệu này';
+    end if;
+
+    if exists (
+        select 1 from public.de_cau_hoi dch join public.cau_hoi c on c.id = dch.cau_hoi_id
+         where c.ngu_lieu_id = p_id
+    ) then
+        raise exception 'Ngữ liệu có câu hỏi đã nằm trong đề — không xóa được. Gỡ khỏi đề trước.';
+    end if;
+
+    update public.cau_hoi  set deleted_at = now() where ngu_lieu_id = p_id and deleted_at is null;
+    update public.ngu_lieu set deleted_at = now() where id = p_id and deleted_at is null;
+end;
+$$;
+
+revoke all on function public.xoa_mem_ngu_lieu(uuid) from public;
+grant execute on function public.xoa_mem_ngu_lieu(uuid) to authenticated;

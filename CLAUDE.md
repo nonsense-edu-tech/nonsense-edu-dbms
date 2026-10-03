@@ -22,7 +22,13 @@ thuộc Khối 2.
 - **Supabase** (PostgreSQL + Auth + RLS) làm backend/CSDL.
 - **Vercel** deploy: branch `main` = production, `develop` = staging.
 - Supabase có 2 project: `DBMS Project (Jul2026)` = **production**,
-  `nonsense-edu-staging` = **staging**. Luôn thử migration trên staging trước.
+  `nonsense-edu-staging` = **staging** — **hiện INACTIVE và chủ dự án quyết
+  định KHÔNG bật lại (03/10/2026)**. Đừng tự restore/bật staging, đừng viết
+  quy trình dựa vào staging. Migration được kiểm bằng test PGlite local
+  (`supabase/tests/*.test.mjs`), rồi đi vào production **chỉ qua PR → merge →
+  CI** (ADR-004/005); chủ dự án test trực tiếp trên production sau merge. Vẫn
+  CẤM áp migration tay lên production (SQL Editor, `supabase db push`, MCP
+  `apply_migration`) và migration phải Expand/tương thích ngược với code cũ.
 - Đăng nhập bằng **email + mật khẩu** (Supabase Auth).
   ⚠️ **KHÔNG dùng Google OAuth** — đã quyết định bỏ. Đừng tự thêm lại.
 
@@ -179,7 +185,7 @@ thụ trực tiếp `ma_hoc_sinh` làm Person ID (giới hạn ≤16 ký tự, c
 - Trước khi động vào cấu trúc ID hoặc CSDL, **đọc `docs/adr/ADR-002-...md`
   trước, `docs/dac-ta-he-thong.md` sau** (ADR ưu tiên cao hơn nếu mâu thuẫn).
 - Mọi thay đổi CSDL viết thành **migration SQL** trong `supabase/migrations/`,
-  đặt tên `NNNN_mo_ta.sql` tăng dần, áp dụng **staging trước, production sau**.
+  đặt tên `NNNN_mo_ta.sql` tăng dần, kiểm bằng test PGlite local rồi đưa lên **production qua PR/CI** (staging không dùng — xem trên).
 - Commit dưới tài khoản tổ chức (`git config user.email "it@nonsense.edu.vn"`).
 - **Không tự ý nhảy cóc bước trong roadmap.** Dừng lại chờ xác nhận sau mỗi
   bước, trừ khi được yêu cầu làm liên tục.

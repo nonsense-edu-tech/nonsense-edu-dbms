@@ -140,20 +140,30 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   const hinhAnh = docHinhAnh(formData, chiSoGoc);
   if ("error" in hinhAnh) return hinhAnh;
 
+  // Câu con của ngữ liệu: vị trí LẤY TỪ NGỮ LIỆU (không tin form) — một ngữ liệu một vị trí.
+  const nguLieuId = String(formData.get("ngu_lieu_id") ?? "").trim();
+  let viTri = { cap_hoc: capHoc, mon_hoc: monHoc, hoc_phan: hocPhan, bai_hoc: baiHoc, chu_de: chuDe };
+  if (nguLieuId) {
+    const { data: vt, error: vtError } = await supabase.rpc("vi_tri_ngu_lieu", { p_id: nguLieuId });
+    const dong = Array.isArray(vt) ? vt[0] : vt;
+    if (vtError || !dong) return { error: "Không tìm thấy ngữ liệu để thêm câu hỏi." };
+    viTri = { cap_hoc: dong.cap_hoc, mon_hoc: dong.mon_hoc, hoc_phan: dong.hoc_phan, bai_hoc: dong.bai_hoc, chu_de: dong.chu_de };
+  }
+
   const ketQua = await luuCauHoi(supabase, user.id, {
-    cap_hoc: capHoc,
+    cap_hoc: viTri.cap_hoc,
     chuong_trinh: chuongTrinh,
-    mon_hoc: monHoc,
-    hoc_phan: hocPhan,
-    bai_hoc: baiHoc,
-    chu_de: chuDe,
+    mon_hoc: viTri.mon_hoc,
+    hoc_phan: viTri.hoc_phan,
+    bai_hoc: viTri.bai_hoc,
+    chu_de: viTri.chu_de,
     dang_cau: dangCau,
     noi_dung: noiDung,
     do_kho: doKho,
     loi_giai: loiGiai,
     dap_an_text: dapAnText,
     lua_chon: luaChonList,
-  });
+  }, nguLieuId || undefined);
   if ("error" in ketQua) return ketQua;
   const cauHoi = ketQua.data;
 
@@ -167,6 +177,7 @@ export async function taoCauHoi(formData: FormData): Promise<TaoCauHoiResult> {
   }
 
   revalidatePath("/dashboard/ngan-hang-cau-hoi");
+  if (nguLieuId) revalidatePath(`/dashboard/ngan-hang-cau-hoi/ngu-lieu/${nguLieuId}`);
   return { data: cauHoi as CauHoi };
 }
 

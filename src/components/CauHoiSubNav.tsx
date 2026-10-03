@@ -5,7 +5,7 @@ import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.c
  * Tab con của Ngân hàng câu hỏi. Tab "Tạo câu hỏi" chỉ hiện với vai trò được tạo
  * (quy tắc "ẩn hẳn, không hiện dạng khoá" — giống HocSinhSubNav).
  */
-export default function CauHoiSubNav({ active, canCreate }: { active: "tao" | "danh-sach"; canCreate: boolean }) {
+export default function CauHoiSubNav({ active, canCreate }: { active: "tao" | "danh-sach" | "ngu-lieu"; canCreate: boolean }) {
   return (
     <nav className={styles.subNav} aria-label="Ngân hàng câu hỏi">
       {canCreate && (
@@ -23,6 +23,13 @@ export default function CauHoiSubNav({ active, canCreate }: { active: "tao" | "d
         aria-current={active === "danh-sach" ? "page" : undefined}
       >
         Danh sách câu hỏi
+      </Link>
+      <Link
+        href="/dashboard/ngan-hang-cau-hoi/ngu-lieu"
+        className={`${styles.subNavLink} ${active === "ngu-lieu" ? styles.subNavLinkActive : ""}`}
+        aria-current={active === "ngu-lieu" ? "page" : undefined}
+      >
+        Ngữ liệu
       </Link>
     </nav>
   );
