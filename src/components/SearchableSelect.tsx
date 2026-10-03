@@ -43,9 +43,14 @@ export default function SearchableSelect({
     return options.filter((o) => chuanHoa(o.label).includes(q));
   }, [options, query]);
 
-  useEffect(() => {
+  // Đặt lại mục đang chọn khi ô tìm kiếm/trạng thái mở đổi (điều chỉnh state
+  // ngay lúc render, không dùng effect — tránh render dư).
+  const khoaTruoc = `${query}|${open}`;
+  const [khoaCu, setKhoaCu] = useState(khoaTruoc);
+  if (khoaCu !== khoaTruoc) {
+    setKhoaCu(khoaTruoc);
     setActiveIndex(0);
-  }, [query, open]);
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {

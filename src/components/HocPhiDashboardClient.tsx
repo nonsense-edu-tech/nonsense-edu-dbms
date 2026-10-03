@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useCatTrangCucBo } from "@/components/PhanTrang";
 import Link from "next/link";
 import { tienHienThi } from "@/lib/formatCurrency";
-import { ngayHienThi } from "@/lib/formatDate";
 import {
   tinhConPhaiThu,
   tinhDoanhThuThuan,
@@ -84,8 +83,6 @@ export default function HocPhiDashboardClient({
   const tuNgay = tinhTuNgay(preset, customFrom);
   const denNgay = preset === "custom" ? customTo || new Date().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
 
-  const theoChuongTrinh = (ma: string) => chuongTrinhChon.length === 0 || chuongTrinhChon.includes(ma);
-
   function toggleChuongTrinh(ma: string) {
     setChuongTrinhChon((cur) => (cur.includes(ma) ? cur.filter((c) => c !== ma) : [...cur, ma]));
   }
@@ -103,7 +100,7 @@ export default function HocPhiDashboardClient({
   const conPhaiThu = tinhConPhaiThu(doanhThuThuan, thucThu);
 
   const quaHanLoc = useMemo(
-    () => quaHan.filter((q) => theoChuongTrinh(q.chuong_trinh_ma)).sort((a, b) => b.so_ngay_tre_nhat - a.so_ngay_tre_nhat || a.hop_dong_id.localeCompare(b.hop_dong_id)),
+    () => quaHan.filter((q) => chuongTrinhChon.length === 0 || chuongTrinhChon.includes(q.chuong_trinh_ma)).sort((a, b) => b.so_ngay_tre_nhat - a.so_ngay_tre_nhat || a.hop_dong_id.localeCompare(b.hop_dong_id)),
     [quaHan, chuongTrinhChon]
   );
   const { rows: quaHanTrang, thanh: thanhQuaHan } = useCatTrangCucBo(quaHanLoc);
@@ -245,13 +242,11 @@ function PieBlock({
   slices: { label: string; value: number; color: string }[];
 }) {
   const tong = slices.reduce((t, s) => t + s.value, 0) || 1;
-  let goc = 0;
   const stops = slices
-    .map((s) => {
-      const tyLe = (s.value / tong) * 100;
-      const tu = goc;
-      goc += tyLe;
-      return `${s.color} ${tu}% ${goc}%`;
+    .map((s, i) => {
+      const tu = (slices.slice(0, i).reduce((t, x) => t + x.value, 0) / tong) * 100;
+      const den = tu + (s.value / tong) * 100;
+      return `${s.color} ${tu}% ${den}%`;
     })
     .join(", ");
 
