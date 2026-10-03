@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Phân công giảng dạy: GV chỉ thấy lớp/học sinh mình phụ trách, duyệt học phần, tạo user một bước
+
+**Tóm tắt:** Thêm bảng phân công giảng dạy (lớp × môn). Giáo viên / trợ giảng / trưởng bộ môn chỉ thấy lớp được phân công; học sinh chỉ hiện tên + lớp (không SĐT, qua RPC `hoc_sinh_cua_toi`); không còn thấy cụm Vận hành và tab Học liệu ở sidebar (chặn cả truy cập URL). GV đề xuất học phần → Trưởng bộ môn/quản trị duyệt (mã cấp khi duyệt); GV tạo bài học dưới học phần đã duyệt trong môn mình. Master Admin tạo người dùng trong một bước (email, tên, vai trò, chi nhánh, môn/cấp học, phân lớp tuỳ chọn). Chi tiết và ngoại lệ ADR-002: `docs/adr/ADR-007-phan-cong-giang-day-va-rls-theo-lop.md`. Test PGlite: `npm run test:phan-cong`.
+
+**Migration:** `0052_phan_cong_giang_day_rls_gv_duyet_hoc_phan.sql` (Expand; có thay thế policy SELECT — xem ADR-007).
+
+**Staging:** — (không dùng)
+
+**Production:** ✅ đã áp dụng thủ công 03/10/2026 trước khi có PR (sai lệch ADR-004, ghi trong ADR-007); file migration là bản sao nguyên văn, lịch sử migration remote đồng bộ về `0052`. Code giao diện: 🔲 chưa — chờ merge PR.
+
+---
+
 ## 2026-10-03 — Giao diện ngữ liệu: tạo nằm trong "Tạo câu hỏi", danh sách ngữ liệu có tìm kiếm + bộ lọc
 
 **Tóm tắt:** Tab "Tạo câu hỏi" có thêm mục **Tạo ngữ liệu** (từng ngữ liệu / nhập từ file). Tab "Ngữ liệu" đổi thành **Danh sách ngữ liệu**, có ô tìm kiếm (số hiệu, tiêu đề, nội dung) và bộ lọc cấp học, môn, học phần, bài học, chủ đề, loại, giống Danh sách câu hỏi. Trang `/ngu-lieu/tao-moi` cũ tự chuyển hướng. Chỉ đổi code giao diện.

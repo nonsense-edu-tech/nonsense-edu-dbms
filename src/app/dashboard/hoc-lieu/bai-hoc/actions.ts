@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type BaiHoc = {
   id: string;
-  ma: number;
+  ma: number | null;
   ten: string;
 };
 
@@ -13,8 +13,11 @@ export type TaoBaiHocResult = { error: string } | { data: BaiHoc };
 export type SuaBaiHocResult = { error: string } | { ok: true };
 export type XoaBaiHocResult = { error: string } | { ok: true };
 
-function docMa(formData: FormData): number | { error: string } {
-  const value = Number(formData.get("ma"));
+// Mã để trống = hệ thống tự cấp (trigger DB, tuần tự trong học phần).
+function docMa(formData: FormData): number | null | { error: string } {
+  const raw = String(formData.get("ma") ?? "").trim();
+  if (raw === "") return null;
+  const value = Number(raw);
   if (!Number.isInteger(value) || value < 1 || value > 99) {
     return { error: "Mã bài học phải là số nguyên từ 1 đến 99." };
   }
@@ -32,11 +35,11 @@ export async function taoBaiHoc(formData: FormData): Promise<TaoBaiHocResult> {
   if (!ten) return { error: "Tên bài học không được để trống." };
 
   const ma = docMa(formData);
-  if (typeof ma !== "number") return ma;
+  if (ma !== null && typeof ma !== "number") return ma;
 
   const { data, error } = await supabase
     .from("bai_hoc")
-    .insert({ hoc_phan_id: hocPhanId, ma, ten, mo_ta: moTa })
+    .insert({ hoc_phan_id: hocPhanId, ...(ma === null ? {} : { ma }), ten, mo_ta: moTa })
     .select("id, ma, ten")
     .single();
 
@@ -57,9 +60,12 @@ export async function suaBaiHoc(formData: FormData): Promise<SuaBaiHocResult> {
   if (!ten) return { error: "Tên bài học không được để trống." };
 
   const ma = docMa(formData);
-  if (typeof ma !== "number") return ma;
+  if (ma !== null && typeof ma !== "number") return ma;
 
-  const { error } = await supabase.from("bai_hoc").update({ ma, ten, mo_ta: moTa }).eq("id", id);
+  const { error } = await supabase
+    .from("bai_hoc")
+    .update({ ...(ma === null ? {} : { ma }), ten, mo_ta: moTa })
+    .eq("id", id);
 
   if (error) return { error: mapDbError(error.message) };
 

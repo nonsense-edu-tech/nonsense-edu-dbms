@@ -8,6 +8,7 @@ import HocPhanTable, { type HocPhanRow } from "@/components/HocPhanTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm"];
+const VAI_TRO_TAO = [...VAI_TRO_QUAN_LY, "gv"];
 
 export default async function HocPhanPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
@@ -19,11 +20,12 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: hocPhanList, count: tongHocPhan }, { data: monHocList }, { data: capHocList }] = await Promise.all([
+  const [{ data: profile }, { data: phamVi }, { data: hocPhanList, count: tongHocPhan }, { data: monHocList }, { data: capHocList }] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
+    supabase.from("user_pham_vi").select("cap_hoc_ma, mon_hoc_ma").eq("user_id", user.id),
     supabase
       .from("hoc_phan")
-      .select("id, mon_hoc_id, ma, ten, mo_ta", { count: "exact" })
+      .select("id, mon_hoc_id, ma, ten, mo_ta, trang_thai, nguoi_tao, ly_do_tu_choi", { count: "exact" })
       .is("deleted_at", null)
       .order("ma")
       .order("id")
@@ -38,12 +40,20 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
 
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
-  const canWrite = isActive && VAI_TRO_QUAN_LY.includes(vaiTro);
+  const quanLy = isActive && VAI_TRO_QUAN_LY.includes(vaiTro);
+  const laGv = isActive && vaiTro === "gv";
+  const canCreate = isActive && VAI_TRO_TAO.includes(vaiTro);
 
   const capHocMap = new Map((capHocList ?? []).map((c) => [c.ma, c.ten]));
   const monHocMap = new Map((monHocList ?? []).map((m) => [m.id, m]));
 
-  const monHocOptions = (monHocList ?? []).map((m) => ({
+  // GV chỉ chọn được môn trong phạm vi được phân (khớp co_quyen_mon ở DB).
+  const monDuocChon = (monHocList ?? []).filter(
+    (m) =>
+      !laGv ||
+      (phamVi ?? []).some((p) => p.cap_hoc_ma === m.cap_hoc_ma && (p.mon_hoc_ma === null || p.mon_hoc_ma === m.ma))
+  );
+  const monHocOptions = monDuocChon.map((m) => ({
     id: m.id,
     ma: m.ma,
     cap_hoc_ma: m.cap_hoc_ma,
@@ -61,6 +71,9 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
       mo_ta: hp.mo_ta,
       mon_hoc_ten: mh?.ten ?? "—",
       cap_hoc_ten: mh ? capHocMap.get(mh.cap_hoc_ma) ?? String(mh.cap_hoc_ma) : "—",
+      trang_thai: hp.trang_thai,
+      ly_do_tu_choi: hp.ly_do_tu_choi,
+      tao_boi_toi: hp.nguoi_tao === user.id,
     };
   });
 
@@ -70,6 +83,7 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
         <h1 className={styles.title}>Học phần</h1>
       </div>
 
+      {!laGv && vaiTro !== "truong_bm" && (
       <nav className={styles.subNav}>
         <Link href="/dashboard/hoc-lieu" className={styles.subNavLink}>Tổng quan</Link>
         <Link href="/dashboard/hoc-lieu/cap-hoc" className={styles.subNavLink}>Cấp học</Link>
@@ -79,14 +93,15 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={styles.subNavLink}>Bài học</Link>
       </nav>
+      )}
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Tạo học phần mới</h2>
-        {canWrite ? (
-          <HocPhanForm monHocList={monHocOptions} />
+        <h2 className={styles.cardTitle}>{laGv ? "Đề xuất học phần mới (cần Trưởng bộ môn duyệt)" : "Tạo học phần mới"}</h2>
+        {canCreate ? (
+          <HocPhanForm monHocList={monHocOptions} laGv={laGv} />
         ) : (
           <p className={styles.noticeBox}>
-            Chỉ Master Admin, Admin học thuật hoặc Trưởng bộ môn được tạo/sửa/xoá học phần. Tài khoản của bạn:{" "}
+            Chỉ Master Admin, Admin học thuật, Trưởng bộ môn hoặc Giáo viên được tạo học phần. Tài khoản của bạn:{" "}
             {isActive ? `vai trò "${vaiTro || "chưa gán"}"` : "tài khoản đang bị khoá (disabled)"}.
           </p>
         )}
@@ -96,7 +111,7 @@ export default async function HocPhanPage({ searchParams }: { searchParams: Prom
         <h2 className={styles.cardTitle}>Danh sách học phần ({total})</h2>
         {total > 0 ? (
           <>
-            <HocPhanTable list={hocPhanRows} canWrite={canWrite} />
+            <HocPhanTable list={hocPhanRows} quanLy={quanLy} laGv={laGv} />
             <PhanTrang total={total} page={pp.page} size={pp.size} />
           </>
         ) : (

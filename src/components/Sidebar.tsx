@@ -51,19 +51,21 @@ function navGroupsForNhom(nhom: NhomGiaoDien, vaiTro: string): NavGroup[] {
     ];
   }
   if (nhom === "gv") {
+    // GV/TBM: KHÔNG thấy cụm "Vận hành" và tab "Học liệu" (chỉ còn Học phần/Bài học
+    // — hai chức năng GV được tạo trong môn mình phụ trách). Lớp/học sinh chỉ hiện
+    // phạm vi được phân công (RLS + RPC hoc_sinh_cua_toi).
     return [
       {
-        label: "Vận hành",
+        label: "Giảng dạy",
         items: [
-          { href: "/dashboard/lop", icon: <IconLop />, label: "Lớp học" },
-          { href: "/dashboard/hoc-sinh", icon: <IconHocSinh />, label: "Học sinh" },
-          { href: "/dashboard/van-hanh", icon: <IconVanHanh />, label: "Vận hành" },
+          { href: "/dashboard/lop-cua-toi", icon: <IconLop />, label: "Lớp của tôi" },
+          { href: "/dashboard/hoc-sinh-cua-toi", icon: <IconHocSinh />, label: "Học sinh của tôi" },
         ],
       },
       {
         label: "Học thuật",
         items: [
-          { href: "/dashboard/hoc-lieu", icon: <IconHocLieu />, label: "Học liệu" },
+          { href: "/dashboard/hoc-lieu/hoc-phan", icon: <IconHocLieu />, label: "Học phần" },
           { href: "/dashboard/hoc-lieu/bai-hoc", icon: <IconBaiHoc />, label: "Bài học" },
           { href: "/dashboard/ngan-hang-cau-hoi", icon: <IconCauHoi />, label: "Ngân hàng câu hỏi" },
           { href: "/dashboard/de-thi", icon: <IconDeThi />, label: "Đề thi" },

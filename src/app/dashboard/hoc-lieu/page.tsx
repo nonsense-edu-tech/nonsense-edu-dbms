@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { nhomGiaoDien } from "@/lib/vai-tro";
 import styles from "./hoc-lieu.module.css";
 
 export default async function HocLieuPage() {
@@ -10,6 +11,10 @@ export default async function HocLieuPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  // GV/TBM/trợ giảng không có tab "Học liệu" — chuyển thẳng tới Học phần.
+  const { data: profile } = await supabase.from("users").select("vai_tro").eq("id", user.id).single();
+  if (profile && nhomGiaoDien(profile.vai_tro) !== "admin") redirect("/dashboard/hoc-lieu/hoc-phan");
 
   return (
     <main className={styles.page}>

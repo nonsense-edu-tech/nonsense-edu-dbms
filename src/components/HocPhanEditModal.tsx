@@ -7,7 +7,7 @@ import type { HocPhanRow } from "./HocPhanTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-lieu/hoc-lieu.module.css";
 
-export default function HocPhanEditModal({ hocPhan, onClose }: { hocPhan: HocPhanRow; onClose: () => void }) {
+export default function HocPhanEditModal({ hocPhan, onClose, laGv = false }: { hocPhan: HocPhanRow; onClose: () => void; laGv?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
@@ -39,10 +39,12 @@ export default function HocPhanEditModal({ hocPhan, onClose }: { hocPhan: HocPha
         </div>
 
         <form onSubmit={handleSubmit} className={formStyles.form} noValidate>
+          {!laGv && (
           <div className={formStyles.field}>
             <label htmlFor="ma" className={formStyles.label}>Mã học phần (1-99)</label>
-            <input id="ma" name="ma" type="number" min={1} max={99} required className={formStyles.input} disabled={isPending} defaultValue={hocPhan.ma} />
+            <input id="ma" name="ma" type="number" min={1} max={99} className={formStyles.input} disabled={isPending} defaultValue={hocPhan.ma ?? ""} />
           </div>
+          )}
 
           <div className={formStyles.field}>
             <label htmlFor="ten" className={formStyles.label}>Tên học phần</label>

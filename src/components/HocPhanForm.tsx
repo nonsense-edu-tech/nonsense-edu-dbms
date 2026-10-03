@@ -7,7 +7,7 @@ import styles from "./Form.module.css";
 
 type MonHocOption = { id: string; ma: number; cap_hoc_ma: number; ten: string; cap_hoc_ten: string };
 
-export default function HocPhanForm({ monHocList }: { monHocList: MonHocOption[] }) {
+export default function HocPhanForm({ monHocList, laGv = false }: { monHocList: MonHocOption[]; laGv?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -33,7 +33,9 @@ export default function HocPhanForm({ monHocList }: { monHocList: MonHocOption[]
         showToast({ type: "error", message: `Tạo học phần thất bại: ${result.error}` });
       } else {
         setSuccess(`Đã tạo học phần "${result.data.ten}"`);
-        showToast({ type: "success", message: `Đã tạo học phần "${result.data.ten}" thành công.` });
+        showToast({ type: "success", message: laGv
+            ? `Đã gửi học phần "${result.data.ten}" chờ Trưởng bộ môn duyệt.`
+            : `Đã tạo học phần "${result.data.ten}" thành công.` });
         form.reset();
         setMonHocId("");
       }
@@ -43,7 +45,7 @@ export default function HocPhanForm({ monHocList }: { monHocList: MonHocOption[]
   if (monHocList.length === 0) {
     return (
       <p className={styles.hint}>
-        Chưa có môn học nào. Vào mục <strong>Học liệu → Môn học</strong> để tạo môn học trước.
+        {laGv ? "Bạn chưa được phân công môn học nào — liên hệ Admin." : <>Chưa có môn học nào. Vào mục <strong>Học liệu → Môn học</strong> để tạo môn học trước.</>}
       </p>
     );
   }
@@ -68,10 +70,12 @@ export default function HocPhanForm({ monHocList }: { monHocList: MonHocOption[]
             ))}
           </select>
         </div>
-        <div className={styles.field}>
-          <label htmlFor="ma" className={styles.label}>Mã học phần (1-99)</label>
-          <input id="ma" name="ma" type="number" min={1} max={99} required className={styles.input} disabled={isPending} />
-        </div>
+        {!laGv && (
+          <div className={styles.field}>
+            <label htmlFor="ma" className={styles.label}>Mã học phần (1-99, để trống = tự cấp)</label>
+            <input id="ma" name="ma" type="number" min={1} max={99} className={styles.input} disabled={isPending} />
+          </div>
+        )}
       </div>
 
       <input type="hidden" name="cap_hoc_ma" value={monHocChon?.cap_hoc_ma ?? ""} />
@@ -91,7 +95,7 @@ export default function HocPhanForm({ monHocList }: { monHocList: MonHocOption[]
       {success && <div className={styles.successBox} role="status">{success}</div>}
 
       <button type="submit" className={styles.btnPrimary} disabled={isPending}>
-        {isPending ? "Đang tạo…" : "Tạo học phần"}
+        {isPending ? "Đang tạo…" : laGv ? "Gửi duyệt học phần" : "Tạo học phần"}
       </button>
     </form>
   );

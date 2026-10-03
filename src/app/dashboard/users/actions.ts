@@ -189,6 +189,71 @@ export async function taoTaiKhoan(formData: FormData): Promise<TaoTaiKhoanResult
   return { ok: true, email, matKhauMacDinh: MAT_KHAU_MAC_DINH };
 }
 
+export type TaoNguoiDungMotBuocInput = {
+  email: string;
+  hoTen: string;
+  vaiTro: string;
+  chiNhanhIds: string[];
+  // Phạm vi: Admin HT theo cấp học (monHocMa = null), TBM/GV/TG theo từng môn.
+  phamVi: { capHocMa: number; monHocMa: number | null }[];
+  // Phân lớp (tuỳ chọn): lớp × môn — môn phải nằm trong phạm vi ở trên.
+  phanCong: { lopId: string; monHocMa: number }[];
+  xacNhanMk1?: string;
+  xacNhanMk2?: string;
+};
+
+// Tạo người dùng trong MỘT bước: Auth (service role) → RPC master_admin_tao_nguoi_dung
+// áp hồ sơ + chi nhánh + phạm vi + phân lớp trong 1 transaction (chạy bằng phiên của
+// Master Admin để auth.uid() đúng). RPC lỗi → xoá tài khoản Auth vừa tạo, không để rác.
+export async function taoNguoiDungMotBuoc(input: TaoNguoiDungMotBuocInput): Promise<TaoTaiKhoanResult> {
+  const supabase = await createClient();
+
+  const goi = await layNguoiGoiHopLe(supabase);
+  if ("error" in goi) return goi;
+  if (goi.data.vaiTro !== "master_admin") return { error: "Chỉ Master Admin được tạo người dùng theo luồng này." };
+
+  const email = String(input.email ?? "").trim().toLowerCase();
+  const hoTen = String(input.hoTen ?? "").trim();
+  const vaiTro = String(input.vaiTro ?? "") as VaiTro;
+
+  if (!email || !email.includes("@")) return { error: "Email không hợp lệ." };
+  if (!hoTen) return { error: "Thiếu họ tên." };
+  if (!VAI_TRO_HOP_LE.includes(vaiTro)) return { error: "Vai trò không hợp lệ." };
+
+  if (vaiTro === "master_admin") {
+    const mk1 = String(input.xacNhanMk1 ?? "");
+    const mk2 = String(input.xacNhanMk2 ?? "");
+    if (!mk1 || !mk2) return { error: "Cần nhập mật khẩu của bạn 2 lần để xác nhận tạo Master Admin mới." };
+    if (mk1 !== mk2) return { error: "Hai lần nhập mật khẩu xác nhận không khớp nhau." };
+    if (!(await xacThucMatKhau(goi.data.email, mk1))) return { error: "Mật khẩu xác nhận không đúng." };
+  }
+
+  const admin = createAdminClient();
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email,
+    password: MAT_KHAU_MAC_DINH,
+    email_confirm: true,
+  });
+  if (createErr || !created?.user) return { error: mapAuthError(createErr?.message) };
+  const newId = created.user.id;
+
+  const { error: rpcErr } = await supabase.rpc("master_admin_tao_nguoi_dung", {
+    p_user_id: newId,
+    p_ho_ten: hoTen,
+    p_vai_tro: vaiTro,
+    p_chi_nhanh_ids: input.chiNhanhIds ?? [],
+    p_pham_vi: (input.phamVi ?? []).map((p) => ({ cap_hoc_ma: p.capHocMa, mon_hoc_ma: p.monHocMa })),
+    p_phan_cong: (input.phanCong ?? []).map((p) => ({ lop_id: p.lopId, mon_hoc_ma: p.monHocMa })),
+  });
+  if (rpcErr) {
+    await admin.auth.admin.deleteUser(newId).catch(() => {});
+    return { error: mapDbError(rpcErr.message) };
+  }
+
+  revalidatePath("/dashboard/users");
+  return { ok: true, email, matKhauMacDinh: MAT_KHAU_MAC_DINH };
+}
+
 export async function xoaMemTaiKhoan(id: string): Promise<XoaMemResult> {
   const supabase = await createClient();
 
