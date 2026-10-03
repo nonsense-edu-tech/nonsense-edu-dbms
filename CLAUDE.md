@@ -68,6 +68,16 @@ công. Từ nay:
    CŨ đang chạy trên production vẫn phải chạy được bình thường trên schema
    mới, cho tới khi code mới lên.
 
+4. **MỖI file migration mới PHẢI có dòng `-- adr004-type: expand` (hoặc
+   `contract`) ở DÒNG 1, đúng nguyên văn.** CI (ADR-005) chỉ grep đúng chuỗi
+   này trong 15 dòng đầu; thiếu/sai chính tả (vd chỉ viết "Loại migration:
+   EXPAND" trong chú thích) → bị xếp là contract → KHÔNG tự áp → job parity
+   báo lỗi "migration chưa áp dụng lên production" sau khi merge (đã xảy ra
+   với 0050, 03/10/2026, và nhiều lần trước đó). Checklist trước khi mở PR có
+   migration: `head -n 15 supabase/migrations/NNNN_*.sql | grep -- "-- adr004-type: expand"`
+   phải ra đúng 1 dòng. Sau merge, vào GitHub Actions duyệt job
+   `apply-migration-expand` (Environment `production-db`) thì migration mới được áp.
+
 Lớp chặn thật (không dựa vào ai nhớ luật trên): GitHub Action
 `.github/workflows/db-parity-check.yml` tự so migration trong repo với
 migration đã áp trên production, FAIL nếu lệch — chạy khi push `main` và mỗi
