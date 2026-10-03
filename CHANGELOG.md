@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Phân công giảng dạy: GV chỉ thấy lớp/học sinh mình phụ trách, duyệt học phần, tạo user một bước
+
+**Tóm tắt:** Thêm bảng phân công giảng dạy (lớp × môn). Giáo viên / trợ giảng / trưởng bộ môn chỉ thấy lớp được phân công; học sinh chỉ hiện tên + lớp (không SĐT, qua RPC `hoc_sinh_cua_toi`); không còn thấy cụm Vận hành và tab Học liệu ở sidebar (chặn cả truy cập URL). GV đề xuất học phần → Trưởng bộ môn/quản trị duyệt (mã cấp khi duyệt); GV tạo bài học dưới học phần đã duyệt trong môn mình. Master Admin tạo người dùng trong một bước (email, tên, vai trò, chi nhánh, môn/cấp học, phân lớp tuỳ chọn). Chi tiết và ngoại lệ ADR-002: `docs/adr/ADR-007-phan-cong-giang-day-va-rls-theo-lop.md`. Test PGlite: `npm run test:phan-cong`.
+
+**Migration:** `0052_phan_cong_giang_day_rls_gv_duyet_hoc_phan.sql` (Expand; có thay thế policy SELECT — xem ADR-007).
+
+**Staging:** — (không dùng)
+
+**Production:** ✅ đã áp dụng thủ công 03/10/2026 trước khi có PR (sai lệch ADR-004, ghi trong ADR-007); file migration là bản sao nguyên văn, lịch sử migration remote đồng bộ về `0052`. Code giao diện: 🔲 chưa — chờ merge PR.
+
+---
+
 ## 2026-10-03 — CI kiểm tra PR + dọn lỗi lint + luật tag migration
 
 **Tóm tắt:** (1) Sự cố 0050: file thiếu dòng `-- adr004-type: expand` nên CI không tự áp, job parity fail sau merge — đã bổ sung tag (PR #50) và ghi luật bắt buộc vào `CLAUDE.md` (migration phải có tag ở dòng 1). (2) PR #53 thêm `.github/workflows/ci.yml` chạy trên mọi PR vào `main`: kiểm tag migration, ESLint, `tsc`, test PGlite (đề thi, ngữ liệu, đề × ngữ liệu). (3) PR #51 sửa toàn bộ lỗi ESLint (từ 7 lỗi + 8 cảnh báo còn 0 lỗi + 2 cảnh báo): Sidebar, SearchableSelect, biểu đồ tròn Học phí, trang Vận hành, test 0049.

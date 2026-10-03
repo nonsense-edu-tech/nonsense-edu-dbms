@@ -8,6 +8,7 @@ import BaiHocTable, { type BaiHocRow } from "@/components/BaiHocTable";
 import styles from "../hoc-lieu.module.css";
 
 const VAI_TRO_QUAN_LY = ["master_admin", "admin_ht", "truong_bm"];
+const VAI_TRO_TAO = [...VAI_TRO_QUAN_LY, "gv"];
 
 export default async function BaiHocPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
@@ -19,9 +20,10 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
 
   if (!user) redirect("/login");
 
-  const [{ data: profile }, { data: baiHocList, count: tongBaiHoc }, { data: hocPhanList }, { data: monHocList }, { data: capHocList }] =
+  const [{ data: profile }, { data: phamVi }, { data: baiHocList, count: tongBaiHoc }, { data: hocPhanList }, { data: monHocList }, { data: capHocList }] =
     await Promise.all([
       supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
+      supabase.from("user_pham_vi").select("cap_hoc_ma, mon_hoc_ma").eq("user_id", user.id),
       supabase
         .from("bai_hoc")
         .select("id, hoc_phan_id, ma, ten, mo_ta", { count: "exact" })
@@ -29,7 +31,7 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
         .order("ma")
         .order("id")
         .range(pp.from, pp.to),
-      supabase.from("hoc_phan").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
+      supabase.from("hoc_phan").select("id, mon_hoc_id, cap_hoc_ma, mon_hoc_ma, ma, ten, trang_thai").is("deleted_at", null).order("ten"),
       supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
       supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
     ]);
@@ -41,12 +43,21 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
   const canWrite = isActive && VAI_TRO_QUAN_LY.includes(vaiTro);
+  const laGv = isActive && vaiTro === "gv";
+  const canCreate = isActive && VAI_TRO_TAO.includes(vaiTro);
 
   const capHocMap = new Map((capHocList ?? []).map((c) => [c.ma, c.ten]));
   const monHocMap = new Map((monHocList ?? []).map((m) => [m.id, m]));
   const hocPhanMap = new Map((hocPhanList ?? []).map((hp) => [hp.id, hp]));
 
-  const hocPhanOptions = (hocPhanList ?? []).map((hp) => {
+  // GV chỉ tạo bài học dưới học phần ĐÃ DUYỆT thuộc môn trong phạm vi của mình (khớp RLS).
+  const hocPhanChon = (hocPhanList ?? []).filter(
+    (hp) =>
+      !laGv ||
+      (hp.trang_thai === "da_duyet" &&
+        (phamVi ?? []).some((p) => p.cap_hoc_ma === hp.cap_hoc_ma && (p.mon_hoc_ma === null || p.mon_hoc_ma === hp.mon_hoc_ma)))
+  );
+  const hocPhanOptions = hocPhanChon.map((hp) => {
     const mh = monHocMap.get(hp.mon_hoc_id);
     return {
       id: hp.id,
@@ -78,6 +89,7 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
         <h1 className={styles.title}>Bài học</h1>
       </div>
 
+      {!laGv && vaiTro !== "truong_bm" && (
       <nav className={styles.subNav}>
         <Link href="/dashboard/hoc-lieu" className={styles.subNavLink}>Tổng quan</Link>
         <Link href="/dashboard/hoc-lieu/cap-hoc" className={styles.subNavLink}>Cấp học</Link>
@@ -87,14 +99,15 @@ export default async function BaiHocPage({ searchParams }: { searchParams: Promi
         <Link href="/dashboard/hoc-lieu/hoc-phan" className={styles.subNavLink}>Học phần</Link>
         <Link href="/dashboard/hoc-lieu/bai-hoc" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Bài học</Link>
       </nav>
+      )}
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Tạo bài học mới</h2>
-        {canWrite ? (
+        {canCreate ? (
           <BaiHocForm hocPhanList={hocPhanOptions} />
         ) : (
           <p className={styles.noticeBox}>
-            Chỉ Master Admin, Admin học thuật hoặc Trưởng bộ môn được tạo/sửa/xoá bài học. Tài khoản của bạn:{" "}
+            Chỉ Master Admin, Admin học thuật, Trưởng bộ môn hoặc Giáo viên được tạo bài học. Tài khoản của bạn:{" "}
             {isActive ? `vai trò "${vaiTro || "chưa gán"}"` : "tài khoản đang bị khoá (disabled)"}.
           </p>
         )}

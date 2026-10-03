@@ -5,7 +5,7 @@ import { taoBaiHoc } from "@/app/dashboard/hoc-lieu/bai-hoc/actions";
 import { useToast } from "./ToastProvider";
 import styles from "./Form.module.css";
 
-type HocPhanOption = { id: string; ma: number; ten: string; mon_hoc_ten: string; cap_hoc_ten: string };
+type HocPhanOption = { id: string; ma: number | null; ten: string; mon_hoc_ten: string; cap_hoc_ten: string };
 
 export default function BaiHocForm({ hocPhanList }: { hocPhanList: HocPhanOption[] }) {
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +54,8 @@ export default function BaiHocForm({ hocPhanList }: { hocPhanList: HocPhanOption
           </select>
         </div>
         <div className={styles.field}>
-          <label htmlFor="ma" className={styles.label}>Mã bài học (1-99)</label>
-          <input id="ma" name="ma" type="number" min={1} max={99} required className={styles.input} disabled={isPending} />
+          <label htmlFor="ma" className={styles.label}>Mã bài học (1-99, để trống = tự cấp)</label>
+          <input id="ma" name="ma" type="number" min={1} max={99} className={styles.input} disabled={isPending} />
         </div>
       </div>
 

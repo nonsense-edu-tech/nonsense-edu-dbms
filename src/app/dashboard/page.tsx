@@ -414,13 +414,9 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
   const supabase = await createClient();
   const { dauTuan, dauTuanSau } = bienNgayVN();
 
-  const { data: buoiHocRows } = await supabase
-    .from("buoi_hoc")
-    .select("lop_id")
-    .eq("gv_id", userId)
-    .is("deleted_at", null)
-    .neq("trang_thai", "huy");
-  const lopIds = Array.from(new Set((buoiHocRows ?? []).map((r: { lop_id: string }) => r.lop_id)));
+  // Lớp phụ trách = lớp thuộc phạm vi phân công (RLS bảng lop đã lọc theo phan_cong_giang_day).
+  const { data: lopRows } = await supabase.from("lop").select("id").is("deleted_at", null).limit(500);
+  const lopIds = (lopRows ?? []).map((r: { id: string }) => r.id);
 
   const [buoiHocTuanNay, hocSinhPhuTrach, cauHoiDaTao, cauHoiChoDuyet, cauHoiDaDuyet, hocSinhTheoLop] = await Promise.all([
     demSoLuong(
@@ -456,7 +452,7 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
       <div className={styles.greeting}>
         <div>
           <h1 className={styles.greetingTitle}>Xin chào, {tenHienThi}</h1>
-          <span className={styles.greetingSub}>Học sinh đang phụ trách & học liệu bạn đang quản lý</span>
+          <span className={styles.greetingSub}>Lớp, học sinh đang phụ trách & câu hỏi bạn đã tạo</span>
         </div>
         <span className={styles.updatedTag}>Cập nhật lần cuối: hôm nay</span>
       </div>
@@ -477,7 +473,7 @@ async function GvDashboard({ tenHienThi, userId }: { tenHienThi: string; userId:
         <div className={styles.group}>
           <div className={styles.groupHead}>
             <IconHocLieu />
-            <span className={styles.groupLabel}>Học liệu của mình đang quản lý</span>
+            <span className={styles.groupLabel}>Câu hỏi của mình</span>
           </div>
           <div className={styles.statGrid}>
             <StatCard label="Câu hỏi tôi đã tạo" value={formatSo(cauHoiDaTao)} />
