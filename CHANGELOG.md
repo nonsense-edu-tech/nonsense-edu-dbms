@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Sửa form đổi mật khẩu bắt buộc: thêm ô "Mật khẩu hiện tại"
+
+**Tóm tắt:** Supabase Auth đang bật "yêu cầu mật khẩu hiện tại khi đổi mật khẩu" nên form đổi mật khẩu lần đầu (thiếu ô này) luôn báo `Current password required when setting new password`, người dùng mới bị kẹt ở trang đổi mật khẩu. Thêm ô "Mật khẩu hiện tại" (gửi `current_password`), dịch lỗi Auth sang tiếng Việt, và nếu bước đánh dấu `phai_doi_mat_khau` lỗi thì bấm lại chỉ gọi lại bước đó. Đăng nhập không đổi.
+
+**Migration:** không có.
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chưa — chờ merge PR.
+
+---
+
 ## 2026-10-03 — Ngữ liệu: nhóm câu hỏi (1 ngữ liệu + nhiều câu con), nhập tay và nhập từ file
 
 **Tóm tắt:** Thêm tab **Ngữ liệu** trong Ngân hàng câu hỏi: tạo/sửa ngữ liệu (số hiệu `NL-0001…`, nhãn môn học, loại, nội dung có công thức), trang chi tiết thêm/sắp xếp/xoá câu hỏi con (câu con không tồn tại độc lập, cùng vị trí với ngữ liệu, tối đa 30). **Nhập từ file** riêng (xlsx 2 sheet, có file mẫu, xem trước, nhập từng nhóm), tách khỏi import câu hỏi thường. Chưa làm: kéo cả nhóm vào đề khi soạn đề; ảnh trong ngữ liệu.
