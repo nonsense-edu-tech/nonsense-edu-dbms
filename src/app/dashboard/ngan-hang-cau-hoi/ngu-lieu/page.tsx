@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PhanTrang from "@/components/PhanTrang";
 import CauHoiSubNav from "@/components/CauHoiSubNav";
+import NguLieuLoc from "@/components/NguLieuLoc";
+import { apDungBoLocNguLieu, dangLocNguLieu, parseBoLocNguLieu } from "@/lib/ngu-lieu-loc";
 import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
 import { tenLoaiNguLieu, VAI_TRO_SOAN_NGU_LIEU } from "@/lib/ngu-lieu";
 import styles from "../ngan-hang-cau-hoi.module.css";
@@ -12,24 +14,37 @@ const GOC = "/dashboard/ngan-hang-cau-hoi/ngu-lieu";
 export default async function NguLieuListPage({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const raw = await searchParams;
   const pp = parsePhanTrang(raw);
+  const boLoc = parseBoLocNguLieu(raw);
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single();
+  const [{ data: profile }, { data: capHocList }, { data: monHocList }, { data: hocPhanList }, { data: baiHocList }, { data: chuDeList }] =
+    await Promise.all([
+      supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
+      supabase.from("cap_hoc").select("ma, ten").is("deleted_at", null).order("ma"),
+      supabase.from("mon_hoc").select("id, ma, cap_hoc_ma, ten").is("deleted_at", null).order("ten"),
+      supabase.from("hoc_phan").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
+      supabase.from("bai_hoc").select("id, hoc_phan_id, ma, ten").is("deleted_at", null).order("ten"),
+      supabase.from("chu_de").select("id, mon_hoc_id, ma, ten").is("deleted_at", null).order("ten"),
+    ]);
   const canWrite = profile?.trang_thai === "active" && VAI_TRO_SOAN_NGU_LIEU.includes(profile?.vai_tro ?? "");
 
-  const { data: list, count } = await supabase
-    .from("ngu_lieu")
-    .select("id, so_hieu, loai, tieu_de, mon_hoc_id, mon_hoc(ten), created_at", { count: "exact" })
-    .is("deleted_at", null)
+  const { data: list, count } = await apDungBoLocNguLieu(
+    supabase
+      .from("ngu_lieu")
+      .select("id, so_hieu, loai, tieu_de, mon_hoc_id, mon_hoc(ten), created_at", { count: "exact" })
+      .is("deleted_at", null),
+    boLoc
+  )
     .order("created_at", { ascending: false })
     .order("id")
     .range(pp.from, pp.to);
 
   const total = count ?? 0;
+  const dangLoc = dangLocNguLieu(boLoc);
   const trangCuoi = duongDanTrangCuoi(GOC, raw, pp, total);
   if (trangCuoi) redirect(trangCuoi);
 
@@ -49,16 +64,26 @@ export default async function NguLieuListPage({ searchParams }: { searchParams: 
       <CauHoiSubNav active="ngu-lieu" canCreate={canWrite} />
 
       <section className={styles.card}>
-        <h2 className={styles.cardTitle}>Ngữ liệu ({total})</h2>
+        <h2 className={styles.cardTitle}>Danh sách ngữ liệu ({total})</h2>
         <p className={styles.noticeBox}>
           Ngữ liệu là đề dẫn dùng chung (bài đọc, bảng số liệu, tình huống logic) kèm nhiều câu hỏi con. Câu hỏi con
           không tồn tại độc lập: thêm ngữ liệu vào đề thì cả nhóm câu con đi theo, xếp liền nhau.
         </p>
         {canWrite && (
           <p>
-            <Link href={`${GOC}/tao-moi`} className={styles.btnAdd}>+ Tạo ngữ liệu</Link>
+            <Link href="/dashboard/ngan-hang-cau-hoi/tao-moi?tab=ngu-lieu" className={styles.btnAdd}>+ Tạo ngữ liệu</Link>
           </p>
         )}
+        {/* Bộ lọc luôn hiện để xoá được bộ lọc kể cả khi kết quả rỗng. */}
+        <NguLieuLoc
+          boLoc={boLoc}
+          dangLoc={dangLoc}
+          capHocList={capHocList ?? []}
+          monHocList={monHocList ?? []}
+          hocPhanList={hocPhanList ?? []}
+          baiHocList={baiHocList ?? []}
+          chuDeList={chuDeList ?? []}
+        >
         {total > 0 ? (
           <>
             <div className={styles.tableWrap}>
@@ -96,8 +121,9 @@ export default async function NguLieuListPage({ searchParams }: { searchParams: 
             <PhanTrang total={total} page={pp.page} size={pp.size} />
           </>
         ) : (
-          <p className={styles.empty}>Chưa có ngữ liệu nào.</p>
+          <p className={styles.empty}>{dangLoc ? "Không tìm thấy ngữ liệu nào khớp." : "Chưa có ngữ liệu nào."}</p>
         )}
+        </NguLieuLoc>
       </section>
     </main>
   );

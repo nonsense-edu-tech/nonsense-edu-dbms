@@ -29,6 +29,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard/hoc-lieu/bai-hoc": "Bài học",
   "/dashboard/ngan-hang-cau-hoi": "Ngân hàng câu hỏi",
   "/dashboard/ngan-hang-cau-hoi/tao-moi": "Tạo câu hỏi",
+  "/dashboard/ngan-hang-cau-hoi/ngu-lieu": "Danh sách ngữ liệu",
   "/dashboard/de-thi": "Đề thi",
   "/dashboard/de-thi/ma-tran": "Ma trận đề",
   "/dashboard/de-thi/ma-tran/moi": "Soạn ma trận",
