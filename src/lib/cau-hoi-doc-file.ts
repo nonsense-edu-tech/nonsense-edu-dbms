@@ -11,7 +11,7 @@ export const TEN_SHEET_CAU_HOI = "Câu hỏi";
 
 export type KetQuaDocFile = { error: string } | { dong: DongTho[] };
 
-function giaTriO(v: ExcelJS.CellValue): string {
+export function giaTriO(v: ExcelJS.CellValue): string {
   if (v == null) return "";
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);

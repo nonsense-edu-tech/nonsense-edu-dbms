@@ -7,7 +7,17 @@ import styles from "@/app/dashboard/ngan-hang-cau-hoi/ngan-hang-cau-hoi.module.c
  * Chuyển đổi 2 cách tạo câu hỏi trong cùng tab "Tạo câu hỏi". Cả hai phần luôn
  * được giữ nguyên (chỉ ẩn) để không mất dữ liệu đang nhập khi đổi qua lại.
  */
-export default function TaoCauHoiTabs({ thuCong, tuFile }: { thuCong: ReactNode; tuFile: ReactNode }) {
+export default function TaoCauHoiTabs({
+  thuCong,
+  tuFile,
+  nhanThuCong = "Nhập từng câu",
+  nhanTuFile = "Nhập từ file",
+}: {
+  thuCong: ReactNode;
+  tuFile: ReactNode;
+  nhanThuCong?: string;
+  nhanTuFile?: string;
+}) {
   const [tab, setTab] = useState<"thu-cong" | "tu-file">("thu-cong");
 
   return (
@@ -20,7 +30,7 @@ export default function TaoCauHoiTabs({ thuCong, tuFile }: { thuCong: ReactNode;
           className={`${styles.segmentedBtn} ${tab === "thu-cong" ? styles.segmentedBtnActive : ""}`}
           onClick={() => setTab("thu-cong")}
         >
-          Nhập từng câu
+          {nhanThuCong}
         </button>
         <button
           type="button"
@@ -29,7 +39,7 @@ export default function TaoCauHoiTabs({ thuCong, tuFile }: { thuCong: ReactNode;
           className={`${styles.segmentedBtn} ${tab === "tu-file" ? styles.segmentedBtnActive : ""}`}
           onClick={() => setTab("tu-file")}
         >
-          Nhập từ file
+          {nhanTuFile}
         </button>
       </div>
       <div hidden={tab !== "thu-cong"}>{thuCong}</div>

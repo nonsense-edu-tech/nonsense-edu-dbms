@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — Ngữ liệu: nhóm câu hỏi (1 ngữ liệu + nhiều câu con), nhập tay và nhập từ file
+
+**Tóm tắt:** Thêm tab **Ngữ liệu** trong Ngân hàng câu hỏi: tạo/sửa ngữ liệu (số hiệu `NL-0001…`, nhãn môn học, loại, nội dung có công thức), trang chi tiết thêm/sắp xếp/xoá câu hỏi con (câu con không tồn tại độc lập, cùng vị trí với ngữ liệu, tối đa 30). **Nhập từ file** riêng (xlsx 2 sheet, có file mẫu, xem trước, nhập từng nhóm), tách khỏi import câu hỏi thường. Chưa làm: kéo cả nhóm vào đề khi soạn đề; ảnh trong ngữ liệu.
+
+**Migration:** `0050_ngu_lieu_nhom_cau_hoi.sql` (Expand: `ngu_lieu.so_hieu`, `ngu_lieu.chu_de_id`, `cau_hoi.thu_tu_trong_ngu_lieu`, trigger kiểm vị trí, hàm `vi_tri_ngu_lieu`, `thu_tu_ke_tiep_ngu_lieu`, `doi_thu_tu_cau_con`, `xoa_mem_ngu_lieu`; FK `cau_hoi.ngu_lieu_id` → RESTRICT). Test PGlite: `npm run test:ngu-lieu`.
+
+**Staging:** — (không dùng; kiểm bằng PGlite)
+
+**Production:** 🔲 chưa — chờ merge PR → CI áp migration.
+
+---
+
 ## 2026-10-02 — Đề thi theo ma trận đề (soạn ma trận → sinh đề → xem trước → chốt → xuất .docx)
 
 **Tóm tắt:** Giáo viên/Trưởng bộ môn/Admin soạn **ma trận đề** (mỗi dòng: câu độc lập hoặc cụm ngữ liệu; lọc theo dạng câu, học phần, bài học, chủ đề, tiến trình; khoảng độ khó; tuỳ chọn nới độ khó ±1 khi thiếu). Hệ thống **xáo trộn có seed** và chọn câu/cụm từ ngân hàng (chỉ câu **Đã duyệt**, trong phạm vi môn của người dùng), ưu tiên câu chưa dùng trong N đề đã chốt gần nhất (chống lặp, thiếu mới dùng lại và đánh dấu). Xem trước có công thức LaTeX, **khoá** / **đổi cụm**, sinh lại giữ phần đã khoá. **Chốt đề** chụp lại nội dung (không đổi theo ngân hàng nữa), sinh **nhiều mã đề** (101, 102…, hoán vị cụm/câu và đáp án A–D, lưu bố cục để xuất lại y hệt). Xuất **.docx** (Đề / Đáp án / Lời giải; công thức là công thức Word thật; ảnh nhúng) hoặc .zip cả bộ. Mục menu "Đề thi" cho master_admin, admin_ht, truong_bm, gv (trợ giảng và vai trò khác ẩn hẳn). Nội dung câu hỏi nay hiểu cú pháp công thức `$…$` / `$$…$$` (xem `docs/yeu-cau-bo-go-latex.md` — bộ gõ nhập công thức là việc tiếp theo).

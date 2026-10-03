@@ -26,7 +26,7 @@
 > lịch sử** — dùng bảng trên đây làm chuẩn khi code, không dùng bảng ở mục 2.4.
 
 > Tài liệu tham chiếu cho toàn bộ quy ước đặt ID và kế hoạch xây dựng hệ thống web quản lý ID.
-> Cập nhật lần cuối: 16/07/2026 (bản 3) · Trạng thái: đang chốt thiết kế, chuẩn bị code.
+> Cập nhật lần cuối: 03/10/2026 (đồng bộ hiện trạng: ID câu hỏi 17 số theo ADR-006; ngữ liệu mục 2.5) · Trạng thái: đang chốt thiết kế, chuẩn bị code.
 
 ---
 
@@ -109,11 +109,21 @@ Câu hỏi là **nhánh ID thứ 4**, rẽ thẳng từ gốc (không nối vào
 
 > **Không đưa vào ID (để làm cột metadata):** độ khó (biến động theo thống kê tỉ lệ làm đúng — nếu nhét vào ID thì mỗi lần cập nhật phải đổi ID), đáp án đúng, lời giải, tag, và **"câu này nằm trong đề nào"** (đây là quan hệ, thuộc bảng nối `de_cau_hoi`, không phải thuộc tính của câu).
 
-### 2.5. Ngữ liệu (đề dẫn dùng chung) — thực thể riêng, không mã hoá vào ID câu hỏi
+### 2.5. Ngữ liệu (đề dẫn dùng chung) — nhóm câu hỏi, thực thể riêng
 
-Đặc thù V-ACT (bài đọc khoa học CORE, phân tích số liệu, logic sắp xếp): **một đoạn ngữ liệu / bảng số liệu / tình huống logic đi kèm nhiều câu hỏi**. Nếu chép nguyên đoạn dẫn vào từng câu sẽ trùng lặp và khó bảo trì.
+> Cập nhật 03/10/2026 theo migration `0050_ngu_lieu_nhom_cau_hoi.sql` (đã code, chờ merge).
 
-→ Ngữ liệu được lưu thành **một thực thể riêng** (`ngu_lieu`), có ID/khoá riêng. Mỗi câu hỏi trỏ về một ngữ liệu qua khoá ngoại (tuỳ chọn — câu đứng một mình thì để trống). Đề thi = ghép ngữ liệu + các câu qua bảng nối. Ngữ liệu **không** cần mã hoá vào chuỗi ID câu hỏi.
+Đặc thù V-ACT (bài đọc CORE, phân tích số liệu, logic sắp xếp): **một ngữ liệu đi kèm nhiều câu hỏi con**. Ngữ liệu là thực thể riêng `ngu_lieu`, **không** mã hoá vào ID câu hỏi.
+
+- **Số hiệu hiển thị:** `ngu_lieu.so_hieu` dạng `NL-0001…` (sequence, duy nhất) + tiêu đề; giao diện luôn kèm nhãn **môn học** (join lúc hiển thị, không lưu trùng). Khoá chính vẫn là UUIDv7 (ADR-003).
+- **Loại:** `doc_core`, `so_lieu`, `logic`, `khac`. Nội dung là HTML tối thiểu, công thức `$…$`/`$$…$$`; chưa hỗ trợ ảnh/biểu đồ (bảng số liệu gõ dạng text).
+- **Một ngữ liệu = một vị trí** (môn/học phần/bài/chủ đề, 00 = Chung; cột `chu_de_id` mới). Vị trí **bị khoá khi đã có câu con còn sống** (phân loại câu hỏi bất biến).
+- **Câu con không tồn tại độc lập:** `cau_hoi.ngu_lieu_id` + `thu_tu_trong_ngu_lieu` (cùng null hoặc cùng có; duy nhất trong ngữ liệu). Câu con phải cùng vị trí với ngữ liệu, **không gỡ/chuyển sang ngữ liệu khác**. Câu chưa từng gắn ngữ liệu vẫn là câu thường. Tối đa 30 câu con/ngữ liệu (giới hạn UI).
+- **Xoá:** chỉ xoá mềm cả nhóm qua RPC `xoa_mem_ngu_lieu` (kiểm vai trò + phạm vi môn); bị chặn nếu có câu con đã nằm trong đề. FK `ON DELETE RESTRICT`.
+- **Đề thi:** thêm ngữ liệu vào đề = kéo theo cả n câu con liền nhau, GV có thể xoá bớt sau. ⚠️ **Phần này chưa làm trong giao diện soạn đề** (luồng `de_cau_hoi.cum_id` của 0049 chưa đổi) — việc tiếp theo.
+- **Vòng đời:** trạng thái tính từ các câu con (`cau_hoi.trang_thai`: nhap → cho_duyet → da_duyet → luu_tru), không lưu cột trạng thái riêng cho ngữ liệu.
+- **Giao diện:** Ngân hàng câu hỏi → tab **Ngữ liệu** (danh sách phân trang, tạo, trang chi tiết thêm/sắp xếp/xoá câu con).
+- **Nhập từ file (riêng, tách khỏi import câu hỏi thường):** `.xlsx` 2 sheet "Ngữ liệu" + "Câu hỏi con" nối bằng cột *Nhóm*; tải file mẫu tại `/dashboard/ngan-hang-cau-hoi/ngu-lieu/template`; xem trước toàn bộ rồi nhập từng nhóm (nhóm lỗi không chặn nhóm khác; một nhóm lỗi giữa chừng sẽ được hoàn tác). Tối đa 100 ngữ liệu / 500 câu con mỗi file; không nhận CSV, chưa hỗ trợ ảnh.
 
 ---
 
@@ -237,3 +247,4 @@ Mỗi cột ID có **ràng buộc duy nhất** ở tầng CSDL → không thể 
 | 15/07/2026 | Chốt cấu trúc 3 loại ID; bàn giao công cụ Google Sheets; đề xuất kiến trúc hệ thống web. Còn 3 quyết định ở mục 6. |
 | 16/07/2026 | Định nghĩa **gốc 4 số** (Cấp học + Chương trình) làm nền tảng chung. **ID Tài liệu** rút từ 19 → **14 số** (bỏ mã lớp khỏi tiền tố, dùng chung mọi lớp cùng chương trình). Làm rõ **ID Học sinh** gắn theo lớp nhập học đầu tiên, cố định vĩnh viễn. Chốt quyết định #1 cũ. Công cụ Google Sheets chưa cập nhật theo cấu trúc mới. |
 | 16/07/2026 (bản 3) | Thêm **nhánh ID thứ 4 — ID Câu hỏi 16 số** (mục 2.4): gốc + môn + học phần + bài + chủ đề + **dạng câu (1 số)** + STT câu (4 số); rẽ độc lập từ gốc, không nối vào ID tài liệu. Bổ sung **bảng mã Dạng câu hỏi** (8 dạng, mục 3). Thêm thực thể **Ngữ liệu** (đề dẫn dùng chung, mục 2.5) và các bảng `ngu_lieu`, `cau_hoi`, `lua_chon`, `de`, `de_cau_hoi` (mục 5.2) — câu hỏi ↔ đề nối nhiều-nhiều để tái sử dụng. Độ khó/đáp án/lời giải để làm metadata, không vào ID. Cập nhật lộ trình GĐ3. **Chốt quyết định ID câu hỏi**; mục 6 còn lại 1 quyết định (nơi lưu trữ). |
+| 03/10/2026 | Đồng bộ đặc tả với hiện trạng: ID câu hỏi 17 số (ADR-006), `trang_thai` đã có trên `cau_hoi`; viết lại mục 2.5 — ngữ liệu là nhóm câu hỏi (số hiệu NL-xxxx, một vị trí, câu con không độc lập, import file riêng). Staging không dùng. |

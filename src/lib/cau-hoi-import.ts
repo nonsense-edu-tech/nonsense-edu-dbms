@@ -176,12 +176,12 @@ export type DongXemTruoc = {
   viTri: HienThiViTri;
 };
 
-function chuoi(v: string | undefined): string {
+export function chuoi(v: string | undefined): string {
   return (v ?? "").replace(/\r\n/g, "\n").trim();
 }
 
 /** Ô mã số: chấp nhận "1", "01", "001", "1.0" (Excel); từ chối chữ, số âm, số thập phân khác. */
-function docMaSo(raw: string, ten: string, min: number, max: number, loi: string[]): number | null {
+export function docMaSo(raw: string, ten: string, min: number, max: number, loi: string[]): number | null {
   const v = chuoi(raw);
   if (v === "") {
     loi.push(`Thiếu ${ten}.`);
@@ -200,7 +200,7 @@ function docMaSo(raw: string, ten: string, min: number, max: number, loi: string
 }
 
 /** Ô mã tuỳ chọn: để trống = 0 ("Chung", ADR-006); có giá trị thì phải là mã số hợp lệ (1..max). */
-function docMaSoTuyChon(raw: string, ten: string, max: number, loi: string[]): number | null {
+export function docMaSoTuyChon(raw: string, ten: string, max: number, loi: string[]): number | null {
   if (chuoi(raw) === "") return 0;
   return docMaSo(raw, ten, 1, max, loi);
 }

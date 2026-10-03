@@ -37,6 +37,7 @@ export default function CauHoiTable({
   currentUserId,
   nangLucOptions,
   tienTrinhOptions,
+  cotThem,
 }: {
   list: CauHoiRow[];
   canWrite: boolean;
@@ -44,6 +45,8 @@ export default function CauHoiTable({
   currentUserId: string;
   nangLucOptions: NangLucOption[];
   tienTrinhOptions: TienTrinhOption[];
+  /** Cột phụ đặt đầu bảng (vd thứ tự trong ngữ liệu). Không truyền = bảng như cũ. */
+  cotThem?: { tieuDe: string; ve: (ch: CauHoiRow, chiSo: number) => React.ReactNode };
 }) {
   const [editingRow, setEditingRow] = useState<CauHoiRow | null>(null);
   const [nangLucRow, setNangLucRow] = useState<CauHoiRow | null>(null);
@@ -54,6 +57,7 @@ export default function CauHoiTable({
       <table className={styles.table}>
         <thead>
           <tr>
+            {cotThem && <th>{cotThem.tieuDe}</th>}
             <th>Mã câu hỏi</th>
             <th>Cấp học</th>
             <th>Môn học</th>
@@ -67,9 +71,10 @@ export default function CauHoiTable({
           </tr>
         </thead>
         <tbody>
-          {list.map((ch) => (
+          {list.map((ch, chiSo) => (
             <CauHoiRowItem
               key={ch.id}
+              cotThemNode={cotThem ? cotThem.ve(ch, chiSo) : undefined}
               cauHoi={ch}
               canWrite={canWrite}
               canDuyet={canDuyet}
@@ -102,7 +107,9 @@ function CauHoiRowItem({
   currentUserId,
   onEdit,
   onNangLuc,
+  cotThemNode,
 }: {
+  cotThemNode?: React.ReactNode;
   cauHoi: CauHoiRow;
   canWrite: boolean;
   canDuyet: boolean;
@@ -176,6 +183,7 @@ function CauHoiRowItem({
 
   return (
     <tr>
+      {cotThemNode !== undefined && <td>{cotThemNode}</td>}
       <td className={styles.mono}>{cauHoi.ma_cau_hoi}</td>
       <td>{cauHoi.cap_hoc_ten}</td>
       <td>{cauHoi.mon_hoc_ten}</td>

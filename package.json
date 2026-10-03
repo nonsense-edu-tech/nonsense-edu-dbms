@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:de-thi": "node supabase/tests/0049-de-thi.test.mjs"
+    "test:de-thi": "node supabase/tests/0049-de-thi.test.mjs",
+    "test:ngu-lieu": "node supabase/tests/0050-ngu-lieu.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

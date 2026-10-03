@@ -66,41 +66,8 @@ function themSheetBang(wb: ExcelJS.Workbook, ten: string, tieuDe: string[], dong
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: tieuDe.length } };
 }
 
-export async function taoTemplateXlsx(dm: DanhMucNhap): Promise<Buffer> {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Nonsense Edu";
-
-  // --- Sheet nhập liệu
-  const ws = wb.addWorksheet(TEN_SHEET_CAU_HOI);
-  ws.columns = COT_TEMPLATE.map((c) => ({ width: c.rong }));
-  const hang1 = ws.addRow(COT_TEMPLATE.map((c) => c.nhan));
-  hang1.font = { bold: true };
-  hang1.alignment = { vertical: "middle", wrapText: true };
-  hang1.eachCell((cell, col) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COT_TEMPLATE[col - 1].batBuoc ? "FFFDE9C4" : "FFEAEAEA" } };
-  });
-  ws.views = [{ state: "frozen", ySplit: 1 }];
-  for (const d of dongViDu(dm)) {
-    const r = ws.addRow(COT_TEMPLATE.map((c) => d[c.khoa] ?? ""));
-    r.alignment = { vertical: "top", wrapText: true };
-  }
-  const cotDang = COT_TEMPLATE.findIndex((c) => c.khoa === "dang_cau") + 1;
-  const cotKho = COT_TEMPLATE.findIndex((c) => c.khoa === "do_kho") + 1;
-  for (let r = 2; r <= 501; r++) {
-    ws.getCell(r, cotDang).dataValidation = { type: "list", allowBlank: true, formulae: [`"${DANG_CAU_HO_TRO_NHAP.join(",")}"`] };
-    ws.getCell(r, cotKho).dataValidation = { type: "list", allowBlank: true, formulae: ['"1,2,3,4,5"'] };
-  }
-
-  // --- Hướng dẫn
-  const hd = wb.addWorksheet("Hướng dẫn");
-  hd.columns = [{ width: 140 }];
-  HUONG_DAN.forEach((t, i) => {
-    const r = hd.addRow([t]);
-    r.alignment = { wrapText: true, vertical: "top" };
-    if (i === 0) r.font = { bold: true, size: 13 };
-  });
-
-  // --- Danh mục mã
+/** Các sheet "Mã ..." (cấp-môn, học phần-bài học, chủ đề, dạng câu) — dùng chung cho mọi file mẫu nhập câu hỏi. */
+export function themSheetDanhMuc(wb: ExcelJS.Workbook, dm: DanhMucNhap): void {
   const capTen = new Map(dm.capHoc.map((c) => [c.ma, c.ten]));
   themSheetBang(
     wb,
@@ -140,6 +107,44 @@ export async function taoTemplateXlsx(dm: DanhMucNhap): Promise<Buffer> {
     dm.dangCau.map((d) => [d.ma, d.ten, DANG_CAU_HO_TRO_NHAP.includes(d.ma) ? "Có" : "Chưa"]),
     [16, 36, 22]
   );
+
+}
+
+export async function taoTemplateXlsx(dm: DanhMucNhap): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Nonsense Edu";
+
+  // --- Sheet nhập liệu
+  const ws = wb.addWorksheet(TEN_SHEET_CAU_HOI);
+  ws.columns = COT_TEMPLATE.map((c) => ({ width: c.rong }));
+  const hang1 = ws.addRow(COT_TEMPLATE.map((c) => c.nhan));
+  hang1.font = { bold: true };
+  hang1.alignment = { vertical: "middle", wrapText: true };
+  hang1.eachCell((cell, col) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COT_TEMPLATE[col - 1].batBuoc ? "FFFDE9C4" : "FFEAEAEA" } };
+  });
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  for (const d of dongViDu(dm)) {
+    const r = ws.addRow(COT_TEMPLATE.map((c) => d[c.khoa] ?? ""));
+    r.alignment = { vertical: "top", wrapText: true };
+  }
+  const cotDang = COT_TEMPLATE.findIndex((c) => c.khoa === "dang_cau") + 1;
+  const cotKho = COT_TEMPLATE.findIndex((c) => c.khoa === "do_kho") + 1;
+  for (let r = 2; r <= 501; r++) {
+    ws.getCell(r, cotDang).dataValidation = { type: "list", allowBlank: true, formulae: [`"${DANG_CAU_HO_TRO_NHAP.join(",")}"`] };
+    ws.getCell(r, cotKho).dataValidation = { type: "list", allowBlank: true, formulae: ['"1,2,3,4,5"'] };
+  }
+
+  // --- Hướng dẫn
+  const hd = wb.addWorksheet("Hướng dẫn");
+  hd.columns = [{ width: 140 }];
+  HUONG_DAN.forEach((t, i) => {
+    const r = hd.addRow([t]);
+    r.alignment = { wrapText: true, vertical: "top" };
+    if (i === 0) r.font = { bold: true, size: 13 };
+  });
+
+  themSheetDanhMuc(wb, dm);
 
   return Buffer.from(await wb.xlsx.writeBuffer());
 }

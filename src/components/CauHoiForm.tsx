@@ -24,7 +24,10 @@ export default function CauHoiForm({
   baiHocList,
   chuDeList,
   dangCauList,
+  nguLieu,
 }: {
+  /** Có = thêm câu con vào ngữ liệu này: vị trí khoá theo ngữ liệu, gửi kèm ngu_lieu_id. */
+  nguLieu?: { id: string; monHocId: string; hocPhanId: string; baiHocId: string; chuDeId: string };
   capHocList: CapHoc[];
   monHocList: MonHoc[];
   hocPhanList: HocPhan[];
@@ -37,10 +40,11 @@ export default function CauHoiForm({
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
 
-  const [monHocId, setMonHocId] = useState("");
-  const [hocPhanId, setHocPhanId] = useState("");
-  const [baiHocId, setBaiHocId] = useState("");
-  const [chuDeId, setChuDeId] = useState("");
+  const [monHocId, setMonHocId] = useState(nguLieu?.monHocId ?? "");
+  const [hocPhanId, setHocPhanId] = useState(nguLieu?.hocPhanId ?? "");
+  const [baiHocId, setBaiHocId] = useState(nguLieu?.baiHocId ?? "");
+  const [chuDeId, setChuDeId] = useState(nguLieu?.chuDeId ?? "");
+  const khoaViTri = !!nguLieu;
   const [dangCauMa, setDangCauMa] = useState("");
   const [hinhKey, setHinhKey] = useState(0); // đổi key để xoá ảnh đã chọn sau khi tạo xong
 
@@ -66,10 +70,13 @@ export default function CauHoiForm({
   const chuDeChon = chuDeList.find((cd) => cd.id === chuDeId) ?? null;
 
   function resetTat() {
-    setMonHocId("");
-    setHocPhanId("");
-    setBaiHocId("");
-    setChuDeId("");
+    // Câu con của ngữ liệu: giữ nguyên vị trí (một ngữ liệu một vị trí), chỉ xoá dạng câu để soạn câu kế tiếp.
+    if (!khoaViTri) {
+      setMonHocId("");
+      setHocPhanId("");
+      setBaiHocId("");
+      setChuDeId("");
+    }
     setDangCauMa("");
   }
 
@@ -115,7 +122,7 @@ export default function CauHoiForm({
               id="mon_hoc_id"
               required
               className={formStyles.select}
-              disabled={isPending}
+              disabled={isPending || khoaViTri}
               value={monHocId}
               onChange={(e) => {
                 setMonHocId(e.target.value);
@@ -160,7 +167,7 @@ export default function CauHoiForm({
             <select
               id="hoc_phan_id"
               className={formStyles.select}
-              disabled={isPending || !monHocId}
+              disabled={isPending || !monHocId || khoaViTri}
               value={hocPhanId}
               onChange={(e) => {
                 setHocPhanId(e.target.value);
@@ -179,7 +186,7 @@ export default function CauHoiForm({
             <select
               id="bai_hoc_id"
               className={formStyles.select}
-              disabled={isPending || !hocPhanId}
+              disabled={isPending || !hocPhanId || khoaViTri}
               value={baiHocId}
               onChange={(e) => setBaiHocId(e.target.value)}
             >
@@ -195,7 +202,7 @@ export default function CauHoiForm({
             <select
               id="chu_de_id"
               className={formStyles.select}
-              disabled={isPending || !monHocId}
+              disabled={isPending || !monHocId || khoaViTri}
               value={chuDeId}
               onChange={(e) => setChuDeId(e.target.value)}
             >
@@ -206,6 +213,9 @@ export default function CauHoiForm({
             </select>
           </div>
         </div>
+        {khoaViTri && (
+          <p className={formStyles.hint}>Vị trí giáo án lấy theo ngữ liệu và không đổi được. Chọn dạng câu cho câu hỏi con này.</p>
+        )}
         <p className={formStyles.hint}>
           Chỉ cần chọn <strong>môn học</strong> và <strong>dạng câu</strong>. Học phần, bài học, chủ đề để trống nghĩa là
           &quot;Chung&quot; — phân loại này không sửa được sau khi tạo. Câu hỏi tự vào mọi chương trình có chứa môn này.
@@ -220,6 +230,7 @@ export default function CauHoiForm({
         <input type="hidden" name="hoc_phan_ma" value={hocPhanChon?.ma ?? ""} />
         <input type="hidden" name="bai_hoc_ma" value={baiHocChon?.ma ?? ""} />
         <input type="hidden" name="chu_de_ma" value={chuDeChon?.ma ?? ""} />
+        {nguLieu && <input type="hidden" name="ngu_lieu_id" value={nguLieu.id} />}
       </fieldset>
 
       <div className={formStyles.field}>
@@ -253,7 +264,7 @@ export default function CauHoiForm({
       {success && <div className={formStyles.successBox} role="status">{success}</div>}
 
       <button type="submit" className={formStyles.btnPrimary} disabled={isPending}>
-        {isPending ? "Đang tạo…" : "Tạo câu hỏi (trạng thái Nháp)"}
+        {isPending ? "Đang tạo…" : nguLieu ? "Thêm câu hỏi con (trạng thái Nháp)" : "Tạo câu hỏi (trạng thái Nháp)"}
       </button>
     </form>
   );

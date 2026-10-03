@@ -11,6 +11,7 @@ export function mapDbError(msg: string): string {
   if (msg.includes("cau_hoi_ma_cau_hoi_key")) return "Mã câu hỏi này đã tồn tại (trùng lặp hiếm gặp) — thử lưu lại.";
   if (msg.includes("cau_hoi_do_kho_check")) return "Độ khó phải từ 1 đến 5.";
   if (msg.includes("cau_hoi_ma_cau_hoi_check")) return "Mã câu hỏi sinh ra không hợp lệ (phải đủ 17 chữ số).";
+  if (msg.includes("uq_cau_hoi_thu_tu_ngu_lieu")) return "Thứ tự câu trong ngữ liệu bị trùng (có người vừa thêm câu cùng lúc) — thử lưu lại.";
   if (msg.includes("uq_lua_chon_thu_tu")) return "Danh sách lựa chọn bị trùng thứ tự.";
   if (msg.includes("update or delete")) return "Không thể xoá — câu hỏi này còn dữ liệu liên quan (đã nằm trong đề).";
   // Các lỗi do RPC cap_ma_cau_hoi() raise exception đã là tiếng Việt sẵn (vd "Học phần % không thuộc môn %").
@@ -20,7 +21,13 @@ export function mapDbError(msg: string): string {
 export type LuuCauHoiResult = { error: string } | { data: { id: string; ma_cau_hoi: string } };
 
 /** Câu hỏi mới luôn ở trạng thái mặc định của DB (`nhap`) — chờ nộp duyệt. */
-export async function luuCauHoi(supabase: SupabaseClient, userId: string, c: CauHoiNhap): Promise<LuuCauHoiResult> {
+export async function luuCauHoi(
+  supabase: SupabaseClient,
+  userId: string,
+  c: CauHoiNhap,
+  /** Có = câu con của ngữ liệu này (vị trí phải khớp ngữ liệu — DB kiểm bằng trigger). Bỏ trống = câu đứng một mình. */
+  nguLieuId?: string
+): Promise<LuuCauHoiResult> {
   // Cấp mã câu hỏi qua RPC — hàm này cũng xác nhận học phần/bài học/chủ đề/dạng câu
   // thật sự thuộc đúng môn học/cấp học đã chọn (chặn dữ liệu rác ngay ở tầng DB).
   const { data: maCauHoi, error: rpcError } = await supabase.rpc("cap_ma_cau_hoi", {
@@ -36,6 +43,13 @@ export async function luuCauHoi(supabase: SupabaseClient, userId: string, c: Cau
   if (rpcError || !maCauHoi) return { error: mapDbError(rpcError?.message ?? "Không cấp được mã câu hỏi.") };
 
   const sttCau = Number(String(maCauHoi).slice(-4));
+
+  let thuTuTrongNguLieu: number | null = null;
+  if (nguLieuId) {
+    const { data: thuTu, error: thuTuError } = await supabase.rpc("thu_tu_ke_tiep_ngu_lieu", { p_ngu_lieu_id: nguLieuId });
+    if (thuTuError || thuTu == null) return { error: mapDbError(thuTuError?.message ?? "Không xác định được thứ tự trong ngữ liệu.") };
+    thuTuTrongNguLieu = Number(thuTu);
+  }
 
   const { data: cauHoi, error: insertError } = await supabase
     .from("cau_hoi")
@@ -54,6 +68,7 @@ export async function luuCauHoi(supabase: SupabaseClient, userId: string, c: Cau
       loi_giai: c.loi_giai,
       dap_an_text: c.dap_an_text,
       nguoi_tao: userId,
+      ...(nguLieuId ? { ngu_lieu_id: nguLieuId, thu_tu_trong_ngu_lieu: thuTuTrongNguLieu } : {}),
     })
     .select("id, ma_cau_hoi")
     .single();
