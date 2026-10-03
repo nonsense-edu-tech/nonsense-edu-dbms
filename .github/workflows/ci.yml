@@ -54,4 +54,5 @@ jobs:
         run: |
           npm run test:de-thi
           npm run test:ngu-lieu
+          npm run test:de-ngu-lieu
           npm run test:phan-cong

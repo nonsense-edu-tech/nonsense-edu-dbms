@@ -32,6 +32,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-03 — CI kiểm tra PR + dọn lỗi lint + luật tag migration
+
+**Tóm tắt:** (1) Sự cố 0050: file thiếu dòng `-- adr004-type: expand` nên CI không tự áp, job parity fail sau merge — đã bổ sung tag (PR #50) và ghi luật bắt buộc vào `CLAUDE.md` (migration phải có tag ở dòng 1). (2) PR #53 thêm `.github/workflows/ci.yml` chạy trên mọi PR vào `main`: kiểm tag migration, ESLint, `tsc`, test PGlite (đề thi, ngữ liệu, đề × ngữ liệu). (3) PR #51 sửa toàn bộ lỗi ESLint (từ 7 lỗi + 8 cảnh báo còn 0 lỗi + 2 cảnh báo): Sidebar, SearchableSelect, biểu đồ tròn Học phí, trang Vận hành, test 0049.
+
+**Migration:** không có (0050 chỉ được thêm tag ở dòng 1, nội dung SQL giữ nguyên).
+
+**Staging:** — (không dùng)
+
+**Production:** ✅ đã merge `main` (PR #50, #51, #53); job parity xanh trên các lần push. Việc còn lại cho chủ dự án: bật "Require status checks" cho 2 job của `ci.yml` ở GitHub Settings → Branches để chặn merge cứng. Nên bấm thử: thu gọn Sidebar + F5, ô chọn có tìm kiếm, biểu đồ tròn Học phí.
+
+---
+
 ## 2026-10-03 — Giao diện ngữ liệu: tạo nằm trong "Tạo câu hỏi", danh sách ngữ liệu có tìm kiếm + bộ lọc
 
 **Tóm tắt:** Tab "Tạo câu hỏi" có thêm mục **Tạo ngữ liệu** (từng ngữ liệu / nhập từ file). Tab "Ngữ liệu" đổi thành **Danh sách ngữ liệu**, có ô tìm kiếm (số hiệu, tiêu đề, nội dung) và bộ lọc cấp học, môn, học phần, bài học, chủ đề, loại, giống Danh sách câu hỏi. Trang `/ngu-lieu/tao-moi` cũ tự chuyển hướng. Chỉ đổi code giao diện.
@@ -40,7 +52,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng)
 
-**Production:** 🔲 chưa — chờ merge PR.
+**Production:** ✅ đã merge `main` (PR #55, 03/10/2026); chỉ đổi code, không có migration.
 
 ---
 
@@ -52,7 +64,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng)
 
-**Production:** 🔲 chưa — chờ merge PR, rồi duyệt job `apply-migration-expand`.
+**Production:** ✅ đã merge (PR #54) + CI áp `0051` (xác nhận qua lịch sử migration production, 03/10/2026).
 
 ---
 
@@ -64,7 +76,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng)
 
-**Production:** 🔲 chưa — chờ merge PR.
+**Production:** ✅ đã merge `main` (PR #52, 03/10/2026); chỉ đổi code, không có migration. Cần xác nhận bằng tài khoản mới: đăng nhập → nhập mật khẩu mặc định ở ô hiện tại + mật khẩu mới.
 
 ---
 
@@ -76,7 +88,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng; kiểm bằng PGlite)
 
-**Production:** 🔲 chưa — PR #49 đã merge nhưng 0050 thiếu tag `-- adr004-type: expand` nên CI xếp là contract và báo lỗi parity; đã bổ sung tag ở PR sửa tiếp theo, chờ CI áp sau khi duyệt Environment `production-db`.
+**Production:** ✅ PR #49 merge, nhưng 0050 thiếu tag `-- adr004-type: expand` nên CI xếp là contract, không tự áp và job parity báo lỗi; PR #50 bổ sung tag → CI áp `0050` (xác nhận qua lịch sử migration production, 03/10/2026).
 
 ---
 
@@ -88,7 +100,7 @@ Mỗi mục ghi rõ:
 
 **Staging:** — (không dùng)
 
-**Production:** 🔲 chờ merge → CI áp migration Expand (`db-parity-check.yml`) + duyệt môi trường `production-db`; sau đó deploy code.
+**Production:** ✅ CI áp `0049` (xác nhận qua lịch sử migration production, 03/10/2026) + code đã merge (PR #48).
 
 **Commit:** xem PR `feat/de-thi-theo-ma-tran`.
 
