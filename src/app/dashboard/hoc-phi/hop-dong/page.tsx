@@ -13,6 +13,15 @@ import styles from "../hoc-phi.module.css";
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 const VAI_TRO_GHI = ["master_admin", "ke_toan", "admin_ts"];
 
+type HopDongNhung = { trang_thai: string; deleted_at: string | null };
+
+// Ghi danh "đã có hợp đồng" chỉ khi có ít nhất 1 hợp đồng chưa hủy và chưa xóa mềm.
+// Embed trả về mảng (quan hệ 1-nhiều từ 0053) hoặc object tùy kiểu sinh — chấp nhận cả hai.
+function coHopDongDangMo(v: HopDongNhung | HopDongNhung[] | null | undefined): boolean {
+  const ds = Array.isArray(v) ? v : v ? [v] : [];
+  return ds.some((h) => h.trang_thai !== "da_huy" && h.deleted_at == null);
+}
+
 export default async function HopDongPage({
   searchParams,
 }: {
@@ -61,11 +70,12 @@ export default async function HopDongPage({
     // (thay cho việc tải toàn bộ ghi_danh/hoc_sinh/lop rồi join bằng Map).
     truyVanHopDong,
     supabase.from("goi_hoc_phi").select("id, ten, chuong_trinh_ma, gia_niem_yet, dang_ap_dung, hieu_luc_den").is("deleted_at", null),
-    // Dropdown "Tạo hợp đồng": ghi danh đang học CHƯA có hợp đồng. `hop_dong_hoc_phi(id)`
-    // cho biết đã có hợp đồng chưa (ghi_danh_id là UNIQUE nên tối đa 1).
+    // Dropdown "Tạo hợp đồng": ghi danh đang học CHƯA có hợp đồng ĐANG MỞ. Hợp đồng đã hủy
+    // (`da_huy`) hoặc xóa mềm không tính — nếu không, học sinh bị hủy hợp đồng sẽ không bao giờ
+    // tạo lại được (migration 0053 cũng chỉ ràng buộc duy nhất trên hợp đồng đang mở).
     supabase
       .from("ghi_danh")
-      .select("id, hoc_sinh(ho_ten, ma_hoc_sinh, deleted_at), lop(ten_lop, chuong_trinh_ma), hop_dong_hoc_phi(id)")
+      .select("id, hoc_sinh(ho_ten, ma_hoc_sinh, deleted_at), lop(ten_lop, chuong_trinh_ma), hop_dong_hoc_phi(id, trang_thai, deleted_at)")
       .eq("trang_thai", "dang_hoc")
       .is("deleted_at", null),
   ]);
@@ -90,7 +100,7 @@ export default async function HopDongPage({
   const thucThuMap = new Map((taiChinhList ?? []).map((tc) => [tc.hop_dong_id, tc.thuc_thu]));
 
   const ghiDanhKhaDung: GhiDanhOption[] = (ghiDanhDangHoc ?? [])
-    .filter((gd) => motBanGhi(gd.hop_dong_hoc_phi) == null)
+    .filter((gd) => !coHopDongDangMo(gd.hop_dong_hoc_phi))
     .map((gd) => {
       const hs = motBanGhi(gd.hoc_sinh);
       const lop = motBanGhi(gd.lop);

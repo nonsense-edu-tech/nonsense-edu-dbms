@@ -1373,14 +1373,14 @@ export type Database = {
           {
             foreignKeyName: "hop_dong_hoc_phi_ghi_danh_id_fkey"
             columns: ["ghi_danh_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "ghi_danh"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "hop_dong_hoc_phi_ghi_danh_id_fkey"
             columns: ["ghi_danh_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "v_hoc_sinh_danh_sach"
             referencedColumns: ["ghi_danh_id"]
           },
@@ -2746,14 +2746,14 @@ export type Database = {
           {
             foreignKeyName: "hop_dong_hoc_phi_ghi_danh_id_fkey"
             columns: ["ghi_danh_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "ghi_danh"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "hop_dong_hoc_phi_ghi_danh_id_fkey"
             columns: ["ghi_danh_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "v_hoc_sinh_danh_sach"
             referencedColumns: ["ghi_danh_id"]
           },
