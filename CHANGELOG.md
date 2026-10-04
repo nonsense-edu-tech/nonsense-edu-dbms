@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-04 — Sửa lỗi: hủy hợp đồng học phí xong không tạo lại được hợp đồng mới
+
+**Tóm tắt:** `hop_dong_hoc_phi` có `UNIQUE (ghi_danh_id)` cho mọi trạng thái nên hợp đồng `da_huy` vẫn chiếm chỗ ghi danh; dropdown "Tạo hợp đồng mới" cũng loại mọi ghi danh có bất kỳ hợp đồng nào. Sửa: ràng buộc duy nhất chỉ tính hợp đồng đang mở (chưa hủy, chưa xóa mềm) + dropdown lọc theo cùng điều kiện. Học sinh 202126002010 được mở khóa, hợp đồng đã hủy giữ lại làm vết. Test PGlite: `npm run test:hop-dong-unique`.
+
+**Migration:** `0053_hop_dong_unique_chi_tinh_hop_dong_mo.sql` (Expand, nới ràng buộc; có `DROP CONSTRAINT` nên người duyệt xác nhận lại phân loại).
+
+**Staging:** — (không dùng)
+
+**Production:** ✅ đã áp dụng thủ công bằng MCP ngày 04/10/2026 (vi phạm ADR-004, ghi nhận trung thực); file migration viết idempotent, lịch sử production đã đổi version → 0053 để parity khớp. Code frontend (`hop-dong/page.tsx`, `database.types.ts`) lên production qua PR này.
+
+**Commit:** xem PR.
+
+---
+
 ## 2026-10-03 — Phân công giảng dạy: GV chỉ thấy lớp/học sinh mình phụ trách, duyệt học phần, tạo user một bước
 
 **Tóm tắt:** Thêm bảng phân công giảng dạy (lớp × môn). Giáo viên / trợ giảng / trưởng bộ môn chỉ thấy lớp được phân công; học sinh chỉ hiện tên + lớp (không SĐT, qua RPC `hoc_sinh_cua_toi`); không còn thấy cụm Vận hành và tab Học liệu ở sidebar (chặn cả truy cập URL). GV đề xuất học phần → Trưởng bộ môn/quản trị duyệt (mã cấp khi duyệt); GV tạo bài học dưới học phần đã duyệt trong môn mình. Master Admin tạo người dùng trong một bước (email, tên, vai trò, chi nhánh, môn/cấp học, phân lớp tuỳ chọn). Chi tiết và ngoại lệ ADR-002: `docs/adr/ADR-007-phan-cong-giang-day-va-rls-theo-lop.md`. Test PGlite: `npm run test:phan-cong`.
