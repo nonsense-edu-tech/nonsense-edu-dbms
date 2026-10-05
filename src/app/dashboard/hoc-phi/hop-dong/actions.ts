@@ -81,7 +81,7 @@ export async function huyHopDong(id: string): Promise<HopDongActionResult> {
   if (!id) return { error: "Thiếu ID hợp đồng." };
 
   // Hợp đồng đã có phiếu thu KHÔNG được huỷ: phiếu thu bất biến, huỷ hợp đồng sẽ làm doanh thu về 0 và
-  // "còn phải thu" tính sai (số đã thu bị bỏ khỏi sổ). Phải tất toán/chấm dứt hợp đồng theo quy trình riêng.
+  // "còn phải thu" tính sai (số đã thu bị bỏ khỏi sổ). Phải dùng chức năng Tất toán (miễn công nợ).
   const { count: soPhieuThu, error: demError } = await supabase
     .from("phieu_thu")
     .select("id", { count: "exact", head: true })
@@ -91,7 +91,7 @@ export async function huyHopDong(id: string): Promise<HopDongActionResult> {
     return {
       error:
         `Hợp đồng này đã có ${soPhieuThu} phiếu thu nên không thể huỷ (huỷ sẽ làm sai công nợ và doanh thu). ` +
-        "Nếu học sinh nghỉ/bảo lưu, hãy nhờ Master Admin tất toán hợp đồng thay vì huỷ.",
+        "Nếu học sinh nghỉ/bảo lưu, hãy dùng nút \"Tất toán\" (miễn phần còn phải thu) thay vì huỷ.",
     };
   }
 
@@ -102,6 +102,30 @@ export async function huyHopDong(id: string): Promise<HopDongActionResult> {
   revalidatePath("/dashboard/hoc-phi/hop-dong");
   revalidatePath("/dashboard/hoc-phi");
   return { ok: true };
+}
+
+export type TatToanKetQua = { error: string } | { ok: true; soTienMien: number; thucThu: number };
+
+// Tất toán hợp đồng: miễn phần còn phải thu, hợp đồng -> hoàn thành, doanh thu thuần = thực thu.
+// Quyền (master_admin / admin_ts / ke_toan) và mọi điều kiện được kiểm tra lại ở DB (RPC tat_toan_hop_dong).
+export async function tatToanHopDong(id: string, lyDo: string): Promise<TatToanKetQua> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Chưa đăng nhập." };
+  if (!id) return { error: "Thiếu ID hợp đồng." };
+  const ly = (lyDo ?? "").trim();
+  if (ly.length < 5) return { error: "Vui lòng nhập lý do tất toán (tối thiểu 5 ký tự)." };
+
+  const { data, error } = await supabase.rpc("tat_toan_hop_dong", { p_id: id, p_ly_do: ly });
+  if (error) return { error: mapDbError(error.message) };
+
+  const kq = (data ?? {}) as Record<string, number>;
+  revalidatePath("/dashboard/hoc-phi/hop-dong");
+  revalidatePath("/dashboard/hoc-phi/thu-tien");
+  revalidatePath("/dashboard/hoc-phi");
+  return { ok: true, soTienMien: Number(kq.so_tien_mien ?? 0), thucThu: Number(kq.thuc_thu ?? 0) };
 }
 
 export type SuaHopDongKetQua =
