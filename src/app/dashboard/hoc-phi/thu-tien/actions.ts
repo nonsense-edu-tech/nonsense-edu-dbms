@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { TRANG_THAI_NHAN_PHIEU_THU } from "@/lib/thu-tien";
 
 const HINH_THUC_HOP_LE = ["tien_mat", "chuyen_khoan"];
 const MIME_HOP_LE = ["image/jpeg", "image/png", "image/heic", "application/pdf"];
@@ -27,6 +28,14 @@ export async function taoPhieuThu(formData: FormData): Promise<TaoPhieuThuResult
   if (!Number.isFinite(soTien) || soTien <= 0) return { error: "Số tiền phải lớn hơn 0." };
   if (!ngayThu) return { error: "Vui lòng chọn ngày thu." };
   if (!HINH_THUC_HOP_LE.includes(hinhThuc)) return { error: "Hình thức thu không hợp lệ." };
+
+  // Chốt chặn phía server (không chỉ dựa vào danh sách chọn ở UI, vì tab cũ/ gọi trực tiếp vẫn
+  // có thể gửi id hợp đồng đã huỷ hoặc chưa kích hoạt). Kiểm tra TRƯỚC khi tải biên lai lên.
+  const { data: hopDong } = await supabase.from("hop_dong_hoc_phi").select("trang_thai").eq("id", hopDongId).maybeSingle();
+  if (!hopDong) return { error: "Không tìm thấy hợp đồng." };
+  if (!TRANG_THAI_NHAN_PHIEU_THU.includes(hopDong.trang_thai)) {
+    return { error: "Hợp đồng đã huỷ hoặc chưa kích hoạt, không ghi được phiếu thu." };
+  }
 
   // Tên người thu lấy từ hồ sơ của CHÍNH người đang đăng nhập (RLS chỉ cho đọc
   // chính mình) — không nhận từ client, đảm bảo không sửa được qua form.

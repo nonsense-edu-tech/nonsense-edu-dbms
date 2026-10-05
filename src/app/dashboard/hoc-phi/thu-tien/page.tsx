@@ -4,10 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import PhanTrang from "@/components/PhanTrang";
 import { motBanGhi } from "@/lib/embed";
 import { duongDanTrangCuoi, parsePhanTrang, type RawSearchParams } from "@/lib/phan-trang";
-import PhieuThuForm, { type HopDongDangHoatDong } from "@/components/PhieuThuForm";
+import PhieuThuForm, { type HopDongCoTheThu } from "@/components/PhieuThuForm";
 import PhieuThuTable, { type PhieuThuRow } from "@/components/PhieuThuTable";
 import OTimKiem from "@/components/OTimKiem";
 import { layTuKhoa, timHopDongTheoTuKhoa, tuKhoaLaSoTien } from "@/lib/tim-kiem-hoc-phi";
+import { nhanPhieuThuTrongDanhSach } from "@/lib/thu-tien";
 import styles from "../hoc-phi.module.css";
 
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
@@ -84,8 +85,9 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
   const ghiDanhMap = new Map((ghiDanhList ?? []).map((g) => [g.id, g]));
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
 
-  const hopDongDangHoatDong: HopDongDangHoatDong[] = (taiChinhList ?? [])
-    .filter((tc) => tc.trang_thai === "dang_hoat_dong")
+  // Gồm hợp đồng đang hoạt động + hợp đồng đã hoàn thành nhưng còn phải thu (thu muộn).
+  const hopDongCoTheThu: HopDongCoTheThu[] = (taiChinhList ?? [])
+    .filter((tc) => nhanPhieuThuTrongDanhSach(tc.trang_thai, Number(tc.con_phai_thu ?? 0)))
     .map((tc) => {
       const gd = ghiDanhMap.get(tc.ghi_danh_id);
       const hs = gd ? hocSinhMap.get(gd.hoc_sinh_id) : undefined;
@@ -95,6 +97,7 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
         ma_hoc_sinh: hs?.ma_hoc_sinh ?? "?",
         chuong_trinh_ten: chuongTrinhMap.get(tc.chuong_trinh_ma) ?? "?",
         con_phai_thu: tc.con_phai_thu,
+        da_ket_thuc: tc.trang_thai === "hoan_thanh",
       };
     })
     .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, "vi"));
@@ -145,7 +148,7 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Ghi phiếu thu</h2>
             {canEdit ? (
-              <PhieuThuForm hopDongList={hopDongDangHoatDong} nguoiDungHienTai={nguoiDungHienTai} />
+              <PhieuThuForm hopDongList={hopDongCoTheThu} nguoiDungHienTai={nguoiDungHienTai} />
             ) : (
               <p className={styles.noticeBox}>Bạn không có quyền ghi phiếu thu.</p>
             )}

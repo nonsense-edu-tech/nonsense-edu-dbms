@@ -9,12 +9,14 @@ import { useToast } from "./ToastProvider";
 import SearchableSelect from "./SearchableSelect";
 import styles from "./Form.module.css";
 
-export type HopDongDangHoatDong = {
+export type HopDongCoTheThu = {
   id: string;
   ho_ten: string;
   ma_hoc_sinh: string;
   chuong_trinh_ten: string;
   con_phai_thu: number;
+  /** Hợp đồng đã hoàn thành nhưng còn phải thu — ghi nhận khoản đóng muộn. */
+  da_ket_thuc: boolean;
 };
 
 const MIME_HOP_LE = ["image/jpeg", "image/png", "image/heic", "application/pdf"];
@@ -27,7 +29,7 @@ export default function PhieuThuForm({
   hopDongList,
   nguoiDungHienTai,
 }: {
-  hopDongList: HopDongDangHoatDong[];
+  hopDongList: HopDongCoTheThu[];
   nguoiDungHienTai: string;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function PhieuThuForm({
     () =>
       hopDongList.map((h) => ({
         value: h.id,
-        label: `${h.ho_ten} (${h.ma_hoc_sinh}) — ${h.chuong_trinh_ten} — còn phải thu ${tienHienThi(h.con_phai_thu)}`,
+        label: `${h.ho_ten} (${h.ma_hoc_sinh}) — ${h.chuong_trinh_ten} — còn phải thu ${tienHienThi(h.con_phai_thu)}${h.da_ket_thuc ? " — HĐ đã kết thúc (thu muộn)" : ""}`,
       })),
     [hopDongList]
   );
