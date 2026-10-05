@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Thu tiền: ghi được phiếu thu muộn cho hợp đồng đã kết thúc còn phải thu
+
+**Tóm tắt:** Ô chọn hợp đồng ở trang Thu tiền chỉ liệt kê hợp đồng "Đang hoạt động", nên học sinh đã nghỉ/hết khoá mà gia đình đóng muộn (ca Trần Lê Thanh Ngọc: học phí tháng 8 chuyển ngày 04/10) không ghi nhận được dù database cho phép. Nay ô chọn gồm cả hợp đồng "Hoàn thành" còn phải thu > 0, gắn nhãn "HĐ đã kết thúc (thu muộn)"; hợp đồng đã huỷ / nháp / chờ duyệt vẫn bị loại. Thêm chốt chặn ở server action `taoPhieuThu`: từ chối hợp đồng không ở trạng thái đang hoạt động / hoàn thành (kiểm tra trước khi tải biên lai). Quy tắc nằm một nơi: `src/lib/thu-tien.ts`. Tác động trên production: chỉ thêm đúng 1 hợp đồng vào ô chọn (Ngọc, còn phải thu 2.500.000 đ sau khi Master Admin sửa doanh thu về 5.000.000 đ ngày 05/10).
+
+**Migration:** không có (chỉ đổi code frontend/server action).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge PR + deploy Vercel.
+
+**Commit:** xem PR.
+
+---
+
 ## 2026-10-05 — Form học sinh: "Trường học" và "Khối thi/kỳ thi" có ô gợi ý
 
 **Tóm tắt:** Đổi nhãn "Trường THPT" → "Trường học", "Khối thi" → "Khối thi/kỳ thi" (placeholder `khối A01, V-ACT, Nội trú Nội - Nhi,...`) ở form Tạo học sinh, modal Sửa, bảng và CSV xuất. Hai ô thành ô nhập có gợi ý (`<datalist>`, vẫn gõ tự do): kỳ thi gồm 5 mục (V-ACT, SAT, Nội trú Nội-Nhi/Ngoại-Sản UMP, Thạc sĩ UMP); trường học gồm ~1.500 trường THPT lấy từ Wikipedia (đầy đủ ở ~16 tỉnh/thành, các tỉnh khác mới có trường chuyên/nổi tiếng — chưa phải danh mục chính thức) và 38 trường đại học Y Dược công/tư. Cột CSDL `truong_thpt`/`khoi_thi` giữ nguyên.
