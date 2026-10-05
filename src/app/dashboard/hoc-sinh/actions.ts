@@ -14,7 +14,7 @@ type HocSinh = {
 export type TaoHocSinhResult = { error: string } | { data: HocSinh };
 export type SuaHocSinhResult = { error: string } | { ok: true };
 export type XoaHocSinhResult = { error: string } | { ok: true };
-export type ChuyenLopResult = { error: string } | { ok: true };
+export type ChuyenLopResult = { error: string } | { ok: true; congNoCu: number };
 export type CapNhatTrangThaiGhiDanhResult = { error: string } | { ok: true };
 
 const GIOI_TINH_HOP_LE = ["nam", "nu", "khac"] as const;
@@ -145,6 +145,16 @@ export async function chuyenLop(hocSinhId: string, lopMoiId: string): Promise<Ch
 
   if (!hocSinhId || !lopMoiId) return { error: "Thiếu học sinh hoặc lớp đích." };
 
+  // Ghi danh đang học hiện tại (sẽ thành "Đã chuyển lớp") — để báo công nợ hợp đồng cũ còn treo sau khi chuyển.
+  const { data: ghiDanhCu } = await supabase
+    .from("ghi_danh")
+    .select("id")
+    .eq("hoc_sinh_id", hocSinhId)
+    .eq("trang_thai", "dang_hoc")
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+
   const { error } = await supabase.rpc("chuyen_lop", {
     p_hoc_sinh_id: hocSinhId,
     p_lop_moi_id: lopMoiId,
@@ -152,10 +162,114 @@ export async function chuyenLop(hocSinhId: string, lopMoiId: string): Promise<Ch
 
   if (error) return { error: mapDbError(error.message) };
 
+  const congNoCu = ghiDanhCu ? (await docCongNoGhiDanh(supabase, ghiDanhCu.id)).reduce((t, c) => t + c.con_phai_thu, 0) : 0;
+
   revalidatePath("/dashboard/hoc-sinh");
   revalidatePath("/dashboard/lop");
-  return { ok: true };
+  return { ok: true, congNoCu };
 }
+
+export type CongNoGhiDanh = { hop_dong_id: string; trang_thai: string; doanh_thu_thuan: number; thuc_thu: number; con_phai_thu: number };
+
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+
+// Hợp đồng đang hoạt động/hoàn thành của 1 ghi danh còn phải thu > 0. RLS áp theo người gọi: vai trò không
+// xem được tài chính (vd quản lý chi nhánh) nhận danh sách rỗng — không chặn việc đổi trạng thái.
+async function docCongNoGhiDanh(supabase: SupabaseServer, ghiDanhId: string): Promise<CongNoGhiDanh[]> {
+  const { data } = await supabase
+    .from("v_tai_chinh_hop_dong")
+    .select("hop_dong_id, trang_thai, doanh_thu_thuan, thuc_thu, con_phai_thu")
+    .eq("ghi_danh_id", ghiDanhId)
+    .in("trang_thai", ["dang_hoat_dong", "hoan_thanh"])
+    .order("hop_dong_id");
+  return (data ?? [])
+    .filter((r) => r.hop_dong_id && Number(r.con_phai_thu ?? 0) > 0)
+    .map((r) => ({
+      hop_dong_id: r.hop_dong_id as string,
+      trang_thai: r.trang_thai ?? "",
+      doanh_thu_thuan: Number(r.doanh_thu_thuan ?? 0),
+      thuc_thu: Number(r.thuc_thu ?? 0),
+      con_phai_thu: Number(r.con_phai_thu ?? 0),
+    }));
+}
+
+export type LayCongNoGhiDanhResult = { error: string } | { ok: true; list: CongNoGhiDanh[]; coTheTatToan: boolean };
+
+// Trước khi đổi ghi danh sang nghỉ/bảo lưu/chuyển lớp: hợp đồng còn công nợ không? Người dùng có tất toán được không?
+export async function layCongNoGhiDanh(ghiDanhId: string): Promise<LayCongNoGhiDanhResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Chưa đăng nhập." };
+  if (!ghiDanhId) return { error: "Thiếu ghi danh." };
+
+  const [list, { data: profile }] = await Promise.all([
+    docCongNoGhiDanh(supabase, ghiDanhId),
+    supabase.from("users").select("vai_tro, trang_thai").eq("id", user.id).single(),
+  ]);
+  const coTheTatToan =
+    profile?.trang_thai === "active" && ["master_admin", "admin_ts", "ke_toan"].includes(profile?.vai_tro ?? "");
+  return { ok: true, list, coTheTatToan };
+}
+
+export type DoiTrangThaiVaCongNoResult =
+  | { error: string }
+  | { ok: true; soHopDongTatToan: number; tongMien: number; loiTatToan: string | null };
+
+// Đổi trạng thái ghi danh rồi (tuỳ chọn) tất toán các hợp đồng còn công nợ của ghi danh đó.
+// Đổi trạng thái trước: nếu tất toán lỗi, trạng thái đã đổi vẫn đúng ý người dùng và họ được báo để tất toán lại bằng nút "Tất toán".
+export async function doiTrangThaiGhiDanhVaCongNo(
+  ghiDanhId: string,
+  trangThaiMoi: string,
+  tatToan: boolean,
+  lyDo: string
+): Promise<DoiTrangThaiVaCongNoResult> {
+  const supabase = await createClient();
+
+  if (!ghiDanhId) return { error: "Thiếu ghi danh." };
+  if (!TRANG_THAI_GHI_DANH_HOP_LE.includes(trangThaiMoi)) return { error: "Trạng thái ghi danh không hợp lệ." };
+  const ly = (lyDo ?? "").trim();
+  if (tatToan && ly.length < 5) return { error: "Vui lòng nhập lý do tất toán (tối thiểu 5 ký tự)." };
+
+  const { error } = await supabase.rpc("cap_nhat_trang_thai_ghi_danh", {
+    p_ghi_danh_id: ghiDanhId,
+    p_trang_thai_moi: trangThaiMoi,
+  });
+  if (error) return { error: mapDbError(error.message) };
+
+  let soHopDongTatToan = 0;
+  let tongMien = 0;
+  let loiTatToan: string | null = null;
+  if (tatToan) {
+    for (const cn of await docCongNoGhiDanh(supabase, ghiDanhId)) {
+      const { data, error: tatToanError } = await supabase.rpc("tat_toan_hop_dong", {
+        p_id: cn.hop_dong_id,
+        p_ly_do: `Học sinh ${TEN_TRANG_THAI_GHI_DANH[trangThaiMoi] ?? trangThaiMoi} — ${ly}`,
+      });
+      if (tatToanError) {
+        loiTatToan = tatToanError.message;
+        break;
+      }
+      soHopDongTatToan += 1;
+      tongMien += Number((data as Record<string, number> | null)?.so_tien_mien ?? 0);
+    }
+  }
+
+  revalidatePath("/dashboard/hoc-sinh");
+  revalidatePath("/dashboard/hoc-phi/hop-dong");
+  revalidatePath("/dashboard/hoc-phi/thu-tien");
+  revalidatePath("/dashboard/hoc-phi");
+  return { ok: true, soHopDongTatToan, tongMien, loiTatToan };
+}
+
+const TEN_TRANG_THAI_GHI_DANH: Record<string, string> = {
+  da_nghi: "đã nghỉ",
+  bao_luu: "bảo lưu",
+  da_chuyen_lop: "đã chuyển lớp",
+  hoan_thanh: "hoàn thành khoá",
+  dang_hoc: "đang học",
+};
 
 export async function capNhatTrangThaiGhiDanh(
   ghiDanhId: string,

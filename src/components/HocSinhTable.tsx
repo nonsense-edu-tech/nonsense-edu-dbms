@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { xoaHocSinh, capNhatTrangThaiGhiDanh, xuatCsvHocSinh } from "@/app/dashboard/hoc-sinh/actions";
+import { xoaHocSinh, capNhatTrangThaiGhiDanh, layCongNoGhiDanh, xuatCsvHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import type { BoLocHocSinh } from "@/lib/hoc-sinh-loc";
 import { GIOI_TINH_LABEL, TINH_TRANG_DANG_KY_LABEL, TRANG_THAI_GHI_DANH_LABEL, TRANG_THAI_GHI_DANH_OPTIONS } from "./hocSinhOptions";
 import { ngayHienThi } from "@/lib/formatDate";
 import { useToast } from "./ToastProvider";
 import HocSinhEditModal from "./HocSinhEditModal";
 import ChuyenLopModal from "./ChuyenLopModal";
+import GhiDanhCongNoModal, { type YeuCauXuLyCongNo } from "./GhiDanhCongNoModal";
+
+// Đổi sang các trạng thái này mà hợp đồng còn công nợ thì phải hỏi cách xử lý công nợ trước.
+const TRANG_THAI_CAN_XU_LY_CONG_NO = ["da_nghi", "bao_luu", "da_chuyen_lop"];
 import styles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
 
 type LopOption = { id: string; ma_lop: string; ten_lop: string | null; chi_nhanh_id: string | null };
@@ -64,6 +68,7 @@ export default function HocSinhTable({
   const [query, setQuery] = useState(boLoc.q);
   const [editingRow, setEditingRow] = useState<HocSinhRow | null>(null);
   const [chuyenLopRow, setChuyenLopRow] = useState<HocSinhRow | null>(null);
+  const [congNoYeuCau, setCongNoYeuCau] = useState<YeuCauXuLyCongNo | null>(null);
   const coCotHanhDong = canDelete || list.some((hs) => hs.coTheSua);
 
   // Bộ lọc nằm trên URL (?q &lop &cn &tt). Đổi bộ lọc luôn về trang 1.
@@ -217,6 +222,7 @@ export default function HocSinhTable({
                   coCotHanhDong={coCotHanhDong}
                   onEdit={() => setEditingRow(hs)}
                   onChuyenLop={() => setChuyenLopRow(hs)}
+                  onCanXuLyCongNo={setCongNoYeuCau}
                 />
               ))}
             </tbody>
@@ -227,6 +233,7 @@ export default function HocSinhTable({
       )}
 
       {editingRow && <HocSinhEditModal hocSinh={editingRow} onClose={() => setEditingRow(null)} />}
+      {congNoYeuCau && <GhiDanhCongNoModal yeuCau={congNoYeuCau} onClose={() => setCongNoYeuCau(null)} />}
       {chuyenLopRow && (
         <ChuyenLopModal hocSinh={chuyenLopRow} lopList={lopList} onClose={() => setChuyenLopRow(null)} />
       )}
@@ -240,12 +247,14 @@ function HocSinhRowItem({
   coCotHanhDong,
   onEdit,
   onChuyenLop,
+  onCanXuLyCongNo,
 }: {
   hocSinh: HocSinhRow;
   canDelete: boolean;
   coCotHanhDong: boolean;
   onEdit: () => void;
   onChuyenLop: () => void;
+  onCanXuLyCongNo: (yeuCau: YeuCauXuLyCongNo) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -271,9 +280,26 @@ function HocSinhRowItem({
   function handleTrangThaiChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const trangThaiMoi = e.target.value;
     if (!hocSinh.ghi_danh_id) return;
+    const ghiDanhId = hocSinh.ghi_danh_id;
     setTrangThaiError(null);
     startTrangThaiTransition(async () => {
-      const result = await capNhatTrangThaiGhiDanh(hocSinh.ghi_danh_id!, trangThaiMoi);
+      // Nghỉ/bảo lưu/chuyển lớp: nếu hợp đồng còn công nợ thì hỏi cách xử lý (giữ hay tất toán) thay vì để treo.
+      if (TRANG_THAI_CAN_XU_LY_CONG_NO.includes(trangThaiMoi)) {
+        const congNo = await layCongNoGhiDanh(ghiDanhId);
+        if ("ok" in congNo && congNo.list.length > 0) {
+          onCanXuLyCongNo({
+            ghiDanhId,
+            hoTen: hocSinh.ho_ten,
+            maHocSinh: hocSinh.ma_hoc_sinh,
+            trangThaiMoi,
+            list: congNo.list,
+            coTheTatToan: congNo.coTheTatToan,
+          });
+          return;
+        }
+        // Không đọc được công nợ (lỗi/không có quyền xem tài chính): vẫn cho đổi như trước.
+      }
+      const result = await capNhatTrangThaiGhiDanh(ghiDanhId, trangThaiMoi);
       if ("error" in result) {
         setTrangThaiError(result.error);
         showToast({ type: "error", message: `Đổi trạng thái ghi danh thất bại: ${result.error}` });
