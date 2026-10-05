@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Tất toán hợp đồng (miễn công nợ), chặn huỷ hợp đồng đã thu tiền, làm sạch view công nợ
+
+**Tóm tắt:** Học sinh nghỉ/bảo lưu/chuyển lớp thì hợp đồng vẫn "đang hoạt động" nên còn phải thu treo mãi, và quy ước cũ cắt doanh thu bằng `so_tien_giam` làm sai nhãn giảm giá. Nay: (1) cột `so_tien_mien_cong_no` + ràng buộc `doanh_thu_thuan = gia_niem_yet − so_tien_giam − so_tien_mien_cong_no`; (2) RPC `tat_toan_hop_dong` (Master Admin / Admin Tuyển sinh / Kế toán, bắt buộc lý do, ghi nhật ký `tat_toan_hop_dong`): miễn phần còn phải thu, hợp đồng → Hoàn thành, doanh thu = thực thu; nút "Tất toán" ở trang Hợp đồng; (3) trigger chặn huỷ hợp đồng đã có phiếu thu ở mọi đường (UI/RPC/SQL); (4) `v_tai_chinh_hop_dong.con_phai_thu` = 0 với hợp đồng đã huỷ, `v_hop_dong_qua_han` loại học sinh không còn đang học; (5) `sua_hop_dong_master` từ chối hợp đồng đã tất toán. Chưa làm: hộp thoại hướng dẫn khi đổi trạng thái ghi danh; migration dữ liệu chuyển các hợp đồng "ngưng hợp đồng" cũ (vd Khánh Châu) sang cột mới.
+
+**Migration:** `0056_tat_toan_hop_dong_chan_huy_da_thu.sql` (expand; test PGlite `npm run test:tat-toan-hop-dong`).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge PR → duyệt job `apply-migration-expand`. Sau đó: tất toán Phạm Bình Minh (miễn 22.000.000 đ) qua nút Tất toán. Hợp đồng Nguyễn Hữu Phước đã được huỷ 05/10 (UPDATE dữ liệu, 0 phiếu thu).
+
+---
+
 ## 2026-10-05 — Thu tiền: tách công nợ học sinh đã nghỉ + chặn huỷ hợp đồng đã có phiếu thu
 
 **Tóm tắt:** (1) Ô chọn hợp đồng ở Thu tiền không còn lẫn hợp đồng của học sinh có ghi danh ≠ "Đang học" (đã nghỉ / bảo lưu / chuyển lớp / hoàn thành); các hợp đồng này hiện ở bảng riêng "Công nợ học sinh đã nghỉ / bảo lưu / chuyển lớp" (có tổng còn phải thu, phân trang, nút "Thu khoản này" chọn sẵn hợp đồng trong form qua `?hop_dong=`) — không giấu công nợ, nhưng không thu nhầm. Hợp đồng được chọn sẵn vẫn gắn nhãn "HS đã nghỉ". (2) `huyHopDong` từ chối huỷ hợp đồng đã có phiếu thu (phiếu thu bất biến; huỷ sẽ làm doanh thu/còn phải thu sai) và hướng sang quy trình tất toán. Chưa đổi view/DB — chốt chặn ở DB và cơ chế tất toán/miễn công nợ là các bước sau.

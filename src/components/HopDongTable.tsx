@@ -7,6 +7,7 @@ import { tienHienThi } from "@/lib/formatCurrency";
 import { useToast } from "./ToastProvider";
 import HopDongEditModal from "./HopDongEditModal";
 import HopDongLichSuModal from "./HopDongLichSuModal";
+import HopDongTatToanModal from "./HopDongTatToanModal";
 import Link from "next/link";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
@@ -97,10 +98,14 @@ function HopDongRowItem({
   const [moSua, setMoSua] = useState(false);
   const [moDeXuat, setMoDeXuat] = useState(false);
   const [moLichSu, setMoLichSu] = useState(false);
+  const [moTatToan, setMoTatToan] = useState(false);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
 
   const coTinhTrangThaiThu = TRANG_THAI_CO_THU_TIEN.includes(hd.trang_thai);
+  // Tất toán (miễn công nợ): hợp đồng đang hoạt động/hoàn thành còn phải thu > 0. Quyền thật do DB kiểm
+  // (canEdit = master_admin / ke_toan / admin_ts, trùng đúng 3 vai trò được tất toán).
+  const coTheTatToan = canEdit && coTinhTrangThaiThu && hd.doanh_thu_thuan - hd.thuc_thu > 0;
   const trangThaiThu = coTinhTrangThaiThu ? tinhTrangThaiThu(hd.doanh_thu_thuan, hd.thuc_thu) : null;
 
   function handleKichHoat() {
@@ -167,6 +172,11 @@ function HopDongRowItem({
                 </button>
               </>
             )}
+            {coTheTatToan && (
+              <button type="button" className={styles.btnEdit} onClick={() => setMoTatToan(true)}>
+                Tất toán
+              </button>
+            )}
             {isMaster && hd.trang_thai !== "da_huy" && (
               <button type="button" className={styles.btnEdit} onClick={() => setMoSua(true)}>
                 Sửa
@@ -191,6 +201,7 @@ function HopDongRowItem({
           {error && <div className={styles.errorText}>{error}</div>}
           {moSua && <HopDongEditModal hd={hd} onClose={() => setMoSua(false)} />}
           {moDeXuat && <HopDongEditModal hd={hd} mode="de_xuat" onClose={() => setMoDeXuat(false)} />}
+          {moTatToan && <HopDongTatToanModal hd={hd} onClose={() => setMoTatToan(false)} />}
           {moLichSu && <HopDongLichSuModal hd={hd} onClose={() => setMoLichSu(false)} />}
         </td>
       )}

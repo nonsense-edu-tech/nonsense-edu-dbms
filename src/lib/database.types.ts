@@ -1324,6 +1324,7 @@ export type Database = {
           nguoi_duyet: string | null
           nguoi_tao: string | null
           so_tien_giam: number
+          so_tien_mien_cong_no: number
           trang_thai: string
           updated_at: string
         }
@@ -1345,6 +1346,7 @@ export type Database = {
           nguoi_duyet?: string | null
           nguoi_tao?: string | null
           so_tien_giam?: number
+          so_tien_mien_cong_no?: number
           trang_thai?: string
           updated_at?: string
         }
@@ -1366,6 +1368,7 @@ export type Database = {
           nguoi_duyet?: string | null
           nguoi_tao?: string | null
           so_tien_giam?: number
+          so_tien_mien_cong_no?: number
           trang_thai?: string
           updated_at?: string
         }
@@ -3079,6 +3082,7 @@ export type Database = {
         }
         Returns: Json
       }
+      tat_toan_hop_dong: { Args: { p_id: string; p_ly_do: string }; Returns: Json }
       tao_hoc_sinh: {
         Args: {
           p_anh_chan_dung?: string
