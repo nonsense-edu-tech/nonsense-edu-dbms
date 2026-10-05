@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { chuyenLop } from "@/app/dashboard/hoc-sinh/actions";
+import { tienHienThi } from "@/lib/formatCurrency";
 import { useToast } from "./ToastProvider";
 import type { HocSinhRow } from "./HocSinhTable";
 import SearchableSelect from "./SearchableSelect";
@@ -46,7 +47,14 @@ export default function ChuyenLopModal({
         setError(result.error);
         showToast({ type: "error", message: `Chuyển lớp thất bại: ${result.error}` });
       } else {
-        showToast({ type: "success", message: `Đã chuyển lớp cho "${hocSinh.ho_ten}" thành công.` });
+        showToast({
+          type: "success",
+          message:
+            `Đã chuyển lớp cho "${hocSinh.ho_ten}" thành công.` +
+            (result.congNoCu > 0
+              ? ` Lưu ý: hợp đồng ở lớp cũ còn phải thu ${tienHienThi(result.congNoCu)} — hãy tất toán (trang Hợp đồng) hoặc thu nốt (trang Thu tiền).`
+              : ""),
+        });
         onClose();
       }
     });
