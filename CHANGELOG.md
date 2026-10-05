@@ -20,6 +20,15 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Đổi trạng thái ghi danh: hỏi cách xử lý công nợ (giữ / tất toán)
+
+**Tóm tắt:** Khi đổi ghi danh sang Đã nghỉ / Bảo lưu / Đã chuyển lớp mà hợp đồng học phí còn phải thu > 0, giao diện hiện hộp thoại thay vì để công nợ treo: (a) giữ công nợ (nằm ở bảng "Công nợ học sinh đã nghỉ" trang Thu tiền, không báo quá hạn) hoặc (b) tất toán — miễn phần còn lại, kèm lý do bắt buộc (chỉ hiện với Master Admin / Admin Tuyển sinh / Kế toán; DB kiểm lại). Trạng thái ghi danh đổi trước, tất toán sau; nếu tất toán lỗi thì báo rõ để tất toán lại ở trang Hợp đồng. Không tự đổi dữ liệu tài chính khi người dùng bỏ qua hộp thoại. Người không xem được tài chính (vd quản lý chi nhánh) đổi trạng thái như cũ. Chuyển lớp: sau khi chuyển, toast báo nếu hợp đồng ở lớp cũ còn phải thu.
+
+**Migration:** không có (dùng RPC `tat_toan_hop_dong` của 0056 — phải merge PR #65 + áp 0056 trước).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge (sau PR #65).
 ## 2026-10-05 — Chuyển dữ liệu "ngưng hợp đồng" kiểu import cũ sang cột miễn công nợ
 
 **Tóm tắt:** Hợp đồng của học sinh nghỉ học từ đợt import Master sheet bị cắt doanh thu bằng cách nhét phần còn lại vào `so_tien_giam` (nhãn sai thành "giảm giá"). Sau 0056 đã có cột riêng, nên chuyển phần đó sang `so_tien_mien_cong_no`; doanh thu thuần không đổi. Phạm vi hẹp (hoan_thanh + ghi chú đúng mẫu + `loai_giam_gia='khong'`): trên production chỉ khớp 1 hợp đồng — Trần Huỳnh Khánh Châu (1.500.000 đ). Không đụng 2 hợp đồng Vũ Hương Giang / Đặng Thị Thanh Vân (chênh 1 triệu giữa sheet và thực thu — vấn đề khác), Trần Lê Thanh Ngọc (doanh thu đã đúng 5.000.000 đ).
