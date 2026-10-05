@@ -365,6 +365,9 @@
   padding: 40px 16px;
   overflow-y: auto;
   z-index: 50;
+  /* Modal được render ngay trong <td>/.rowActions (white-space: nowrap) nên chữ bên trong
+     kế thừa nowrap và tràn khỏi khung. Reset về bình thường cho toàn bộ nội dung modal. */
+  white-space: normal;
 }
 
 .modalPanel {
@@ -374,6 +377,8 @@
   padding: 24px;
   max-width: 560px;
   width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere; /* chuỗi dài không có khoảng trắng (mã, tên gói) cũng không làm tràn */
 }
 
 .modalPanelWide {

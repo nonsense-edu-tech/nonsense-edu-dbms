@@ -105,7 +105,7 @@ export default function HopDongEditModal({
         </div>
 
         <p className={formStyles.hint} style={{ marginBottom: 12 }}>
-          {hd.goi_ten} · {hd.chuong_trinh_ten} · thực thu hiện tại <strong>{tienHienThi(hd.thuc_thu)}</strong>.
+          {hd.goi_ten} · {hd.chuong_trinh_ten} · thực thu hiện tại <strong>{tienHienThi(hd.thuc_thu)}</strong>.{" "}
           {deXuat
             ? "Đề xuất chưa làm thay đổi hợp đồng — chỉ có hiệu lực khi Master Admin phê duyệt. Mọi bước đều được ghi nhật ký."
             : "Mọi thay đổi (giá trị cũ → mới, người sửa, lý do) được ghi vào nhật ký và không thể xoá."}
