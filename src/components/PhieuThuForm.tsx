@@ -17,6 +17,8 @@ export type HopDongCoTheThu = {
   con_phai_thu: number;
   /** Hợp đồng đã hoàn thành nhưng còn phải thu — ghi nhận khoản đóng muộn. */
   da_ket_thuc: boolean;
+  /** Nhãn trạng thái ghi danh khi học sinh KHÔNG còn đang học (vd "Đã nghỉ", "Bảo lưu"); null nếu đang học. */
+  ghi_danh_nhan: string | null;
 };
 
 const MIME_HOP_LE = ["image/jpeg", "image/png", "image/heic", "application/pdf"];
@@ -28,15 +30,18 @@ type BienLaiDaChon = { file: File; dungLuongGoc: number; daNen: boolean };
 export default function PhieuThuForm({
   hopDongList,
   nguoiDungHienTai,
+  hopDongMacDinhId = "",
 }: {
   hopDongList: HopDongCoTheThu[];
   nguoiDungHienTai: string;
+  /** Chọn sẵn hợp đồng này (vd bấm "Thu khoản này" từ bảng công nợ học sinh đã nghỉ). */
+  hopDongMacDinhId?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
-  const [hopDongId, setHopDongId] = useState("");
+  const [hopDongId, setHopDongId] = useState(hopDongMacDinhId);
   const [bienLaiList, setBienLaiList] = useState<BienLaiDaChon[]>([]);
   const [dangNen, setDangNen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,7 +50,7 @@ export default function PhieuThuForm({
     () =>
       hopDongList.map((h) => ({
         value: h.id,
-        label: `${h.ho_ten} (${h.ma_hoc_sinh}) — ${h.chuong_trinh_ten} — còn phải thu ${tienHienThi(h.con_phai_thu)}${h.da_ket_thuc ? " — HĐ đã kết thúc (thu muộn)" : ""}`,
+        label: `${h.ho_ten} (${h.ma_hoc_sinh}) — ${h.chuong_trinh_ten} — còn phải thu ${tienHienThi(h.con_phai_thu)}${h.ghi_danh_nhan ? ` — HS ${h.ghi_danh_nhan.toLowerCase()}` : ""}${h.da_ket_thuc ? " — HĐ đã kết thúc (thu muộn)" : ""}`,
       })),
     [hopDongList]
   );

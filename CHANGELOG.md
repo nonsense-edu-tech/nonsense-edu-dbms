@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Thu tiền: tách công nợ học sinh đã nghỉ + chặn huỷ hợp đồng đã có phiếu thu
+
+**Tóm tắt:** (1) Ô chọn hợp đồng ở Thu tiền không còn lẫn hợp đồng của học sinh có ghi danh ≠ "Đang học" (đã nghỉ / bảo lưu / chuyển lớp / hoàn thành); các hợp đồng này hiện ở bảng riêng "Công nợ học sinh đã nghỉ / bảo lưu / chuyển lớp" (có tổng còn phải thu, phân trang, nút "Thu khoản này" chọn sẵn hợp đồng trong form qua `?hop_dong=`) — không giấu công nợ, nhưng không thu nhầm. Hợp đồng được chọn sẵn vẫn gắn nhãn "HS đã nghỉ". (2) `huyHopDong` từ chối huỷ hợp đồng đã có phiếu thu (phiếu thu bất biến; huỷ sẽ làm doanh thu/còn phải thu sai) và hướng sang quy trình tất toán. Chưa đổi view/DB — chốt chặn ở DB và cơ chế tất toán/miễn công nợ là các bước sau.
+
+**Migration:** không có (chỉ đổi code frontend/server action).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge PR → Vercel deploy. Dữ liệu hiện tại: bảng công nợ sẽ có 3 dòng (Nguyễn Hữu Phước 5.900.000; Phạm Bình Minh 22.000.000; Trần Lê Thanh Ngọc 2.500.000).
+
+---
+
 ## 2026-10-05 — Thu tiền: ghi được phiếu thu muộn cho hợp đồng đã kết thúc còn phải thu
 
 **Tóm tắt:** Ô chọn hợp đồng ở trang Thu tiền chỉ liệt kê hợp đồng "Đang hoạt động", nên học sinh đã nghỉ/hết khoá mà gia đình đóng muộn (ca Trần Lê Thanh Ngọc: học phí tháng 8 chuyển ngày 04/10) không ghi nhận được dù database cho phép. Nay ô chọn gồm cả hợp đồng "Hoàn thành" còn phải thu > 0, gắn nhãn "HĐ đã kết thúc (thu muộn)"; hợp đồng đã huỷ / nháp / chờ duyệt vẫn bị loại. Thêm chốt chặn ở server action `taoPhieuThu`: từ chối hợp đồng không ở trạng thái đang hoạt động / hoàn thành (kiểm tra trước khi tải biên lai). Quy tắc nằm một nơi: `src/lib/thu-tien.ts`. Tác động trên production: chỉ thêm đúng 1 hợp đồng vào ô chọn (Ngọc, còn phải thu 2.500.000 đ sau khi Master Admin sửa doanh thu về 5.000.000 đ ngày 05/10).

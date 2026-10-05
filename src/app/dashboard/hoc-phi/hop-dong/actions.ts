@@ -80,6 +80,21 @@ export async function huyHopDong(id: string): Promise<HopDongActionResult> {
 
   if (!id) return { error: "Thiếu ID hợp đồng." };
 
+  // Hợp đồng đã có phiếu thu KHÔNG được huỷ: phiếu thu bất biến, huỷ hợp đồng sẽ làm doanh thu về 0 và
+  // "còn phải thu" tính sai (số đã thu bị bỏ khỏi sổ). Phải tất toán/chấm dứt hợp đồng theo quy trình riêng.
+  const { count: soPhieuThu, error: demError } = await supabase
+    .from("phieu_thu")
+    .select("id", { count: "exact", head: true })
+    .eq("hop_dong_id", id);
+  if (demError) return { error: mapDbError(demError.message) };
+  if ((soPhieuThu ?? 0) > 0) {
+    return {
+      error:
+        `Hợp đồng này đã có ${soPhieuThu} phiếu thu nên không thể huỷ (huỷ sẽ làm sai công nợ và doanh thu). ` +
+        "Nếu học sinh nghỉ/bảo lưu, hãy nhờ Master Admin tất toán hợp đồng thay vì huỷ.",
+    };
+  }
+
   const { error } = await supabase.from("hop_dong_hoc_phi").update({ trang_thai: "da_huy" }).eq("id", id);
 
   if (error) return { error: mapDbError(error.message) };
