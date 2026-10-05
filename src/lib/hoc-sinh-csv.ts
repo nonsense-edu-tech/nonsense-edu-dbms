@@ -8,7 +8,7 @@ import {
 export const CSV_HEADER = [
   "STT", "ID hoc sinh", "Ho va ten", "Lop hien tai", "Ten phu huynh", "SDT phu huynh",
   "Ngay sinh", "Gioi tinh", "SDT hoc sinh", "Email", "CCCD", "Dia chi",
-  "Tinh trang dang ky", "Truong THPT", "Khoi thi", "NV1",
+  "Tinh trang dang ky", "Truong hoc", "Khoi thi/ky thi", "NV1",
 ];
 
 export type DongCsvNguon = {

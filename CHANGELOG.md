@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Form học sinh: "Trường học" và "Khối thi/kỳ thi" có ô gợi ý
+
+**Tóm tắt:** Đổi nhãn "Trường THPT" → "Trường học", "Khối thi" → "Khối thi/kỳ thi" (placeholder `khối A01, V-ACT, Nội trú Nội - Nhi,...`) ở form Tạo học sinh, modal Sửa, bảng và CSV xuất. Hai ô thành ô nhập có gợi ý (`<datalist>`, vẫn gõ tự do): kỳ thi gồm 5 mục (V-ACT, SAT, Nội trú Nội-Nhi/Ngoại-Sản UMP, Thạc sĩ UMP); trường học gồm ~1.500 trường THPT lấy từ Wikipedia (đầy đủ ở ~16 tỉnh/thành, các tỉnh khác mới có trường chuyên/nổi tiếng — chưa phải danh mục chính thức) và 38 trường đại học Y Dược công/tư. Cột CSDL `truong_thpt`/`khoi_thi` giữ nguyên.
+
+**Migration:** không có (chỉ đổi code frontend).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chưa — lên production qua PR này.
+
+**Commit:** xem PR.
+
+---
+
 ## 2026-10-04 — Sửa lỗi: hủy hợp đồng học phí xong không tạo lại được hợp đồng mới
 
 **Tóm tắt:** `hop_dong_hoc_phi` có `UNIQUE (ghi_danh_id)` cho mọi trạng thái nên hợp đồng `da_huy` vẫn chiếm chỗ ghi danh; dropdown "Tạo hợp đồng mới" cũng loại mọi ghi danh có bất kỳ hợp đồng nào. Sửa: ràng buộc duy nhất chỉ tính hợp đồng đang mở (chưa hủy, chưa xóa mềm) + dropdown lọc theo cùng điều kiện. Học sinh 202126002010 được mở khóa, hợp đồng đã hủy giữ lại làm vết. Test PGlite: `npm run test:hop-dong-unique`.

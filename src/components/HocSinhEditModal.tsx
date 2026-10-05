@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { suaHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
 import { useToast } from "./ToastProvider";
+import GoiYInput from "./GoiYInput";
+import { KHOI_THI_PLACEHOLDER, KY_THI_OPTIONS, TRUONG_HOC_OPTIONS } from "@/lib/danhMucHocSinh";
 import type { HocSinhRow } from "./HocSinhTable";
 import formStyles from "./Form.module.css";
 import modalStyles from "@/app/dashboard/hoc-sinh/hoc-sinh.module.css";
@@ -149,22 +151,23 @@ export default function HocSinhEditModal({ hocSinh, onClose }: { hocSinh: HocSin
           </div>
 
           <div className={formStyles.field}>
-            <label htmlFor="truong_thpt" className={formStyles.label}>Trường THPT</label>
-            <input
-              id="truong_thpt" name="truong_thpt" type="text"
-              className={formStyles.input} disabled={isPending}
+            <label htmlFor="truong_thpt" className={formStyles.label}>Trường học</label>
+            <GoiYInput
+              id="truong_thpt" name="truong_thpt"
+              options={TRUONG_HOC_OPTIONS} disabled={isPending}
+              placeholder="Chọn từ danh sách hoặc gõ tên trường"
               defaultValue={hocSinh.truong_thpt ?? ""}
             />
           </div>
 
           <div className={formStyles.row}>
             <div className={formStyles.field}>
-              <label htmlFor="khoi_thi" className={formStyles.label}>Khối thi</label>
-              <input
-                id="khoi_thi" name="khoi_thi" type="text"
-                className={formStyles.input} disabled={isPending}
+              <label htmlFor="khoi_thi" className={formStyles.label}>Khối thi/kỳ thi</label>
+              <GoiYInput
+                id="khoi_thi" name="khoi_thi"
+                options={KY_THI_OPTIONS} disabled={isPending}
+                placeholder={KHOI_THI_PLACEHOLDER}
                 defaultValue={hocSinh.khoi_thi ?? ""}
-                placeholder="vd A00, D01"
               />
             </div>
             <div className={formStyles.field}>
