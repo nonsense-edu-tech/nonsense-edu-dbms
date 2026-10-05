@@ -20,6 +20,18 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Chuyển dữ liệu "ngưng hợp đồng" kiểu import cũ sang cột miễn công nợ
+
+**Tóm tắt:** Hợp đồng của học sinh nghỉ học từ đợt import Master sheet bị cắt doanh thu bằng cách nhét phần còn lại vào `so_tien_giam` (nhãn sai thành "giảm giá"). Sau 0056 đã có cột riêng, nên chuyển phần đó sang `so_tien_mien_cong_no`; doanh thu thuần không đổi. Phạm vi hẹp (hoan_thanh + ghi chú đúng mẫu + `loai_giam_gia='khong'`): trên production chỉ khớp 1 hợp đồng — Trần Huỳnh Khánh Châu (1.500.000 đ). Không đụng 2 hợp đồng Vũ Hương Giang / Đặng Thị Thanh Vân (chênh 1 triệu giữa sheet và thực thu — vấn đề khác), Trần Lê Thanh Ngọc (doanh thu đã đúng 5.000.000 đ).
+
+**Migration:** `0057_chuyen_ngung_hop_dong_sang_mien_cong_no.sql` (expand, idempotent; test PGlite `npm run test:chuyen-ngung-hop-dong`). Phải áp SAU 0056.
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge (PR #65 trước, rồi PR này) → duyệt job `apply-migration-expand`.
+
+---
+
 ## 2026-10-05 — Tất toán hợp đồng (miễn công nợ), chặn huỷ hợp đồng đã thu tiền, làm sạch view công nợ
 
 **Tóm tắt:** Học sinh nghỉ/bảo lưu/chuyển lớp thì hợp đồng vẫn "đang hoạt động" nên còn phải thu treo mãi, và quy ước cũ cắt doanh thu bằng `so_tien_giam` làm sai nhãn giảm giá. Nay: (1) cột `so_tien_mien_cong_no` + ràng buộc `doanh_thu_thuan = gia_niem_yet − so_tien_giam − so_tien_mien_cong_no`; (2) RPC `tat_toan_hop_dong` (Master Admin / Admin Tuyển sinh / Kế toán, bắt buộc lý do, ghi nhật ký `tat_toan_hop_dong`): miễn phần còn phải thu, hợp đồng → Hoàn thành, doanh thu = thực thu; nút "Tất toán" ở trang Hợp đồng; (3) trigger chặn huỷ hợp đồng đã có phiếu thu ở mọi đường (UI/RPC/SQL); (4) `v_tai_chinh_hop_dong.con_phai_thu` = 0 với hợp đồng đã huỷ, `v_hop_dong_qua_han` loại học sinh không còn đang học; (5) `sua_hop_dong_master` từ chối hợp đồng đã tất toán. Chưa làm: hộp thoại hướng dẫn khi đổi trạng thái ghi danh; migration dữ liệu chuyển các hợp đồng "ngưng hợp đồng" cũ (vd Khánh Châu) sang cột mới.
