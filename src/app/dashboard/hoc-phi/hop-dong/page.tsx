@@ -91,12 +91,24 @@ export default async function HopDongPage({
       ? await supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, thuc_thu").in("hop_dong_id", hopDongIds)
       : { data: [] as { hop_dong_id: string | null; thuc_thu: number | null }[] };
 
+  const { data: ycChoDuyet } =
+    hopDongIds.length > 0
+      ? await supabase
+          .from("yeu_cau_sua_hop_dong")
+          .select("hop_dong_id")
+          .eq("trang_thai", "cho_duyet")
+          .in("hop_dong_id", hopDongIds)
+      : { data: [] as { hop_dong_id: string }[] };
+  const choDuyetSet = new Set((ycChoDuyet ?? []).map((y) => y.hop_dong_id));
+
   const isActive = profile?.trang_thai === "active";
   const vaiTro = profile?.vai_tro ?? "";
   const canRead = isActive && VAI_TRO_DOC.includes(vaiTro);
   const canEdit = isActive && VAI_TRO_GHI.includes(vaiTro);
   // Công cụ sửa hợp đồng + xem nhật ký: CHỈ Master Admin (ẩn hẳn với vai trò khác, không hiện nút khoá).
   const isMaster = isActive && vaiTro === "master_admin";
+  // Admin Tuyển sinh không sửa trực tiếp: chỉ được "Đề xuất sửa" (kèm lý do) để Master Admin duyệt.
+  const isAdminTs = isActive && vaiTro === "admin_ts";
 
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
   const thucThuMap = new Map((taiChinhList ?? []).map((tc) => [tc.hop_dong_id, tc.thuc_thu]));
@@ -143,6 +155,7 @@ export default async function HopDongPage({
       gia_tri_giam_gia: hd.gia_tri_giam_gia,
       hinh_thuc_dong: hd.hinh_thuc_dong,
       ghi_chu: hd.ghi_chu,
+      yeu_cau_cho_duyet: choDuyetSet.has(hd.id),
     };
   });
 
@@ -157,6 +170,7 @@ export default async function HopDongPage({
         <Link href="/dashboard/hoc-phi/goi" className={styles.subNavLink}>Gói học phí</Link>
         <Link href="/dashboard/hoc-phi/hop-dong" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Hợp đồng</Link>
         <Link href="/dashboard/hoc-phi/thu-tien" className={styles.subNavLink}>Thu tiền</Link>
+        <Link href="/dashboard/hoc-phi/yeu-cau-sua" className={styles.subNavLink}>Yêu cầu sửa</Link>
       </nav>
 
       {!canRead ? (
@@ -187,7 +201,7 @@ export default async function HopDongPage({
             )}
             {hopDongRows.length > 0 ? (
               <>
-                <HopDongTable list={hopDongRows} canEdit={canEdit} isMaster={isMaster} />
+                <HopDongTable list={hopDongRows} canEdit={canEdit} isMaster={isMaster} isAdminTs={isAdminTs} />
                 <PhanTrang total={total} page={pp.page} size={pp.size} />
               </>
             ) : (

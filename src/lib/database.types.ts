@@ -2545,6 +2545,85 @@ export type Database = {
         }
         Relationships: []
       }
+      yeu_cau_sua_hop_dong: {
+        Row: {
+          created_at: string
+          ghi_chu: string | null
+          gia_niem_yet: number
+          gia_tri_giam_gia: number
+          hinh_thuc_dong: string
+          hop_dong_id: string
+          id: string
+          loai_giam_gia: string
+          ly_do_de_xuat: string
+          ly_do_xu_ly: string | null
+          nguoi_de_xuat: string
+          nguoi_xu_ly: string | null
+          trang_thai: string
+          truoc: Json
+          updated_at: string
+          xu_ly_luc: string | null
+        }
+        Insert: {
+          created_at?: string
+          ghi_chu?: string | null
+          gia_niem_yet: number
+          gia_tri_giam_gia?: number
+          hinh_thuc_dong: string
+          hop_dong_id: string
+          id?: string
+          loai_giam_gia: string
+          ly_do_de_xuat: string
+          ly_do_xu_ly?: string | null
+          nguoi_de_xuat: string
+          nguoi_xu_ly?: string | null
+          trang_thai?: string
+          truoc: Json
+          updated_at?: string
+          xu_ly_luc?: string | null
+        }
+        Update: {
+          created_at?: string
+          ghi_chu?: string | null
+          gia_niem_yet?: number
+          gia_tri_giam_gia?: number
+          hinh_thuc_dong?: string
+          hop_dong_id?: string
+          id?: string
+          loai_giam_gia?: string
+          ly_do_de_xuat?: string
+          ly_do_xu_ly?: string | null
+          nguoi_de_xuat?: string
+          nguoi_xu_ly?: string | null
+          trang_thai?: string
+          truoc?: Json
+          updated_at?: string
+          xu_ly_luc?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yeu_cau_sua_hop_dong_hop_dong_id_fkey"
+            columns: ["hop_dong_id"]
+            isOneToOne: false
+            referencedRelation: "hop_dong_hoc_phi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yeu_cau_sua_hop_dong_nguoi_de_xuat_fkey"
+            columns: ["nguoi_de_xuat"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "yeu_cau_sua_hop_dong_nguoi_xu_ly_fkey"
+            columns: ["nguoi_xu_ly"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       buoi_hoc_chi_phi: {
@@ -2974,6 +3053,19 @@ export type Database = {
           tieu_de: string
         }[]
       }
+      de_xuat_sua_hop_dong: {
+        Args: {
+          p_ghi_chu: string
+          p_gia_niem_yet: number
+          p_gia_tri_giam_gia: number
+          p_hinh_thuc_dong: string
+          p_hop_dong_id: string
+          p_loai_giam_gia: string
+          p_ly_do: string
+        }
+        Returns: string
+      }
+      rut_yeu_cau_sua_hop_dong: { Args: { p_id: string }; Returns: undefined }
       sinh_de: { Args: { p_de_id: string; p_seed?: string }; Returns: Json }
       sua_hop_dong_master: {
         Args: {
@@ -3091,6 +3183,10 @@ export type Database = {
           hoc_phan: number
           mon_hoc: number
         }[]
+      }
+      xu_ly_yeu_cau_sua_hop_dong: {
+        Args: { p_id: string; p_ly_do: string; p_quyet: string }
+        Returns: Json
       }
       xem_mot_cau_hoi: {
         Args: { p_id: string }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { suaHopDongMaster } from "@/app/dashboard/hoc-phi/hop-dong/actions";
+import { suaHopDongMaster, deXuatSuaHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
 import { HINH_THUC_DONG_LABEL, LOAI_GIAM_GIA_LABEL, tinhDoanhThuThuan } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { useToast } from "./ToastProvider";
@@ -9,8 +9,19 @@ import type { HopDongRow } from "./HopDongTable";
 import formStyles from "./Form.module.css";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
-// Công cụ sửa hợp đồng — chỉ hiển thị cho Master Admin (DB cũng chặn lại ở RPC sua_hop_dong_master).
-export default function HopDongEditModal({ hd, onClose }: { hd: HopDongRow; onClose: () => void }) {
+// Công cụ sửa hợp đồng, 2 chế độ (DB cũng chặn lại ở RPC):
+//  - "master": Master Admin sửa trực tiếp (sua_hop_dong_master).
+//  - "de_xuat": Admin Tuyển sinh gửi đề xuất kèm lý do, chờ Master Admin duyệt (de_xuat_sua_hop_dong).
+export default function HopDongEditModal({
+  hd,
+  onClose,
+  mode = "master",
+}: {
+  hd: HopDongRow;
+  onClose: () => void;
+  mode?: "master" | "de_xuat";
+}) {
+  const deXuat = mode === "de_xuat";
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
@@ -45,13 +56,31 @@ export default function HopDongEditModal({ hd, onClose }: { hd: HopDongRow; onCl
       return;
     }
     if (lyDo.trim().length < 5) {
-      setError("Vui lòng nhập lý do chỉnh sửa (tối thiểu 5 ký tự) — lý do được lưu vào nhật ký.");
+      setError(
+        deXuat
+          ? "Vui lòng nêu lý do đề xuất (tối thiểu 5 ký tự) — Master Admin sẽ xem lý do này khi duyệt."
+          : "Vui lòng nhập lý do chỉnh sửa (tối thiểu 5 ký tự) — lý do được lưu vào nhật ký."
+      );
       return;
     }
     const formData = new FormData(e.currentTarget);
     formData.set("id", hd.id);
 
     startTransition(async () => {
+      if (deXuat) {
+        const r = await deXuatSuaHopDong(formData);
+        if ("error" in r) {
+          setError(r.error);
+          showToast({ type: "error", message: `Gửi đề xuất thất bại: ${r.error}` });
+          return;
+        }
+        showToast({
+          type: "success",
+          message: `Đã gửi đề xuất sửa hợp đồng của "${hd.ho_ten}" — chờ Master Admin phê duyệt.`,
+        });
+        onClose();
+        return;
+      }
       const result = await suaHopDongMaster(formData);
       if ("error" in result) {
         setError(result.error);
@@ -71,13 +100,15 @@ export default function HopDongEditModal({ hd, onClose }: { hd: HopDongRow; onCl
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalPanel} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>Sửa hợp đồng — {hd.ho_ten}</h3>
+          <h3 className={styles.modalTitle}>{deXuat ? "Đề xuất sửa hợp đồng" : "Sửa hợp đồng"} — {hd.ho_ten}</h3>
           <button type="button" className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
 
         <p className={formStyles.hint} style={{ marginBottom: 12 }}>
           {hd.goi_ten} · {hd.chuong_trinh_ten} · thực thu hiện tại <strong>{tienHienThi(hd.thuc_thu)}</strong>.
-          Mọi thay đổi (giá trị cũ → mới, người sửa, lý do) được ghi vào nhật ký và không thể xoá.
+          {deXuat
+            ? "Đề xuất chưa làm thay đổi hợp đồng — chỉ có hiệu lực khi Master Admin phê duyệt. Mọi bước đều được ghi nhật ký."
+            : "Mọi thay đổi (giá trị cũ → mới, người sửa, lý do) được ghi vào nhật ký và không thể xoá."}
         </p>
 
         <form onSubmit={handleSubmit} className={formStyles.form} noValidate>
@@ -159,7 +190,7 @@ export default function HopDongEditModal({ hd, onClose }: { hd: HopDongRow; onCl
           </div>
 
           <div className={formStyles.field}>
-            <label htmlFor="ly_do" className={formStyles.label}>Lý do chỉnh sửa (bắt buộc)</label>
+            <label htmlFor="ly_do" className={formStyles.label}>{deXuat ? "Lý do đề xuất (bắt buộc)" : "Lý do chỉnh sửa (bắt buộc)"}</label>
             <textarea
               id="ly_do" name="ly_do" rows={2} required className={formStyles.textarea} disabled={isPending}
               placeholder="VD: Phụ huynh được giảm 1,5 triệu theo thỏa thuận ngày …"
@@ -174,7 +205,7 @@ export default function HopDongEditModal({ hd, onClose }: { hd: HopDongRow; onCl
               Huỷ
             </button>
             <button type="submit" className={formStyles.btnPrimary} disabled={isPending}>
-              {isPending ? "Đang lưu…" : "Lưu thay đổi"}
+              {isPending ? (deXuat ? "Đang gửi…" : "Đang lưu…") : deXuat ? "Gửi đề xuất" : "Lưu thay đổi"}
             </button>
           </div>
         </form>

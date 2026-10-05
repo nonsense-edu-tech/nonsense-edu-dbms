@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { layLichSuHopDong, type NhatKyHopDong } from "@/app/dashboard/hoc-phi/hop-dong/actions";
-import { HINH_THUC_DONG_LABEL, LOAI_GIAM_GIA_LABEL, TRANG_THAI_HOP_DONG_LABEL } from "./hocPhiOptions";
-import { tienHienThi } from "@/lib/formatCurrency";
+import { COT_HOP_DONG_LABEL, TRANG_THAI_YEU_CAU_LABEL, hienThiGiaTriHopDong } from "@/lib/hop-dong-hien-thi";
 import type { HopDongRow } from "./HopDongTable";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
@@ -14,34 +13,37 @@ const HANH_DONG_LABEL: Record<string, string> = {
   huy_hop_dong: "Huỷ hợp đồng",
   xoa_mem_hop_dong: "Xoá mềm hợp đồng",
   cap_nhat_hop_dong: "Cập nhật hợp đồng",
+  sua_hop_dong_theo_yeu_cau: "Sửa hợp đồng theo yêu cầu đã duyệt",
+  de_xuat_sua_hop_dong: "Admin Tuyển sinh đề xuất chỉnh sửa",
+  duyet_yeu_cau_sua_hop_dong: "Master Admin phê duyệt yêu cầu",
+  tu_choi_yeu_cau_sua_hop_dong: "Master Admin từ chối yêu cầu",
+  rut_yeu_cau_sua_hop_dong: "Người đề xuất rút yêu cầu",
 };
 
-const COT_LABEL: Record<string, string> = {
-  goi_hoc_phi_id: "Gói học phí",
-  gia_niem_yet: "Giá niêm yết",
-  loai_giam_gia: "Loại giảm giá",
-  gia_tri_giam_gia: "Giá trị giảm",
-  so_tien_giam: "Số tiền giảm",
-  doanh_thu_thuan: "Doanh thu thuần",
-  hinh_thuc_dong: "Hình thức đóng",
-  trang_thai: "Trạng thái",
-  ghi_chu: "Ghi chú",
-  nguoi_duyet: "Người duyệt",
-  kich_hoat_luc: "Kích hoạt lúc",
-  deleted_at: "Xoá mềm lúc",
-};
+type DongDiff = { cot: string; nhan: string; cu: string | null; moi: string };
 
-const COT_TIEN = ["gia_niem_yet", "gia_tri_giam_gia", "so_tien_giam", "doanh_thu_thuan"];
-
-function hienThiGiaTri(cot: string, v: unknown, loaiGiam?: unknown): string {
-  if (v === null || v === undefined || v === "") return "—";
-  if (cot === "gia_tri_giam_gia" && loaiGiam === "phan_tram") return `${v}%`;
-  if (COT_TIEN.includes(cot) && typeof v === "number") return tienHienThi(v);
-  if (cot === "hinh_thuc_dong") return HINH_THUC_DONG_LABEL[String(v)] ?? String(v);
-  if (cot === "loai_giam_gia") return LOAI_GIAM_GIA_LABEL[String(v)] ?? String(v);
-  if (cot === "trang_thai") return TRANG_THAI_HOP_DONG_LABEL[String(v)] ?? String(v);
-  if (cot === "kich_hoat_luc" || cot === "deleted_at") return new Date(String(v)).toLocaleString("vi-VN");
-  return String(v);
+// Gom các dòng "cũ → mới" cho 1 bản ghi nhật ký (hợp đồng hoặc sự kiện của yêu cầu sửa).
+function tinhDongDiff(n: NhatKyHopDong): DongDiff[] {
+  const loaiGiamSau = n.sau?.loai_giam_gia ?? n.truoc?.loai_giam_gia;
+  const laSuKienYeuCau = n.hanh_dong.endsWith("yeu_cau_sua_hop_dong") && n.hanh_dong !== "sua_hop_dong_theo_yeu_cau";
+  if (laSuKienYeuCau && n.hanh_dong !== "de_xuat_sua_hop_dong") {
+    return [{
+      cot: "trang_thai_yeu_cau",
+      nhan: "Trạng thái yêu cầu",
+      cu: TRANG_THAI_YEU_CAU_LABEL[String(n.truoc?.trang_thai)] ?? String(n.truoc?.trang_thai ?? "—"),
+      moi: TRANG_THAI_YEU_CAU_LABEL[String(n.sau?.trang_thai)] ?? String(n.sau?.trang_thai ?? "—"),
+    }];
+  }
+  const bo = laSuKienYeuCau ? ["hop_dong_id", "trang_thai"] : [];
+  return Object.keys(n.sau ?? {})
+    .filter((c) => !bo.includes(c))
+    .filter((c) => !laSuKienYeuCau || JSON.stringify(n.truoc?.[c]) !== JSON.stringify(n.sau?.[c]))
+    .map((c) => ({
+      cot: c,
+      nhan: COT_HOP_DONG_LABEL[c] ?? c,
+      cu: n.truoc ? hienThiGiaTriHopDong(c, n.truoc[c], n.truoc.loai_giam_gia ?? loaiGiamSau) : null,
+      moi: hienThiGiaTriHopDong(c, n.sau?.[c], loaiGiamSau),
+    }));
 }
 
 export default function HopDongLichSuModal({ hd, onClose }: { hd: HopDongRow; onClose: () => void }) {
@@ -78,8 +80,7 @@ export default function HopDongLichSuModal({ hd, onClose }: { hd: HopDongRow; on
         {list !== null && list.length > 0 && (
           <ul className={styles.logList}>
             {list.map((n) => {
-              const cot = Object.keys(n.sau ?? {});
-              const loaiGiamSau = n.sau?.loai_giam_gia ?? n.truoc?.loai_giam_gia;
+              const dong = tinhDongDiff(n);
               return (
                 <li key={n.id} className={styles.logItem}>
                   <div className={styles.logHead}>
@@ -89,20 +90,20 @@ export default function HopDongLichSuModal({ hd, onClose }: { hd: HopDongRow; on
                     </span>
                   </div>
                   {n.ly_do && <div className={styles.logReason}>Lý do: {n.ly_do}</div>}
-                  {cot.length > 0 && (
+                  {dong.length > 0 && (
                     <table className={styles.logDiff}>
                       <tbody>
-                        {cot.map((c) => (
-                          <tr key={c}>
-                            <th>{COT_LABEL[c] ?? c}</th>
+                        {dong.map((d) => (
+                          <tr key={d.cot}>
+                            <th>{d.nhan}</th>
                             <td>
-                              {n.truoc ? (
+                              {d.cu !== null && (
                                 <>
-                                  <span className={styles.logOld}>{hienThiGiaTri(c, n.truoc[c], n.truoc.loai_giam_gia ?? loaiGiamSau)}</span>
+                                  <span className={styles.logOld}>{d.cu}</span>
                                   {" → "}
                                 </>
-                              ) : null}
-                              <span className={styles.logNew}>{hienThiGiaTri(c, n.sau?.[c], loaiGiamSau)}</span>
+                              )}
+                              <span className={styles.logNew}>{d.moi}</span>
                             </td>
                           </tr>
                         ))}

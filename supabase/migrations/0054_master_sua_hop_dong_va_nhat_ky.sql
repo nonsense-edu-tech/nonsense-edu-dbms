@@ -67,6 +67,7 @@ begin
   end if;
 
   v_hanh := case
+    when coalesce(current_setting('app.yeu_cau_id', true), '') <> '' then 'sua_hop_dong_theo_yeu_cau'
     when coalesce(current_setting('app.nguon', true), '') = 'sua_master' then 'sua_hop_dong'
     when new.deleted_at is not null and old.deleted_at is null then 'xoa_mem_hop_dong'
     when new.trang_thai is distinct from old.trang_thai and new.trang_thai = 'da_huy' then 'huy_hop_dong'
@@ -84,6 +85,41 @@ drop trigger if exists trg_hop_dong_ghi_nhat_ky on public.hop_dong_hoc_phi;
 create trigger trg_hop_dong_ghi_nhat_ky
   after insert or update on public.hop_dong_hoc_phi
   for each row execute function public.ghi_nhat_ky_hop_dong();
+
+-- 3b) Hàm kiểm tra + chuẩn hoá thông số hợp đồng, dùng chung cho sửa trực tiếp (0054) và đề xuất sửa (0055) -----
+create or replace function public.chuan_hoa_thong_so_hop_dong(
+  p_gia_niem_yet     bigint,
+  p_loai_giam_gia    text,
+  p_gia_tri_giam_gia bigint,
+  p_hinh_thuc_dong   text,
+  out o_gia_tri      bigint,
+  out o_so_tien_giam bigint
+) language plpgsql immutable set search_path to 'public' as $$
+begin
+  if p_gia_niem_yet is null or p_gia_niem_yet < 0 then
+    raise exception 'Giá niêm yết phải là số ≥ 0.';
+  end if;
+  if p_loai_giam_gia is null or p_loai_giam_gia not in ('khong', 'phan_tram', 'co_dinh') then
+    raise exception 'Loại giảm giá không hợp lệ.';
+  end if;
+  if p_hinh_thuc_dong is null or p_hinh_thuc_dong not in ('mot_lan', 'hang_thang', 'hang_quy', 'tra_gop') then
+    raise exception 'Hình thức đóng không hợp lệ.';
+  end if;
+  o_gia_tri := case when p_loai_giam_gia = 'khong' then 0 else coalesce(p_gia_tri_giam_gia, 0) end;
+  if o_gia_tri < 0 then
+    raise exception 'Giá trị giảm giá phải là số ≥ 0.';
+  end if;
+  if p_loai_giam_gia = 'phan_tram' and o_gia_tri > 100 then
+    raise exception 'Giảm theo %% không được vượt quá 100.';
+  end if;
+  o_so_tien_giam := case p_loai_giam_gia
+                      when 'phan_tram' then round(p_gia_niem_yet::numeric * o_gia_tri / 100)::bigint
+                      when 'co_dinh'   then o_gia_tri
+                      else 0
+                    end;
+  o_so_tien_giam := greatest(0, least(o_so_tien_giam, p_gia_niem_yet));
+end;
+$$;
 
 -- 4) RPC sửa hợp đồng (chỉ master_admin) ---------------------------------------------------------------------
 create or replace function public.sua_hop_dong_master(
@@ -120,30 +156,8 @@ begin
     raise exception 'Hợp đồng đã huỷ, không sửa được.';
   end if;
 
-  if p_gia_niem_yet is null or p_gia_niem_yet < 0 then
-    raise exception 'Giá niêm yết phải là số ≥ 0.';
-  end if;
-  if p_loai_giam_gia is null or p_loai_giam_gia not in ('khong', 'phan_tram', 'co_dinh') then
-    raise exception 'Loại giảm giá không hợp lệ.';
-  end if;
-  if p_hinh_thuc_dong is null or p_hinh_thuc_dong not in ('mot_lan', 'hang_thang', 'hang_quy', 'tra_gop') then
-    raise exception 'Hình thức đóng không hợp lệ.';
-  end if;
-
-  v_gia_tri := case when p_loai_giam_gia = 'khong' then 0 else coalesce(p_gia_tri_giam_gia, 0) end;
-  if v_gia_tri < 0 then
-    raise exception 'Giá trị giảm giá phải là số ≥ 0.';
-  end if;
-  if p_loai_giam_gia = 'phan_tram' and v_gia_tri > 100 then
-    raise exception 'Giảm theo %% không được vượt quá 100.';
-  end if;
-
-  v_giam := case p_loai_giam_gia
-              when 'phan_tram' then round(p_gia_niem_yet::numeric * v_gia_tri / 100)::bigint
-              when 'co_dinh'   then v_gia_tri
-              else 0
-            end;
-  v_giam := greatest(0, least(v_giam, p_gia_niem_yet));
+  select o_gia_tri, o_so_tien_giam into v_gia_tri, v_giam
+    from public.chuan_hoa_thong_so_hop_dong(p_gia_niem_yet, p_loai_giam_gia, p_gia_tri_giam_gia, p_hinh_thuc_dong);
 
   if r.gia_niem_yet = p_gia_niem_yet
      and r.loai_giam_gia = p_loai_giam_gia
