@@ -20,6 +20,20 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Form học sinh: "Trường học" và "Khối thi/kỳ thi" có ô gợi ý
+
+**Tóm tắt:** Đổi nhãn "Trường THPT" → "Trường học", "Khối thi" → "Khối thi/kỳ thi" (placeholder `khối A01, V-ACT, Nội trú Nội - Nhi,...`) ở form Tạo học sinh, modal Sửa, bảng và CSV xuất. Hai ô thành ô nhập có gợi ý (`<datalist>`, vẫn gõ tự do): kỳ thi gồm 5 mục (V-ACT, SAT, Nội trú Nội-Nhi/Ngoại-Sản UMP, Thạc sĩ UMP); trường học gồm ~1.500 trường THPT lấy từ Wikipedia (đầy đủ ở ~16 tỉnh/thành, các tỉnh khác mới có trường chuyên/nổi tiếng — chưa phải danh mục chính thức) và 38 trường đại học Y Dược công/tư. Cột CSDL `truong_thpt`/`khoi_thi` giữ nguyên.
+
+**Migration:** không có (chỉ đổi code frontend).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chưa — lên production qua PR này.
+
+**Commit:** xem PR.
+
+---
+
 ## 2026-10-05 — Quy trình đề xuất → phê duyệt khi sửa hợp đồng (Admin Tuyển sinh → Master Admin), mọi bước đều log
 
 **Tóm tắt:** Admin Tuyển sinh không sửa trực tiếp mà "Đề xuất sửa" (bắt buộc nêu lý do) ở trang Hợp đồng; Master Admin xem tại

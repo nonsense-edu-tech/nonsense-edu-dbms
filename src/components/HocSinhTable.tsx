@@ -201,8 +201,8 @@ export default function HocSinhTable({
                 <th>Địa chỉ nhà ở</th>
                 <th>Tên phụ huynh</th>
                 <th>SĐT phụ huynh</th>
-                <th>Trường THPT</th>
-                <th>Khối thi</th>
+                <th>Trường học</th>
+                <th>Khối thi/kỳ thi</th>
                 <th>Nguyện vọng 1</th>
                 <th>Tình trạng đăng ký</th>
                 {coCotHanhDong && <th></th>}

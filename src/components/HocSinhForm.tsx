@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { taoHocSinh } from "@/app/dashboard/hoc-sinh/actions";
 import { GIOI_TINH_LABEL, GIOI_TINH_OPTIONS, TINH_TRANG_DANG_KY_LABEL, TINH_TRANG_DANG_KY_OPTIONS } from "./hocSinhOptions";
 import { useToast } from "./ToastProvider";
+import GoiYInput from "./GoiYInput";
+import { KHOI_THI_PLACEHOLDER, KY_THI_OPTIONS, TRUONG_HOC_OPTIONS } from "@/lib/danhMucHocSinh";
 import styles from "./Form.module.css";
 
 type LopOption = { id: string; ma_lop: string; ten_lop: string | null };
@@ -144,14 +146,22 @@ export default function HocSinhForm({ lopList }: { lopList: LopOption[] }) {
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="truong_thpt" className={styles.label}>Trường THPT (tuỳ chọn)</label>
-        <input id="truong_thpt" name="truong_thpt" type="text" className={styles.input} disabled={isPending} />
+        <label htmlFor="truong_thpt" className={styles.label}>Trường học (tuỳ chọn)</label>
+        <GoiYInput
+          id="truong_thpt" name="truong_thpt"
+          options={TRUONG_HOC_OPTIONS} disabled={isPending}
+          placeholder="Chọn từ danh sách hoặc gõ tên trường"
+        />
       </div>
 
       <div className={styles.row}>
         <div className={styles.field}>
-          <label htmlFor="khoi_thi" className={styles.label}>Khối thi (tuỳ chọn)</label>
-          <input id="khoi_thi" name="khoi_thi" type="text" className={styles.input} disabled={isPending} placeholder="vd A00, D01" />
+          <label htmlFor="khoi_thi" className={styles.label}>Khối thi/kỳ thi (tuỳ chọn)</label>
+          <GoiYInput
+            id="khoi_thi" name="khoi_thi"
+            options={KY_THI_OPTIONS} disabled={isPending}
+            placeholder={KHOI_THI_PLACEHOLDER}
+          />
         </div>
         <div className={styles.field}>
           <label htmlFor="nv1" className={styles.label}>Nguyện vọng 1 (tuỳ chọn)</label>
