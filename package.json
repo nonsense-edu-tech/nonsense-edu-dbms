@@ -14,7 +14,8 @@
     "test:hop-dong-unique": "node supabase/tests/0053-hop-dong-unique-mo.test.mjs",
     "test:hop-dong-nhat-ky": "node supabase/tests/0054-hop-dong-nhat-ky.test.mjs",
     "test:yeu-cau-sua-hop-dong": "node supabase/tests/0055-yeu-cau-sua-hop-dong.test.mjs",
-    "test:tat-toan-hop-dong": "node supabase/tests/0056-tat-toan-hop-dong.test.mjs"
+    "test:tat-toan-hop-dong": "node supabase/tests/0056-tat-toan-hop-dong.test.mjs",
+    "test:chuyen-ngung-hop-dong": "node supabase/tests/0057-chuyen-ngung-hop-dong.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
