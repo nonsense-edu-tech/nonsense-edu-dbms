@@ -50,7 +50,7 @@ export default async function HopDongPage({
   let truyVanHopDong = supabase
     .from("hop_dong_hoc_phi")
     .select(
-      "id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, so_tien_giam, doanh_thu_thuan, trang_thai, goi_hoc_phi(ten), ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh), lop(chuong_trinh_ma))",
+      "id, ghi_danh_id, goi_hoc_phi_id, gia_niem_yet, loai_giam_gia, gia_tri_giam_gia, so_tien_giam, doanh_thu_thuan, hinh_thuc_dong, ghi_chu, trang_thai, goi_hoc_phi(ten), ghi_danh(hoc_sinh(ho_ten, ma_hoc_sinh), lop(chuong_trinh_ma))",
       { count: "exact" }
     )
     .is("deleted_at", null);
@@ -95,6 +95,8 @@ export default async function HopDongPage({
   const vaiTro = profile?.vai_tro ?? "";
   const canRead = isActive && VAI_TRO_DOC.includes(vaiTro);
   const canEdit = isActive && VAI_TRO_GHI.includes(vaiTro);
+  // Công cụ sửa hợp đồng + xem nhật ký: CHỈ Master Admin (ẩn hẳn với vai trò khác, không hiện nút khoá).
+  const isMaster = isActive && vaiTro === "master_admin";
 
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
   const thucThuMap = new Map((taiChinhList ?? []).map((tc) => [tc.hop_dong_id, tc.thuc_thu]));
@@ -137,6 +139,10 @@ export default async function HopDongPage({
       doanh_thu_thuan: hd.doanh_thu_thuan,
       thuc_thu: thucThuMap.get(hd.id) ?? 0,
       trang_thai: hd.trang_thai,
+      loai_giam_gia: hd.loai_giam_gia,
+      gia_tri_giam_gia: hd.gia_tri_giam_gia,
+      hinh_thuc_dong: hd.hinh_thuc_dong,
+      ghi_chu: hd.ghi_chu,
     };
   });
 
@@ -181,7 +187,7 @@ export default async function HopDongPage({
             )}
             {hopDongRows.length > 0 ? (
               <>
-                <HopDongTable list={hopDongRows} canEdit={canEdit} />
+                <HopDongTable list={hopDongRows} canEdit={canEdit} isMaster={isMaster} />
                 <PhanTrang total={total} page={pp.page} size={pp.size} />
               </>
             ) : (

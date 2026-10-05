@@ -56,3 +56,5 @@ jobs:
           npm run test:ngu-lieu
           npm run test:de-ngu-lieu
           npm run test:phan-cong
+          npm run test:hop-dong-unique
+          npm run test:hop-dong-nhat-ky

@@ -353,3 +353,147 @@
   font-size: 12px;
   color: var(--text-mid);
 }
+
+/* ── Hộp thoại (modal) dùng chung trong module học phí ── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.modalPanel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.modalPanelWide {
+  max-width: 760px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.modalTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.modalClose {
+  background: transparent;
+  border: none;
+  color: var(--text-lo);
+  font-size: 16px;
+  padding: 4px 8px;
+}
+
+.modalClose:hover {
+  color: var(--text-hi);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ── Xem trước kết quả khi sửa hợp đồng + cảnh báo ── */
+.previewBox {
+  background: var(--surface-2, rgba(139, 146, 169, 0.08));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.7;
+}
+
+.warnBox {
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--accent);
+  line-height: 1.6;
+}
+
+/* ── Dòng thời gian lịch sử thay đổi ── */
+.logList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.logItem {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 12px;
+}
+
+.logHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-hi);
+  margin-bottom: 4px;
+}
+
+.logMeta {
+  font-size: 12px;
+  color: var(--text-lo);
+}
+
+.logReason {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin: 6px 0;
+}
+
+.logDiff {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.logDiff th,
+.logDiff td {
+  text-align: left;
+  padding: 3px 8px 3px 0;
+  vertical-align: top;
+  color: var(--text-mid);
+}
+
+.logDiff th {
+  color: var(--text-lo);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.logOld {
+  color: #F08080;
+  text-decoration: line-through;
+}
+
+.logNew {
+  color: var(--success);
+}

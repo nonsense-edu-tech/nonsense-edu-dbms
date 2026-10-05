@@ -20,6 +20,28 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Công cụ sửa hợp đồng (Master Admin) + nhật ký thay đổi hợp đồng
+
+**Tóm tắt:** Master Admin sửa được giá niêm yết, giảm giá, hình thức đóng, ghi chú của hợp đồng học phí
+ngay trên `/dashboard/hoc-phi/hop-dong` (nút "Sửa"), bắt buộc nhập lý do, có xem trước doanh thu thuần/còn phải
+thu và cảnh báo thu dư. Mọi thay đổi trên `hop_dong_hoc_phi` (kể cả kích hoạt/huỷ/sửa trực tiếp bằng SQL) được
+trigger tự ghi vào `nhat_ky` (cặp trước/sau chỉ gồm cột thật sự đổi, người thao tác, lý do); nút "Lịch sử" xem lại
+dòng thời gian. `nhat_ky` thành bảng chỉ-thêm (chặn UPDATE/DELETE). Ca khởi nguồn: hợp đồng 101026001002 (sheet
+23,5tr, hệ thống 25tr).
+
+- **Migration:** `0054_master_sua_hop_dong_va_nhat_ky.sql` (tag `expand`: cột `nhat_ky.ly_do`, 2 trigger, RPC
+  `sua_hop_dong_master`). Test PGlite: `npm run test:hop-dong-nhat-ky` (25 kiểm tra, đã thêm vào CI cùng
+  `test:hop-dong-unique`).
+- **Code:** `HopDongEditModal`, `HopDongLichSuModal`, actions `suaHopDongMaster`/`layLichSuHopDong`, bổ sung CSS
+  modal vào `hoc-phi.module.css` (trước đó `GoiHocPhiDoiGiaModal` dùng class modal chưa được định nghĩa ở file này).
+- **Giới hạn đã biết:** sửa giá KHÔNG tự cập nhật lịch kỳ đóng và không đổi phiếu thu; RPC trả về tổng kỳ để
+  giao diện cảnh báo lệch. Chưa có công cụ sửa kỳ đóng; không sửa hợp đồng đã huỷ.
+- **Staging:** 🔲 chưa áp (staging timeout khi kiểm tra kết nối ngày 05/10/2026)
+- **Production:** 🔲 chưa áp — chờ merge, CI áp qua Environment `production-db`.
+- **Commit:** (xem PR)
+
+---
+
 ## 2026-10-04 — Sửa lỗi: hủy hợp đồng học phí xong không tạo lại được hợp đồng mới
 
 **Tóm tắt:** `hop_dong_hoc_phi` có `UNIQUE (ghi_danh_id)` cho mọi trạng thái nên hợp đồng `da_huy` vẫn chiếm chỗ ghi danh; dropdown "Tạo hợp đồng mới" cũng loại mọi ghi danh có bất kỳ hợp đồng nào. Sửa: ràng buộc duy nhất chỉ tính hợp đồng đang mở (chưa hủy, chưa xóa mềm) + dropdown lọc theo cùng điều kiện. Học sinh 202126002010 được mở khóa, hợp đồng đã hủy giữ lại làm vết. Test PGlite: `npm run test:hop-dong-unique`.

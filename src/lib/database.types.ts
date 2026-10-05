@@ -1976,6 +1976,7 @@ export type Database = {
           doi_tuong_id: string | null
           hanh_dong: string
           id: string
+          ly_do: string | null
           nguoi_dung_id: string | null
           sau: Json | null
           truoc: Json | null
@@ -1986,6 +1987,7 @@ export type Database = {
           doi_tuong_id?: string | null
           hanh_dong: string
           id?: string
+          ly_do?: string | null
           nguoi_dung_id?: string | null
           sau?: Json | null
           truoc?: Json | null
@@ -1996,6 +1998,7 @@ export type Database = {
           doi_tuong_id?: string | null
           hanh_dong?: string
           id?: string
+          ly_do?: string | null
           nguoi_dung_id?: string | null
           sau?: Json | null
           truoc?: Json | null
@@ -2972,6 +2975,18 @@ export type Database = {
         }[]
       }
       sinh_de: { Args: { p_de_id: string; p_seed?: string }; Returns: Json }
+      sua_hop_dong_master: {
+        Args: {
+          p_ghi_chu: string
+          p_gia_niem_yet: number
+          p_gia_tri_giam_gia: number
+          p_hinh_thuc_dong: string
+          p_id: string
+          p_loai_giam_gia: string
+          p_ly_do: string
+        }
+        Returns: Json
+      }
       tao_hoc_sinh: {
         Args: {
           p_anh_chan_dung?: string
