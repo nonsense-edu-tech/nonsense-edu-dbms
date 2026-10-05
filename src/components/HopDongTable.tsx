@@ -5,6 +5,9 @@ import { kichHoatHopDong, huyHopDong } from "@/app/dashboard/hoc-phi/hop-dong/ac
 import { TRANG_THAI_HOP_DONG_LABEL, TRANG_THAI_THU_LABEL, tinhTrangThaiThu } from "./hocPhiOptions";
 import { tienHienThi } from "@/lib/formatCurrency";
 import { useToast } from "./ToastProvider";
+import HopDongEditModal from "./HopDongEditModal";
+import HopDongLichSuModal from "./HopDongLichSuModal";
+import Link from "next/link";
 import styles from "@/app/dashboard/hoc-phi/hoc-phi.module.css";
 
 export type HopDongRow = {
@@ -18,6 +21,11 @@ export type HopDongRow = {
   doanh_thu_thuan: number;
   thuc_thu: number;
   trang_thai: string;
+  loai_giam_gia: string;
+  gia_tri_giam_gia: number;
+  hinh_thuc_dong: string;
+  ghi_chu: string | null;
+  yeu_cau_cho_duyet: boolean; // hợp đồng đang có yêu cầu sửa chờ Master Admin duyệt
 };
 
 const BADGE_CLASS: Record<string, string> = {
@@ -36,7 +44,17 @@ const BADGE_CLASS_THU: Record<string, string> = {
 
 const TRANG_THAI_CO_THU_TIEN = ["dang_hoat_dong", "hoan_thanh"];
 
-export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; canEdit: boolean }) {
+export default function HopDongTable({
+  list,
+  canEdit,
+  isMaster,
+  isAdminTs,
+}: {
+  list: HopDongRow[];
+  canEdit: boolean;
+  isMaster: boolean;
+  isAdminTs: boolean;
+}) {
   return (
     <div className={styles.tableWrap}>
       <table className={styles.table}>
@@ -56,7 +74,7 @@ export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; ca
         </thead>
         <tbody>
           {list.map((hd) => (
-            <HopDongRowItem key={hd.id} hd={hd} canEdit={canEdit} />
+            <HopDongRowItem key={hd.id} hd={hd} canEdit={canEdit} isMaster={isMaster} isAdminTs={isAdminTs} />
           ))}
         </tbody>
       </table>
@@ -64,8 +82,21 @@ export default function HopDongTable({ list, canEdit }: { list: HopDongRow[]; ca
   );
 }
 
-function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
+function HopDongRowItem({
+  hd,
+  canEdit,
+  isMaster,
+  isAdminTs,
+}: {
+  hd: HopDongRow;
+  canEdit: boolean;
+  isMaster: boolean;
+  isAdminTs: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
+  const [moSua, setMoSua] = useState(false);
+  const [moDeXuat, setMoDeXuat] = useState(false);
+  const [moLichSu, setMoLichSu] = useState(false);
   const [isPending, startTransition] = useTransition();
   const showToast = useToast();
 
@@ -136,8 +167,31 @@ function HopDongRowItem({ hd, canEdit }: { hd: HopDongRow; canEdit: boolean }) {
                 </button>
               </>
             )}
+            {isMaster && hd.trang_thai !== "da_huy" && (
+              <button type="button" className={styles.btnEdit} onClick={() => setMoSua(true)}>
+                Sửa
+              </button>
+            )}
+            {isAdminTs && hd.trang_thai !== "da_huy" && !hd.yeu_cau_cho_duyet && (
+              <button type="button" className={styles.btnEdit} onClick={() => setMoDeXuat(true)}>
+                Đề xuất sửa
+              </button>
+            )}
+            {(isMaster || isAdminTs) && hd.yeu_cau_cho_duyet && (
+              <Link href="/dashboard/hoc-phi/yeu-cau-sua" className={`${styles.badge} ${styles.badgeChoDuyet}`}>
+                Đang chờ duyệt
+              </Link>
+            )}
+            {isMaster && (
+              <button type="button" className={styles.btnEdit} onClick={() => setMoLichSu(true)}>
+                Lịch sử
+              </button>
+            )}
           </div>
           {error && <div className={styles.errorText}>{error}</div>}
+          {moSua && <HopDongEditModal hd={hd} onClose={() => setMoSua(false)} />}
+          {moDeXuat && <HopDongEditModal hd={hd} mode="de_xuat" onClose={() => setMoDeXuat(false)} />}
+          {moLichSu && <HopDongLichSuModal hd={hd} onClose={() => setMoLichSu(false)} />}
         </td>
       )}
     </tr>
