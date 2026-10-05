@@ -66,6 +66,7 @@ export default async function GoiHocPhiPage({ searchParams }: { searchParams: Pr
         <Link href="/dashboard/hoc-phi/goi" className={`${styles.subNavLink} ${styles.subNavLinkActive}`}>Gói học phí</Link>
         <Link href="/dashboard/hoc-phi/hop-dong" className={styles.subNavLink}>Hợp đồng</Link>
         <Link href="/dashboard/hoc-phi/thu-tien" className={styles.subNavLink}>Thu tiền</Link>
+        <Link href="/dashboard/hoc-phi/yeu-cau-sua" className={styles.subNavLink}>Yêu cầu sửa</Link>
       </nav>
 
       {!canRead ? (

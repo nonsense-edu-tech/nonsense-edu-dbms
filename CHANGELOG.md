@@ -34,6 +34,49 @@ Mỗi mục ghi rõ:
 
 ---
 
+## 2026-10-05 — Quy trình đề xuất → phê duyệt khi sửa hợp đồng (Admin Tuyển sinh → Master Admin), mọi bước đều log
+
+**Tóm tắt:** Admin Tuyển sinh không sửa trực tiếp mà "Đề xuất sửa" (bắt buộc nêu lý do) ở trang Hợp đồng; Master Admin xem tại
+`/dashboard/hoc-phi/yeu-cau-sua` và Phê duyệt hoặc Từ chối (đều bắt buộc lý do); người đề xuất có thể Rút. Duyệt = áp ngay vào
+hợp đồng. Mỗi hợp đồng tối đa 1 yêu cầu chờ duyệt. Đề xuất/duyệt/từ chối/rút và thay đổi hợp đồng do duyệt (`sua_hop_dong_theo_yeu_cau`)
+đều vào `nhat_ky` (hiện trong nút "Lịch sử" của Master). DB chặn sửa cột tài chính của hợp đồng không-nháp ngoài hai đường
+RPC (`sua_hop_dong_master`, duyệt yêu cầu) đối với người dùng đăng nhập — kể cả `ke_toan`/`admin_ts`/`master_admin` UPDATE trực tiếp.
+
+- **Migration:** `0055_quy_trinh_de_xuat_phe_duyet_sua_hop_dong.sql` (tag `expand`: bảng `yeu_cau_sua_hop_dong` + RLS chỉ-đọc, trigger
+  nhật ký/bất biến, trigger chặn sửa tài chính trực tiếp, RPC `de_xuat_sua_hop_dong`/`xu_ly_yeu_cau_sua_hop_dong`/`rut_yeu_cau_sua_hop_dong`).
+  Test PGlite: `npm run test:yeu-cau-sua-hop-dong` (45 kiểm tra, đã thêm vào CI).
+- **Code:** `HopDongEditModal` (chế độ `de_xuat`), `YeuCauSuaTable`, trang `yeu-cau-sua`, actions `deXuatSuaHopDong`/`xuLyYeuCauSua`/`rutYeuCauSua`,
+  liên kết "Yêu cầu sửa" trên sub-nav học phí.
+- **Lưu ý:** chỉ `admin_ts` được đề xuất; SQL Editor/service role không bị chặn nhưng vẫn được trigger ghi log. Cần reviewer xác nhận phân loại
+  `expand` cho 2 trigger chặn (nhat_ky append-only ở 0054 và chặn sửa tài chính ở 0055).
+- **Staging:** 🔲 chưa áp (staging không truy cập được)
+- **Production:** 🔲 chưa áp — chờ merge, CI áp qua Environment `production-db`.
+- **Commit:** (xem PR #59)
+
+---
+
+## 2026-10-05 — Công cụ sửa hợp đồng (Master Admin) + nhật ký thay đổi hợp đồng
+
+**Tóm tắt:** Master Admin sửa được giá niêm yết, giảm giá, hình thức đóng, ghi chú của hợp đồng học phí
+ngay trên `/dashboard/hoc-phi/hop-dong` (nút "Sửa"), bắt buộc nhập lý do, có xem trước doanh thu thuần/còn phải
+thu và cảnh báo thu dư. Mọi thay đổi trên `hop_dong_hoc_phi` (kể cả kích hoạt/huỷ/sửa trực tiếp bằng SQL) được
+trigger tự ghi vào `nhat_ky` (cặp trước/sau chỉ gồm cột thật sự đổi, người thao tác, lý do); nút "Lịch sử" xem lại
+dòng thời gian. `nhat_ky` thành bảng chỉ-thêm (chặn UPDATE/DELETE). Ca khởi nguồn: hợp đồng 101026001002 (sheet
+23,5tr, hệ thống 25tr).
+
+- **Migration:** `0054_master_sua_hop_dong_va_nhat_ky.sql` (tag `expand`: cột `nhat_ky.ly_do`, 2 trigger, RPC
+  `sua_hop_dong_master`). Test PGlite: `npm run test:hop-dong-nhat-ky` (25 kiểm tra, đã thêm vào CI cùng
+  `test:hop-dong-unique`).
+- **Code:** `HopDongEditModal`, `HopDongLichSuModal`, actions `suaHopDongMaster`/`layLichSuHopDong`, bổ sung CSS
+  modal vào `hoc-phi.module.css` (trước đó `GoiHocPhiDoiGiaModal` dùng class modal chưa được định nghĩa ở file này).
+- **Giới hạn đã biết:** sửa giá KHÔNG tự cập nhật lịch kỳ đóng và không đổi phiếu thu; RPC trả về tổng kỳ để
+  giao diện cảnh báo lệch. Chưa có công cụ sửa kỳ đóng; không sửa hợp đồng đã huỷ.
+- **Staging:** 🔲 chưa áp (staging timeout khi kiểm tra kết nối ngày 05/10/2026)
+- **Production:** 🔲 chưa áp — chờ merge, CI áp qua Environment `production-db`.
+- **Commit:** (xem PR)
+
+---
+
 ## 2026-10-04 — Sửa lỗi: hủy hợp đồng học phí xong không tạo lại được hợp đồng mới
 
 **Tóm tắt:** `hop_dong_hoc_phi` có `UNIQUE (ghi_danh_id)` cho mọi trạng thái nên hợp đồng `da_huy` vẫn chiếm chỗ ghi danh; dropdown "Tạo hợp đồng mới" cũng loại mọi ghi danh có bất kỳ hợp đồng nào. Sửa: ràng buộc duy nhất chỉ tính hợp đồng đang mở (chưa hủy, chưa xóa mềm) + dropdown lọc theo cùng điều kiện. Học sinh 202126002010 được mở khóa, hợp đồng đã hủy giữ lại làm vết. Test PGlite: `npm run test:hop-dong-unique`.
