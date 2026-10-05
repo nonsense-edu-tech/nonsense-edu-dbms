@@ -9,7 +9,13 @@ import PhieuThuTable, { type PhieuThuRow } from "@/components/PhieuThuTable";
 import OTimKiem from "@/components/OTimKiem";
 import { layTuKhoa, timHopDongTheoTuKhoa, tuKhoaLaSoTien } from "@/lib/tim-kiem-hoc-phi";
 import { nhanPhieuThuTrongDanhSach } from "@/lib/thu-tien";
+import { tienHienThi } from "@/lib/formatCurrency";
+import { TRANG_THAI_GHI_DANH_LABEL } from "@/components/hocSinhOptions";
 import styles from "../hoc-phi.module.css";
+
+function layGiaTriDau(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
 
 const VAI_TRO_DOC = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
 const VAI_TRO_GHI = ["master_admin", "ke_toan", "thu_ngan", "admin_ts"];
@@ -64,7 +70,7 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
   ] = await Promise.all([
     supabase.from("users").select("vai_tro, trang_thai, ho_ten").eq("id", user.id).single(),
     supabase.from("v_tai_chinh_hop_dong").select("hop_dong_id, ghi_danh_id, chuong_trinh_ma, con_phai_thu, trang_thai"),
-    supabase.from("ghi_danh").select("id, hoc_sinh_id").is("deleted_at", null),
+    supabase.from("ghi_danh").select("id, hoc_sinh_id, trang_thai").is("deleted_at", null),
     supabase.from("hoc_sinh").select("id, ho_ten, ma_hoc_sinh").is("deleted_at", null),
     supabase.from("lop").select("id, chuong_trinh_ma").is("deleted_at", null),
     supabase.from("chuong_trinh").select("ma, ten").is("deleted_at", null),
@@ -86,11 +92,12 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
   const chuongTrinhMap = new Map((chuongTrinhList ?? []).map((c) => [c.ma, c.ten]));
 
   // Gồm hợp đồng đang hoạt động + hợp đồng đã hoàn thành nhưng còn phải thu (thu muộn).
-  const hopDongCoTheThu: HopDongCoTheThu[] = (taiChinhList ?? [])
+  const coTheThu: (HopDongCoTheThu & { trang_thai_hd: string })[] = (taiChinhList ?? [])
     .filter((tc) => nhanPhieuThuTrongDanhSach(tc.trang_thai, Number(tc.con_phai_thu ?? 0)))
     .map((tc) => {
       const gd = ghiDanhMap.get(tc.ghi_danh_id);
       const hs = gd ? hocSinhMap.get(gd.hoc_sinh_id) : undefined;
+      const dangHoc = !gd || gd.trang_thai === "dang_hoc";
       return {
         id: tc.hop_dong_id,
         ho_ten: hs?.ho_ten ?? "?",
@@ -98,9 +105,25 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
         chuong_trinh_ten: chuongTrinhMap.get(tc.chuong_trinh_ma) ?? "?",
         con_phai_thu: tc.con_phai_thu,
         da_ket_thuc: tc.trang_thai === "hoan_thanh",
+        ghi_danh_nhan: dangHoc ? null : (TRANG_THAI_GHI_DANH_LABEL[gd.trang_thai] ?? gd.trang_thai),
+        trang_thai_hd: tc.trang_thai,
       };
     })
     .sort((a, b) => a.ho_ten.localeCompare(b.ho_ten, "vi"));
+
+  // Học sinh đã nghỉ/bảo lưu/chuyển lớp: KHÔNG đưa vào ô chọn mặc định (tránh thu nhầm hợp đồng đã
+  // ngưng) nhưng cũng KHÔNG được giấu — công nợ nằm ở bảng riêng bên dưới; bấm "Thu khoản này" để
+  // chọn sẵn hợp đồng đó trong form (?hop_dong=...).
+  const hopDongMacDinhId = layGiaTriDau(raw.hop_dong);
+  const hopDongCoTheThu: HopDongCoTheThu[] = coTheThu.filter(
+    (h) => h.ghi_danh_nhan == null || h.id === hopDongMacDinhId
+  );
+  const congNoHsNghi = coTheThu.filter((h) => h.ghi_danh_nhan != null && Number(h.con_phai_thu) > 0);
+  const ppNo = parsePhanTrang(raw, "no");
+  const trangCuoiNo = duongDanTrangCuoi("/dashboard/hoc-phi/thu-tien", raw, ppNo, congNoHsNghi.length, "no");
+  if (trangCuoiNo) redirect(trangCuoiNo);
+  const congNoTrang = congNoHsNghi.slice(ppNo.from, ppNo.to + 1);
+  const tongConNo = congNoHsNghi.reduce((t, h) => t + Number(h.con_phai_thu), 0);
 
   const phieuThuRows: PhieuThuRow[] = (phieuThuList ?? []).map((pt) => {
     const hocSinh = motBanGhi(motBanGhi(motBanGhi(pt.hop_dong_hoc_phi)?.ghi_danh)?.hoc_sinh);
@@ -145,14 +168,64 @@ export default async function ThuTienPage({ searchParams }: { searchParams: Prom
         </section>
       ) : (
         <>
-          <section className={styles.card}>
+          <section className={styles.card} id="ghi-phieu-thu">
             <h2 className={styles.cardTitle}>Ghi phiếu thu</h2>
             {canEdit ? (
-              <PhieuThuForm hopDongList={hopDongCoTheThu} nguoiDungHienTai={nguoiDungHienTai} />
+              <PhieuThuForm
+                key={hopDongMacDinhId ?? ""}
+                hopDongList={hopDongCoTheThu}
+                nguoiDungHienTai={nguoiDungHienTai}
+                hopDongMacDinhId={hopDongMacDinhId ?? ""}
+              />
             ) : (
               <p className={styles.noticeBox}>Bạn không có quyền ghi phiếu thu.</p>
             )}
           </section>
+
+          {congNoHsNghi.length > 0 && (
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>
+                Công nợ học sinh đã nghỉ / bảo lưu / chuyển lớp ({congNoHsNghi.length}) — còn phải thu {tienHienThi(tongConNo)}
+              </h2>
+              <p className={styles.noticeBox} style={{ marginBottom: 14 }}>
+                Các hợp đồng này không có trong ô chọn mặc định của form. Cần xử lý dứt điểm (thu nốt, hoặc nhờ Master
+                Admin tất toán/miễn phần còn lại) — không để treo công nợ.
+              </p>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Học sinh</th>
+                      <th>Chương trình</th>
+                      <th>Ghi danh</th>
+                      <th>Hợp đồng</th>
+                      <th>Còn phải thu</th>
+                      {canEdit && <th></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {congNoTrang.map((h) => (
+                      <tr key={h.id}>
+                        <td>{h.ho_ten} <span className={styles.mono}>({h.ma_hoc_sinh})</span></td>
+                        <td>{h.chuong_trinh_ten}</td>
+                        <td><span className={`${styles.badge} ${styles.badgeHuy}`}>HS {h.ghi_danh_nhan?.toLowerCase()}</span></td>
+                        <td>{h.trang_thai_hd === "hoan_thanh" ? "Hoàn thành" : "Đang hoạt động"}</td>
+                        <td className={styles.mono}>{tienHienThi(Number(h.con_phai_thu))}</td>
+                        {canEdit && (
+                          <td>
+                            <Link href={`/dashboard/hoc-phi/thu-tien?hop_dong=${h.id}#ghi-phieu-thu`} className={styles.btnEdit}>
+                              Thu khoản này
+                            </Link>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PhanTrang total={congNoHsNghi.length} page={ppNo.page} size={ppNo.size} prefix="no" />
+            </section>
+          )}
 
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Lịch sử phiếu thu ({total})</h2>
