@@ -60,3 +60,4 @@ jobs:
           npm run test:hop-dong-nhat-ky
           npm run test:yeu-cau-sua-hop-dong
           npm run test:nen-du-lieu-pl
+          npm run test:giai-doan-hop-dong

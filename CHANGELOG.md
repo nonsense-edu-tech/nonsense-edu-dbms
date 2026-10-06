@@ -54,6 +54,20 @@ Mỗi mục ghi rõ:
 **Production:** 🔲 chờ merge (PR #65 trước, rồi PR này) → duyệt job `apply-migration-expand`.
 
 ---
+## 2026-10-06 — Giai đoạn hợp đồng học phí (lớp Nội trú 24 tháng: giá, kỳ đóng, giảm giá, doanh thu theo giai đoạn)
+
+**Tóm tắt:** Lớp dài hơn 12 tháng chia giai đoạn (mặc định 12 tháng đầu = giai đoạn 1, phần còn lại = giai đoạn 2); lớp vẫn là một lớp, giữ tên và tiến độ buổi. Mỗi học viên vẫn MỘT hợp đồng; hợp đồng có các giai đoạn (`hop_dong_giai_doan`), tổng tiền hợp đồng luôn = tổng giai đoạn đã kích hoạt. Giai đoạn 2 chỉ có "giá dự kiến" (chưa tính công nợ/doanh thu) cho tới khi tự kích hoạt sau khi giai đoạn 1 kết thúc, trừ khi admin đóng (cả lớp hoặc từng học viên). Học bổng/giảm giá áp riêng từng giai đoạn; kích hoạt tạo kỳ đóng của giai đoạn đó. Hợp đồng hiện có tự thành 1 giai đoạn (số tiền y nguyên); sửa/tất toán hợp đồng bằng đường cũ vẫn hoạt động (chênh lệch dồn vào giai đoạn hiện hành). Chưa có giao diện; hàm `kich_hoat_giai_doan_den_han()` cần được gọi hằng ngày bằng service role (cron ngoài DB — production không có pg_cron) — làm ở bước code sau.
+
+**Migration:** `0059_giai_doan_hop_dong_hoc_phi.sql` (test: `npm run test:giai-doan-hop-dong`). Nên merge sau PR #69 (0058).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge PR → CI duyệt job `apply-migration-expand`. Sau khi áp: chạy `get_advisors`.
+
+**Commit:** (điền sau merge)
+
+---
+
 
 ## 2026-10-05 — Tất toán hợp đồng (miễn công nợ), chặn huỷ hợp đồng đã thu tiền, làm sạch view công nợ
 
