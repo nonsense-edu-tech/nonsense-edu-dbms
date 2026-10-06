@@ -59,3 +59,4 @@ jobs:
           npm run test:hop-dong-unique
           npm run test:hop-dong-nhat-ky
           npm run test:yeu-cau-sua-hop-dong
+          npm run test:nen-du-lieu-pl

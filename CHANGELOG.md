@@ -19,6 +19,20 @@ Mỗi mục ghi rõ:
 `DBMS Project (Jul2026)` (`pdyerenojwrtejyhlcbs`) = production.
 
 ---
+## 2026-10-06 — Nền dữ liệu P&L theo lớp (giai đoạn A1): hình thức dạy, loại buổi, nhân sự & đơn giá giảng dạy
+
+**Tóm tắt:** Chuẩn bị dữ liệu để tính P&L từng lớp: thêm `lop.so_buoi_tuan` / `hinh_thuc_mac_dinh` (điền sẵn: V-ACT 4 buổi/tuần offline, lớp A-02 online; Nội trú & Ngoại 2 buổi/tuần OMO); `buoi_hoc` thêm loại buổi (chính khóa/tăng cường/học bù/thi thử), hình thức học, nguồn xác nhận, cờ tính chi phí khi huỷ; unique đổi thành (lớp, môn, ngày, giờ bắt đầu) để cho phép buổi tăng cường cùng ngày; `ghi_danh.hinh_thuc_tham_gia` cho lớp OMO; bảng mới `buoi_hoc_nhan_su` (GV chính/trợ giảng/dạy thay, thù lao ẨN, chỉ đọc qua view `buoi_hoc_nhan_su_chi_phi` cho kế toán/master_admin) và `don_gia_giang_day` (đơn giá theo người/vai trò/hình thức/loại buổi, không chồng thời gian, chỉ kế toán/master_admin đọc). Chưa có thay đổi giao diện. Migration Expand, chỉ thêm policy (không sửa policy cũ); cần extension `btree_gist` (schema `extensions`).
+
+**Migration:** `0058_nen_du_lieu_pl_theo_lop.sql` (test: `npm run test:nen-du-lieu-pl`).
+
+**Staging:** — (không dùng)
+
+**Production:** 🔲 chờ merge PR → CI duyệt job `apply-migration-expand`. Sau khi áp: chạy `get_advisors` (security + performance).
+
+**Commit:** (điền sau merge)
+
+---
+
 
 ## 2026-10-05 — Đổi trạng thái ghi danh: hỏi cách xử lý công nợ (giữ / tất toán)
 
