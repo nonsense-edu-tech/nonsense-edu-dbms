@@ -16,6 +16,7 @@
     "test:yeu-cau-sua-hop-dong": "node supabase/tests/0055-yeu-cau-sua-hop-dong.test.mjs",
     "test:tat-toan-hop-dong": "node supabase/tests/0056-tat-toan-hop-dong.test.mjs",
     "test:chuyen-ngung-hop-dong": "node supabase/tests/0057-chuyen-ngung-hop-dong.test.mjs",
+    "test:giai-doan-hop-dong": "node supabase/tests/0059-giai-doan-hop-dong.test.mjs",
     "test:nen-du-lieu-pl": "node supabase/tests/0058-nen-du-lieu-pl.test.mjs"
   },
   "dependencies": {
